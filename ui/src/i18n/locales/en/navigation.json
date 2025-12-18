@@ -1,0 +1,80 @@
+{
+  "menu": {
+    "dashboard": "Dashboard",
+    "proxyHosts": "Proxy Hosts",
+    "hosts": "Hosts",
+    "redirects": "Redirects",
+    "redirectHosts": "Redirect Hosts",
+    "waf": "WAF",
+    "wafBanIp": "WAF / Blocking",
+    "access": "Access",
+    "accessControl": "Access Control",
+    "accessLists": "Access Lists",
+    "certificates": "Certificates",
+    "sslCerts": "SSL Certs",
+    "logs": "Logs",
+    "settings": "Settings"
+  },
+  "header": {
+    "nginxProxyGuard": "Nginx Proxy Guard",
+    "subtitle": "Secure Reverse Proxy Manager",
+    "testConfig": "Test Config",
+    "syncAll": "Sync All",
+    "notifications": "Notifications",
+    "noNotifications": "No new notifications"
+  },
+  "account": {
+    "myAccount": "My Account",
+    "settings": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode",
+    "logout": "Logout",
+    "logoutConfirm": "Are you sure you want to logout?"
+  },
+  "footer": {
+    "version": "Version",
+    "documentation": "Documentation",
+    "support": "Support",
+    "github": "GitHub",
+    "allRightsReserved": "All rights reserved."
+  },
+  "subTabs": {
+    "certificates": {
+      "list": "Certificates",
+      "history": "Issuance/Renewal History",
+      "dnsProviders": "DNS Providers"
+    },
+    "waf": {
+      "ruleSettings": "WAF Policy Settings",
+      "bannedIps": "IP Ban Management",
+      "uriBlocks": "URI Block Management",
+      "exploitRules": "Exploit Block Rules",
+      "fail2ban": "Fail2ban",
+      "tester": "WAF Tester"
+    },
+    "logs": {
+      "access": "Access Logs",
+      "wafEvents": "WAF Events",
+      "botFilter": "Bot Filter",
+      "exploitBlocks": "Exploit Blocks",
+      "error": "Error Logs",
+      "system": "System Logs",
+      "audit": "Admin Audit",
+      "rawFiles": "Raw Files"
+    },
+    "settings": {
+      "global": "Global Settings",
+      "captcha": "CAPTCHA",
+      "geoip": "GeoIP",
+      "botfilter": "Bot Filter",
+      "wafAutoBan": "WAF Auto-Ban",
+      "ssl": "SSL / ACME",
+      "maintenance": "Maintenance",
+      "backups": "Backups",
+      "systemLogs": "System Logs"
+    }
+  },
+  "loading": "Loading..."
+}

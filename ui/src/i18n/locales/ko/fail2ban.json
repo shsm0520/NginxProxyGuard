@@ -1,0 +1,41 @@
+{
+  "title": "Fail2ban 관리",
+  "subtitle": "모든 호스트의 자동 IP 차단 설정을 관리합니다",
+  "viewBannedIPs": "차단된 IP 보기",
+  "info": {
+    "title": "Fail2ban 소개",
+    "description": "Fail2ban은 로그인 실패(401/403 오류)가 너무 많은 IP 주소를 자동으로 차단합니다. 호스트별로 설정을 구성하여 무차별 대입 공격으로부터 보호하세요."
+  },
+  "hostList": {
+    "title": "호스트 목록",
+    "empty": "구성된 호스트가 없습니다"
+  },
+  "status": {
+    "enabled": "활성화",
+    "disabled": "비활성화"
+  },
+  "settings": {
+    "maxRetries": "최대 재시도",
+    "maxRetriesHelp": "차단 전 허용되는 실패 횟수",
+    "findTime": "탐지 시간 (초)",
+    "findTimeHelp": "실패 횟수를 계산하는 시간 범위",
+    "banTime": "차단 시간 (초)",
+    "banTimeHelp": "IP 차단 지속 시간",
+    "failCodes": "실패 코드",
+    "failCodesHelp": "실패로 간주되는 HTTP 상태 코드",
+    "action": "액션",
+    "actionOptions": {
+      "block": "IP 차단",
+      "log": "로그만 기록",
+      "notify": "알림만"
+    }
+  },
+  "actions": {
+    "configure": "설정",
+    "cancel": "취소",
+    "save": "저장"
+  },
+  "editModal": {
+    "title": "Fail2ban 설정 - {{host}}"
+  }
+}

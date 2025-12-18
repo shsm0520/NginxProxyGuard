@@ -1,0 +1,21 @@
+{
+    "enabled": true,
+    "levels": {
+        "npg-proxy": "info",
+        "npg-api": "info",
+        "npg-db": "warn",
+        "npg-ui": "warn"
+    },
+    "exclude_patterns": [
+        "/health",
+        "/nginx_status",
+        "/.well-known/",
+        "HEAD /",
+        "GET /api/v1/dashboard",
+        "GET /api/v1/system-logs",
+        "GET /favicon.ico"
+    ],
+    "stdout_excluded": [
+        "npg-proxy"
+    ]
+}

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nginx Proxy Guard API Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        .swagger-ui .topbar {
+            background-color: #1e293b;
+        }
+        .swagger-ui .topbar .download-url-wrapper .select-label {
+            display: none;
+        }
+        .swagger-ui .info .title {
+            color: #1e293b;
+        }
+        .swagger-ui .info .title small.version-stamp {
+            background-color: #3b82f6;
+        }
+        .swagger-ui .opblock.opblock-get .opblock-summary-method {
+            background: #3b82f6;
+        }
+        .swagger-ui .opblock.opblock-post .opblock-summary-method {
+            background: #22c55e;
+        }
+        .swagger-ui .opblock.opblock-put .opblock-summary-method {
+            background: #f59e0b;
+        }
+        .swagger-ui .opblock.opblock-delete .opblock-summary-method {
+            background: #ef4444;
+        }
+        .swagger-ui .btn.authorize {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+        .swagger-ui .btn.authorize:hover {
+            background-color: #2563eb;
+        }
+        .custom-header {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .custom-header svg {
+            width: 40px;
+            height: 40px;
+        }
+        .custom-header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .custom-header p {
+            margin: 5px 0 0 0;
+            opacity: 0.8;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="custom-header">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" fill="#3b82f6"/>
+            <path d="M12 12.99V21c-3.72-1.15-6.47-4.82-7-8.94h7z" fill="white" opacity="0.3"/>
+        </svg>
+        <div>
+            <h1>Nginx Proxy Guard API</h1>
+            <p>Secure Reverse Proxy Manager - API Documentation</p>
+        </div>
+    </div>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            SwaggerUIBundle({
+                url: "/api/docs/swagger.yaml",
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                persistAuthorization: true,
+                displayRequestDuration: true,
+                filter: true,
+                showExtensions: true,
+                showCommonExtensions: true,
+                syntaxHighlight: {
+                    activate: true,
+                    theme: "monokai"
+                }
+            });
+        };
+    </script>
+</body>
+</html>

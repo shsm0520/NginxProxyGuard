@@ -1,0 +1,531 @@
+{
+  "title": "WAF",
+  "subtitle": "Web Application Firewall",
+  "overview": {
+    "title": "Overview",
+    "totalEvents": "Total Events",
+    "blockedRequests": "Blocked Requests",
+    "detectedThreats": "Detected Threats",
+    "activeRules": "Active Rules"
+  },
+  "status": {
+    "enabled": "WAF Enabled",
+    "disabled": "WAF Disabled",
+    "blocking": "Blocking Mode",
+    "detection": "Detection Mode"
+  },
+  "settings": {
+    "title": "WAF Settings",
+    "mode": {
+      "title": "Mode",
+      "blocking": "Blocking",
+      "blockingDescription": "Block malicious requests",
+      "detection": "Detection",
+      "detectionDescription": "Detect and log threats only"
+    },
+    "paranoiaLevel": {
+      "title": "Paranoia Level",
+      "description": "Higher levels are more sensitive",
+      "level1": "Level 1 - Default",
+      "level1Description": "Minimize false positives",
+      "level2": "Level 2 - Standard",
+      "level2Description": "Balanced protection",
+      "level3": "Level 3 - Enhanced",
+      "level3Description": "Enhanced protection",
+      "level4": "Level 4 - Maximum",
+      "level4Description": "Maximum protection (high false positive risk)"
+    },
+    "anomalyThreshold": {
+      "title": "Anomaly Threshold",
+      "description": "Minimum score to block a request"
+    },
+    "autoBan": {
+      "title": "Auto Ban",
+      "enabled": "Enable Auto Ban",
+      "description": "Automatically ban IPs with repeated WAF violations",
+      "threshold": "Ban Threshold",
+      "thresholdDescription": "Violations before automatic ban",
+      "duration": "Ban Duration",
+      "durationDescription": "IP ban duration (minutes)"
+    }
+  },
+  "rules": {
+    "title": "Rules",
+    "coreRuleSet": "OWASP Core Rule Set",
+    "customRules": "Custom Rules",
+    "ruleId": "Rule ID",
+    "ruleName": "Rule Name",
+    "severity": "Severity",
+    "category": "Category",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "addRule": "Add Rule",
+    "editRule": "Edit Rule",
+    "deleteRule": "Delete Rule",
+    "categories": {
+      "sqli": "SQL Injection",
+      "xss": "Cross-Site Scripting",
+      "lfi": "Local File Inclusion",
+      "rfi": "Remote File Inclusion",
+      "rce": "Remote Code Execution",
+      "scanner": "Scanner Detection",
+      "protocol": "Protocol Violation",
+      "dos": "Denial of Service"
+    }
+  },
+  "exclusions": {
+    "title": "Exclusions",
+    "description": "Paths or rules to exclude from WAF inspection",
+    "addExclusion": "Add Exclusion",
+    "editExclusion": "Edit Exclusion",
+    "deleteExclusion": "Delete Exclusion",
+    "path": "Path",
+    "pathPlaceholder": "/api/upload/*",
+    "ruleIds": "Rule IDs",
+    "ruleIdsPlaceholder": "920300, 942100",
+    "allRules": "All Rules",
+    "specificRules": "Specific Rules"
+  },
+  "events": {
+    "title": "Events",
+    "recentEvents": "Recent Events",
+    "viewAll": "View All",
+    "noEvents": "No events",
+    "severity": {
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "columns": {
+      "time": "Time",
+      "ip": "IP",
+      "rule": "Rule",
+      "severity": "Severity",
+      "action": "Action",
+      "uri": "URI"
+    },
+    "actions": {
+      "blocked": "Blocked",
+      "logged": "Logged",
+      "allowed": "Allowed"
+    }
+  },
+  "policy": {
+    "title": "Policy",
+    "globalPolicy": "Global Policy",
+    "hostPolicy": "Host Policy",
+    "inheritance": "Inheritance",
+    "override": "Override",
+    "history": {
+      "title": "Policy History",
+      "viewHistory": "View History",
+      "restore": "Restore",
+      "compare": "Compare"
+    }
+  },
+  "messages": {
+    "saveSuccess": "WAF settings saved",
+    "saveFailed": "Failed to save WAF settings",
+    "ruleEnabled": "Rule enabled",
+    "ruleDisabled": "Rule disabled",
+    "exclusionAdded": "Exclusion added",
+    "exclusionRemoved": "Exclusion removed"
+  },
+  "bannedIp": {
+    "title": "Banned IP List",
+    "subtitle": "IP addresses banned by WAF, Rate Limit, or Fail2ban",
+    "totalCount": "Total {{count}}",
+    "addBan": "Add IP Ban",
+    "noBans": "No IPs currently banned.",
+    "fetchError": "Failed to fetch banned IP list.",
+    "global": "Global",
+    "tabs": {
+      "global": "Global Bans",
+      "perHost": "Per-Host Bans",
+      "current": "Current Bans",
+      "history": "Ban History"
+    },
+    "stats": {
+      "total": "Total Bans",
+      "permanent": "Permanent",
+      "auto": "Auto Banned",
+      "global": "Global Bans",
+      "hostsWithBans": "Hosts with Bans",
+      "perHostTotal": "Per-Host Bans"
+    },
+    "filter": {
+      "host": "Host",
+      "allHosts": "All Hosts",
+      "globalOnly": "Global Only",
+      "type": "Ban Type",
+      "allTypes": "All Types",
+      "autoOnly": "Auto Bans",
+      "manualOnly": "Manual Bans",
+      "waf": "WAF Bans",
+      "fail2ban": "Fail2ban",
+      "rateLimit": "Rate Limit",
+      "showing": "Showing {{count}}"
+    },
+    "table": {
+      "ip": "IP Address",
+      "host": "Host",
+      "reason": "Reason",
+      "type": "Type",
+      "banTime": "Ban Time",
+      "expires": "Expires",
+      "actions": "Actions"
+    },
+    "type": {
+      "auto": "Auto",
+      "manual": "Manual"
+    },
+    "status": {
+      "permanent": "Permanent Ban",
+      "daysRemaining": "{{count}}d remaining",
+      "hoursRemaining": "{{count}}h remaining",
+      "minutesRemaining": "{{count}}m remaining",
+      "expiringSoon": "Expiring soon",
+      "expired": "Expired"
+    },
+    "time": {
+      "futureDays": "In {{count}} days",
+      "futureHours": "In {{count}} hours",
+      "futureMinutes": "In {{count}} minutes",
+      "soon": "Soon",
+      "justNow": "Just now",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "daysAgo": "{{count}}d ago"
+    },
+    "actions": {
+      "unban": "Unban",
+      "cancel": "Cancel",
+      "ban": "Ban",
+      "processing": "Processing..."
+    },
+    "confirm": {
+      "unban": "Are you sure you want to unban {{ip}}?"
+    },
+    "modal": {
+      "title": "Add IP Ban",
+      "ipLabel": "IP Address",
+      "ipPlaceholder": "192.168.1.100",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "Enter ban reason (optional)",
+      "durationLabel": "Ban Duration",
+      "hostLabel": "Apply to Host",
+      "globalBan": "Global Ban (All Hosts)",
+      "hostHint": "Global ban applies to all proxy hosts.",
+      "durations": {
+        "5m": "5 minutes",
+        "10m": "10 minutes",
+        "30m": "30 minutes",
+        "1h": "1 hour",
+        "24h": "24 hours",
+        "7d": "7 days",
+        "30d": "30 days",
+        "permanent": "Permanent Ban"
+      }
+    },
+    "messages": {
+      "saveFailed": "Failed to ban IP."
+    },
+    "logs": {
+      "title": "Activity Logs",
+      "subtitle": "Previous activity logs for banned IP",
+      "reasonPrefix": "Reason: ",
+      "banTime": "Ban Time:",
+      "expires": "Expires:",
+      "failCount": "Fail Count:",
+      "noLogs": "No logs recorded for this IP.",
+      "fetchError": "Failed to fetch logs.",
+      "close": "Close",
+      "host": "Host:"
+    },
+    "history": {
+      "stats": {
+        "totalBans": "Total Bans",
+        "totalUnbans": "Total Unbans",
+        "activeBans": "Active Bans",
+        "fail2ban": "Fail2ban Bans"
+      },
+      "filter": {
+        "eventType": "Event Type",
+        "all": "All",
+        "ban": "Ban",
+        "unban": "Unban",
+        "source": "Source",
+        "manual": "Manual",
+        "expired": "Expired"
+      },
+      "table": {
+        "time": "Time",
+        "event": "Event",
+        "ip": "IP Address",
+        "source": "Source",
+        "host": "Host",
+        "reason": "Reason",
+        "user": "User"
+      },
+      "event": {
+        "ban": "Ban",
+        "unban": "Unban"
+      },
+      "source": {
+        "manual": "Manual",
+        "expired": "Expired"
+      },
+      "fetchError": "Failed to load history.",
+      "noHistory": "No history found.",
+      "system": "System",
+      "topBanned": "Frequently Banned IPs",
+      "times": "times"
+    },
+    "pagination": {
+      "prev": "Previous",
+      "next": "Next"
+    }
+  },
+  "hostList": {
+    "subtitle": "Manage WAF policies per host",
+    "noHosts": "No proxy hosts found. Please create a proxy host first.",
+    "loadError": "Failed to load host list",
+    "managePolicy": "Manage Policy",
+    "rulesDisabled": "{{count}} rules disabled",
+    "allRulesEnabled": "All rules enabled",
+    "status": {
+      "inactive": "Inactive",
+      "blocking": "Blocking Mode",
+      "detection": "Detection Mode"
+    }
+  },
+  "policyManager": {
+    "title": "WAF Policy Management - {{name}}",
+    "subtitle": "{{disabled}} of {{total}} rules disabled",
+    "loadError": "Failed to load rules",
+    "tabs": {
+      "rules": "Policy Settings",
+      "history": "Change History"
+    },
+    "searchPlaceholder": "Search by Rule ID or description...",
+    "showDisabledOnly": "Disabled rules only",
+    "showingCount": "Showing {{count}}",
+    "disabledCount": "({{count}} disabled)",
+    "allCategories": "All Categories",
+    "ruleCount": "{{count}} rules",
+    "empty": "No rules to display",
+    "noResults": "No results found",
+    "bulkEnable": "Enable All",
+    "bulkDisable": "Disable All",
+    "noDescription": "No description",
+    "exclusionInfo": "Exclusion Info",
+    "disabledAt": "Disabled At",
+    "reason": "Reason",
+    "disabledBy": "Disabled By",
+    "category": "Category"
+  },
+  "disableModal": {
+    "title": "Disable Rule",
+    "reasonLabel": "Reason for disabling",
+    "reasonPlaceholder": "e.g., False positive for legitimate request",
+    "cancel": "Cancel",
+    "confirm": "Disable",
+    "processing": "Processing..."
+  },
+  "tester": {
+    "title": "WAF Attack Tester",
+    "description": "Test your WAF configuration by sending simulated attack patterns.",
+    "warning": "Only use this on your own systems.",
+    "selectHost": "Select Proxy Host",
+    "selectHostPlaceholder": "-- Select a proxy host or enter manually --",
+    "wafEnabledGroup": "🛡️ WAF Enabled",
+    "wafDisabledGroup": "⚠️ WAF Disabled",
+    "noWafHosts": "⚠️ No proxy hosts have WAF enabled. Enable WAF in proxy host settings to test.",
+    "targetUrl": "Target URL",
+    "targetUrlHelp": "Docker internal: use https://npg-proxy",
+    "hostHeader": "Host Header",
+    "hostHeaderHelp": "Domain name for virtual host routing",
+    "testAll": "Test All Patterns",
+    "testingAll": "Testing All...",
+    "target": "Target:",
+    "status": {
+      "blocking": "🛡️ WAF Blocking",
+      "detection": "👁️ WAF Detection",
+      "disabled": "⚠️ WAF Disabled"
+    },
+    "stats": {
+      "total": "Total Tests",
+      "blocked": "Blocked",
+      "passed": "Passed Through"
+    },
+    "patterns": {
+      "title": "Attack Patterns",
+      "loading": "Loading patterns...",
+      "test": "Test",
+      "testing": "Testing..."
+    },
+    "modeInfo": {
+      "title": "WAF Mode",
+      "blocking": "Blocking mode: Attacks are blocked and logged (returns 403).",
+      "detection": "Detection mode: Attacks are only logged but not blocked (returns 200).",
+      "configure": "Configure WAF mode in Proxy Host settings."
+    }
+  },
+  "uriBlock": {
+    "title": "URI Path Blocking",
+    "subtitle": "Manage URI blocking rules across all proxy hosts",
+    "addRule": "Add Rule",
+    "addHost": "Add Host",
+    "stats": {
+      "totalHosts": "Total Hosts",
+      "totalRules": "Total Rules",
+      "activeHosts": "Active Hosts",
+      "disabledHosts": "Disabled Hosts"
+    },
+    "filters": {
+      "allHosts": "All Hosts"
+    },
+    "table": {
+      "status": "Status",
+      "host": "Host",
+      "rules": "Rules",
+      "settings": "Settings",
+      "actions": "Actions"
+    },
+    "empty": {
+      "title": "No URI Blocking Rules",
+      "description": "Click 'Add Host' to configure URI blocking for a proxy host."
+    },
+    "hostDisabled": "Host Disabled",
+    "moreHosts": "more domains",
+    "rulesCount": "rules",
+    "exceptions": "exceptions",
+    "privateAllowed": "Private IPs",
+    "noRules": "No rules configured",
+    "matchTypes": {
+      "exact": "Exact",
+      "prefix": "Prefix",
+      "regex": "Regex"
+    },
+    "confirmDelete": "Are you sure you want to delete this rule?",
+    "exceptionIPs": "Exception IPs",
+    "allowPrivateIPs": "Allow Private IPs",
+    "updatedAt": "Updated",
+    "hostModal": {
+      "subtitle": "URI Blocking Configuration",
+      "enableBlocking": "Enable URI Blocking",
+      "enableBlockingDesc": "Block access to configured URI patterns",
+      "rules": "Blocking Rules",
+      "exceptionIPsDesc": "These IPs will bypass URI blocking rules",
+      "noExceptionIPs": "No exception IPs configured",
+      "settings": "Settings",
+      "allowPrivateIPsDesc": "Allow private/local IPs (10.x, 172.16.x, 192.168.x, 127.x) to bypass blocking"
+    },
+    "newHostModal": {
+      "title": "Add Host for URI Blocking",
+      "selectHost": "Select Proxy Host",
+      "noAvailableHosts": "All proxy hosts already have URI blocking configured",
+      "create": "Add Host"
+    },
+    "modal": {
+      "title": "Add URI Block Rule",
+      "selectHost": "Proxy Host",
+      "selectHostPlaceholder": "-- Select a proxy host --",
+      "pattern": "URI Pattern",
+      "patternPlaceholder": "/wp-admin, /xmlrpc.php, \\.php$",
+      "matchType": "Match Type",
+      "matchTypeHelp": {
+        "prefix": "Blocks all URIs starting with this pattern",
+        "exact": "Blocks only the exact URI path",
+        "regex": "Blocks URIs matching this regular expression"
+      },
+      "description": "Description (optional)",
+      "descriptionPlaceholder": "e.g., Block WordPress Admin",
+      "quickTemplates": "Quick Templates",
+      "addButton": "Add"
+    },
+    "tabs": {
+      "global": "Global Rules",
+      "rules": "Per-Host Rules",
+      "history": "History"
+    },
+    "global": {
+      "title": "Global URI Blocking",
+      "description": "These rules apply to ALL proxy hosts automatically.",
+      "rules": "Rules",
+      "exceptionIPsDesc": "IPs that bypass global URI blocking.",
+      "infoTitle": "How Global Rules Work",
+      "infoDesc": "Global rules are automatically applied to all proxy hosts. They are checked before host-specific rules. Use this for common security patterns like blocking WordPress admin, XML-RPC, or sensitive files.",
+      "unsavedChanges": "You have unsaved changes",
+      "saveSuccess": "Settings saved and applied to {{count}} hosts",
+      "saveFailed": "Failed to save settings"
+    },
+    "history": {
+      "empty": "No history records",
+      "time": "Time",
+      "action": "Action",
+      "host": "Host",
+      "details": "Details",
+      "user": "User",
+      "actions": {
+        "addRule": "Rule Added",
+        "removeRule": "Rule Removed",
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+      }
+    },
+    "bulkAdd": {
+      "applyToAll": "Apply to all hosts",
+      "willApplyToAll": "Will apply to {{count}} hosts",
+      "success": "Rule added to {{count}}/{{total}} hosts",
+      "failed": "Failed to add rule: {{error}}"
+    }
+  },
+  "global": {
+    "title": "Global WAF Rule Management",
+    "subtitle": "Manage global rules that apply to all proxy hosts",
+    "ruleCount": "{{disabled}} of {{total}} rules globally disabled",
+    "showDisabledOnly": "Globally disabled only",
+    "globallyDisabled": "({{count}} globally disabled)",
+    "badge": "Global",
+    "exclusionInfo": "Global Exclusion Info",
+    "tabs": {
+      "perHost": "Per-Host Policies",
+      "global": "Global Policies"
+    },
+    "disableModal": {
+      "title": "Disable Global Rule",
+      "warning": "This rule will be disabled for ALL proxy hosts.",
+      "reasonPlaceholder": "e.g., False positive across all hosts",
+      "confirm": "Disable Globally"
+    },
+    "history": {
+      "loadError": "Failed to load change history",
+      "searchPlaceholder": "Search by Rule ID or category...",
+      "count": "{{count}} records",
+      "total": "{{count}} total",
+      "empty": "No global policy history",
+      "emptyDescription": "History will be recorded when global rules are enabled/disabled",
+      "disabled": "Globally Disabled",
+      "enabled": "Globally Enabled",
+      "reason": "Reason"
+    }
+  },
+  "help": {
+    "bannedIp": {
+      "ip": "Enter the IP address to ban.",
+      "reason": "Enter a reason for the ban (optional).",
+      "duration": "Set the duration for the IP ban."
+    },
+    "hostList": {
+      "status": "WAF is disabled. Enable it in the Proxy Host settings."
+    },
+    "policyManager": {
+      "showDisabledOnly": "Filter to show only disabled rules."
+    },
+    "global": {
+      "description": "Rules disabled in global policies automatically apply to all proxy hosts."
+    }
+  }
+}

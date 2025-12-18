@@ -1,0 +1,492 @@
+{
+  "saveProgress": {
+    "titleCreate": "Creating Proxy Host",
+    "titleUpdate": "Updating Proxy Host",
+    "steps": {
+      "server": "Processing on Server",
+      "serverDesc": "Saving to DB, generating config, testing, reloading Nginx...",
+      "additional": "Saving Additional Settings",
+      "additionalDesc": "Saving bot filter, GeoIP and other settings...",
+      "complete": "Complete",
+      "completeDesc": "Proxy host saved successfully!"
+    }
+  },
+  "list": {
+    "title": "Proxy Hosts",
+    "description": "Manage proxy hosts",
+    "addNew": "Add Proxy Host",
+    "empty": "No proxy hosts",
+    "emptyDescription": "Add your first proxy host",
+    "search": "Search hosts...",
+    "filter": {
+      "all": "All",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "ssl": "SSL Enabled",
+      "waf": "WAF Enabled"
+    },
+    "columns": {
+      "domain": "Domain",
+      "target": "Target",
+      "ssl": "SSL",
+      "status": "Status",
+      "actions": "Actions",
+      "source": "Source",
+      "destination": "Destination",
+      "features": "Features"
+    },
+    "status": {
+      "active": "Active",
+      "disabled": "Disabled"
+    },
+    "showing": "Showing {{count}} of {{total}} proxy hosts"
+  },
+  "form": {
+    "addTitle": "Add Proxy Host",
+    "editTitle": "Edit Proxy Host",
+    "tabs": {
+      "basic": "Basic",
+      "ssl": "SSL/TLS",
+      "security": "Security",
+      "protection": "Protection",
+      "performance": "Performance",
+      "advanced": "Advanced"
+    },
+    "basic": {
+      "domainNames": "Domain Names",
+      "domainPlaceholder": "example.com",
+      "addDomain": "Add Domain",
+      "forwardHost": "Forward Host",
+      "forwardHostPlaceholder": "192.168.1.100 or container_name",
+      "forwardPort": "Forward Port",
+      "forwardScheme": "Forward Scheme",
+      "websocket": "WebSocket Support",
+      "websocketDescription": "Allow WebSocket connections"
+    },
+    "ssl": {
+      "enabled": "SSL Enabled",
+      "enabledDescription": "Enable HTTPS connections",
+      "forceHttps": "Force HTTPS",
+      "forceHttpsDescription": "Redirect HTTP requests to HTTPS",
+      "http2": "HTTP/2",
+      "http2Description": "Enable HTTP/2 protocol",
+      "http3": "HTTP/3",
+      "http3Description": "Enable HTTP/3 (QUIC) protocol",
+      "certificate": "Certificate",
+      "selectCertificate": "Select Certificate",
+      "noCertificate": "No Certificate",
+      "createCertificate": "Create New Certificate",
+      "existingCertificate": "Use Existing Certificate",
+      "pendingCertificates": "Pending Certificates",
+      "certificateProvider": "Certificate Provider",
+      "dnsProvider": "DNS Provider",
+      "dnsChallenge": "DNS Challenge",
+      "httpChallenge": "HTTP Challenge",
+      "creatingCertificate": "Creating certificate...",
+      "certificateSuccess": "Certificate created",
+      "certificateFailed": "Failed to create certificate"
+    },
+    "security": {
+      "priorityAllowIPs": {
+        "title": "Priority Allow IPs",
+        "overrideTag": "Override",
+        "description": "These IPs/CIDRs will bypass GeoIP restrictions, Bot Filter, and other security checks. Add internal services or monitoring systems.",
+        "placeholder": "Enter one IP or CIDR per line\ne.g., 192.168.1.100\n10.0.0.0/8\n172.16.0.0/16",
+        "note": "IPs and CIDR ranges in this list have highest priority and bypass all blocks.",
+        "registeredCount": "{{count}} entries registered"
+      },
+      "blockExploits": "Block Exploits",
+      "blockExploitsDescription": "Block common attack patterns",
+      "exploitRulesManagement": "Exploit Rules Management",
+      "exploitRulesDescription": "Manage exploit blocking rules and exceptions in the centralized WAF settings.",
+      "manageRules": "Manage Rules",
+      "fail2ban": "Fail2ban (Auto IP Ban)",
+      "fail2banDescription": "Automatically ban IPs after repeated failed attempts (401/403 errors).",
+      "fail2banSettings": "Fail2ban Settings",
+      "fail2banSettingsDescription": "Configure ban time, max retries, and other settings.",
+      "configureSettings": "Configure",
+      "accessList": "Access List",
+      "noAccessList": "No access restrictions",
+      "selectAccessList": "Select Access List",
+      "botFilter": {
+        "title": "Bot Filter",
+        "enabled": "Enable Bot Filter",
+        "description": "Block malicious bots and scrapers",
+        "blockBadBots": "Block Bad Bots",
+        "blockBadBotsDescription": "Block known malicious bots",
+        "blockAiBots": "Block AI Bots",
+        "blockAiBotsDescription": "Block AI training bots",
+        "allowSearchEngines": "Allow Search Engines",
+        "allowSearchEnginesDescription": "Allow Google, Bing, and other search engine bots",
+        "blockSuspicious": "Block Suspicious Clients",
+        "blockSuspiciousDescription": "Block clients with abnormal request patterns",
+        "challengeSuspicious": "Challenge Suspicious Requests",
+        "challengeSuspiciousDescription": "Show CAPTCHA for suspicious requests",
+        "customBlocked": "Custom Block List",
+        "customBlockedPlaceholder": "Enter User-Agents to block, one per line",
+        "settingsLink": "Bot lists can be customized in <1>Settings &rarr; Bot Filter</1>"
+      },
+      "geoip": {
+        "title": "GeoIP Restriction",
+        "notAvailable": "GeoIP Not Available",
+        "notAvailableDescription": "Configure MaxMind GeoIP in Settings → GeoIP",
+        "enabled": "Enable GeoIP Restriction",
+        "description": "Allow or block traffic from specific countries",
+        "mode": "Mode",
+        "modeBlock": "Block",
+        "modeBlockDescription": "Block selected countries",
+        "modeAllow": "Allow Only",
+        "modeAllowDescription": "Allow only selected countries",
+        "challengeMode": "Challenge Mode",
+        "challengeModeDescription": "Show CAPTCHA instead of blocking",
+        "allowPrivateIPs": "Allow Private IPs",
+        "allowPrivateIPsDescription": "Private IP ranges (10.x.x.x, 172.16-31.x.x, 192.168.x.x) bypass GeoIP blocking",
+        "allowSearchBots": "Allow Search Bots",
+        "allowSearchBotsDescription": "Search engine bots (Google, Bing, Yahoo, etc.) bypass GeoIP restrictions",
+        "searchCountries": "Search Countries",
+        "selectedCountries": "Selected",
+        "selectFiltered": "Select Filtered",
+        "clearAll": "Clear All",
+        "quickAdd": "Quick Add",
+        "highRisk": "High Risk",
+        "majorMarkets": "Major Markets",
+        "euCountries": "EU Countries",
+        "asiaPacific": "Asia Pacific",
+        "korea": "South Korea",
+        "noCountries": "No countries found"
+      },
+      "cloudProvider": {
+        "title": "Cloud Provider Blocking",
+        "description": "Block traffic from known cloud service providers",
+        "blocked": "blocked",
+        "warning": "Traffic from selected cloud providers will be blocked. This may affect legitimate users accessing through VPNs or cloud-based services.",
+        "challengeMode": "Challenge Mode",
+        "challengeModeDescription": "Show CAPTCHA verification instead of blocking",
+        "challengeWarning": "Traffic from selected cloud providers will be shown a CAPTCHA challenge before accessing the site.",
+        "quickAdd": "Quick Add",
+        "majorClouds": "Major Clouds",
+        "budgetVps": "Budget VPS",
+        "asiaProviders": "Asian Clouds",
+        "ipRanges": "IP ranges",
+        "regions": {
+          "us": "United States",
+          "eu": "Europe",
+          "cn": "China",
+          "kr": "South Korea"
+        }
+      },
+      "uriBlock": {
+        "title": "URI Path Blocking",
+        "description": "Block access to specific URI paths",
+        "quickAdd": "Quick Add",
+        "addRule": "Add Blocking Rule",
+        "patternPlaceholder": "Enter URI pattern (e.g., /wp-admin)",
+        "descriptionPlaceholder": "Description (optional)",
+        "matchTypes": {
+          "exact": "Exact Match",
+          "prefix": "Prefix Match",
+          "regex": "Regex Match"
+        },
+        "add": "Add",
+        "rules": "Blocking Rules",
+        "exceptionIPs": "Exception IPs",
+        "exceptionIPsPlaceholder": "Enter IP addresses that bypass blocking\nOne per line",
+        "allowPrivateIPs": "Allow Private IPs",
+        "allowPrivateIPsDescription": "Private IPs (10.x, 172.16-31.x, 192.168.x) bypass URI blocking"
+      }
+    },
+    "protection": {
+      "title": "Protection Settings",
+      "notAvailable": {
+        "title": "Protection settings available after saving",
+        "description": "Save the proxy host first, then edit it again to configure Rate Limit, Fail2ban, Security Headers, and other protection settings."
+      },
+      "rateLimit": {
+        "title": "Rate Limit",
+        "description": "Configure request rate limiting",
+        "enabled": "Enable Rate Limiting",
+        "requestsPerSecond": "Requests per Second",
+        "burst": "Burst Size",
+        "burstDescription": "Maximum requests allowed temporarily",
+        "limitBy": "Limit By",
+        "limitByOptions": {
+          "ip": "IP Address",
+          "uri": "URI",
+          "ipUri": "IP + URI"
+        },
+        "responseCode": "Response Code",
+        "whitelistIPs": "Whitelist IPs",
+        "banDuration": "Ban Duration",
+        "banDurationDescription": "Ban duration when limit exceeded (seconds)"
+      },
+      "fail2ban": {
+        "title": "Fail2ban",
+        "description": "Block repeated failed attempts",
+        "enabled": "Enable Fail2ban",
+        "maxRetries": "Max Retries",
+        "maxRetriesDescription": "Allowed failures before ban",
+        "findTime": "Find Time (sec)",
+        "findTimeDescription": "Time window for counting failures (seconds)",
+        "banTime": "Ban Time (sec)",
+        "banTimeDescription": "IP ban duration (seconds)",
+        "action": "Action",
+        "actionOptions": {
+          "block": "Block",
+          "log": "Log Only",
+          "notify": "Notify"
+        },
+        "failCodes": "Fail Codes"
+      },
+      "securityHeaders": {
+        "title": "Security Headers",
+        "description": "Add security HTTP headers",
+        "enabled": "Enable Security Headers",
+        "preset": {
+          "strict": "Strict",
+          "moderate": "Moderate",
+          "relaxed": "Relaxed"
+        },
+        "hsts": "HSTS (HTTP Strict Transport Security)",
+        "hstsDescription": "HTTP Strict Transport Security",
+        "hstsEnabled": "Enable",
+        "includeSubdomains": "Include Subdomains",
+        "preload": "Preload",
+        "maxAge": {
+          "1day": "1 day",
+          "1week": "1 week",
+          "30days": "30 days",
+          "1year": "1 year"
+        },
+        "xFrameOptions": "X-Frame-Options",
+        "referrerPolicy": "Referrer-Policy",
+        "xContentType": "X-Content-Type-Options: nosniff",
+        "xssProtection": "X-XSS-Protection",
+        "csp": "Content-Security-Policy",
+        "advancedHeadersTitle": "Content-Security-Policy & Permissions-Policy",
+        "advancedHeadersDesc": "These headers can break your website if misconfigured. Please add them manually in the Advanced tab using nginx configuration."
+      },
+      "bannedIPs": {
+        "title": "Banned IPs",
+        "description": "Currently banned IP addresses",
+        "manageCentrally": "Manage all banned IPs in the central Banned IPs page",
+        "empty": "No banned IPs",
+        "ip": "IP Address",
+        "reason": "Reason",
+        "duration": "Duration",
+        "durationOptions": {
+          "1hour": "1 hour",
+          "1day": "1 day",
+          "1week": "1 week",
+          "permanent": "Permanent"
+        },
+        "ban": "Ban",
+        "banning": "Banning...",
+        "expiresAt": "Expires",
+        "bannedAt": "Banned At",
+        "unban": "Unban",
+        "unbanConfirm": "Unban this IP address?",
+        "permanent": "Permanent"
+      }
+    },
+    "performance": {
+      "cache": {
+        "title": "Caching",
+        "enabled": "Enable Cache",
+        "description": "Cache static files to improve performance"
+      },
+      "compression": {
+        "title": "Compression",
+        "enabled": "Enable Compression",
+        "description": "Compress responses to reduce bandwidth"
+      },
+      "timeout": {
+        "title": "Timeouts",
+        "connectTimeout": "Connect Timeout",
+        "readTimeout": "Read Timeout",
+        "sendTimeout": "Send Timeout"
+      }
+    },
+    "advanced": {
+      "config": {
+        "title": "Custom Nginx Configuration",
+        "description": "Custom Nginx location block configuration",
+        "placeholder": "# Enter custom configuration\nproxy_read_timeout 3600;\n",
+        "warning": "Invalid configuration may cause the proxy host to fail"
+      }
+    },
+    "waf": {
+      "title": "WAF (Web Application Firewall)",
+      "enabled": "Enable WAF",
+      "description": "Enable ModSecurity web application firewall",
+      "mode": "Mode",
+      "modeBlocking": "Blocking",
+      "modeBlockingDescription": "Block attacks",
+      "modeDetection": "Detection",
+      "modeDetectionDescription": "Detect and log attacks only",
+      "paranoiaLevel": "Paranoia Level",
+      "paranoiaLevelDescription": "Higher values are more sensitive (1-4)",
+      "anomalyThreshold": "Anomaly Threshold",
+      "anomalyThresholdDescription": "Minimum score to block request"
+    }
+  },
+  "help": {
+    "domainNames": "Enter the web addresses (e.g., blog.mysite.com) that visitors will use. Press Enter to add multiple. Wildcards like *.mysite.com are supported.",
+    "forwardHost": "The IP address or container name of your internal server. 'Container Name' is best if on the same Docker network.",
+    "forwardScheme": "Protocol to use for communicating with the internal service. Use 'https' only if the internal service handles its own SSL.",
+    "forwardPort": "The port number your internal service is listening on (e.g., 80 for web, 3000 for Node.js).",
+    "websocket": "Must be enabled for apps using real-time communication like Signal or Socket.io.",
+    "ssl": {
+      "enabled": "Enables SSL/TLS encryption for secure data transmission.",
+      "forceHttps": "Redirects all HTTP traffic to HTTPS. Highly recommended for security.",
+      "http2": "Modern protocol for faster page loads. Recommended for most sites.",
+      "http3": "Next-gen protocol using QUIC/UDP. Faster on mobile/unstable networks. Requires UDP port 443.",
+      "hsts": "Tells browsers to ONLY use HTTPS for this site. Be careful, as this is cached by browsers."
+    },
+    "security": {
+      "priorityAllowIPs": "Trusted IPs that bypass all blocks (GeoIP, Bot Filter, etc.). Use for internal monitoring or partners.",
+      "blockExploits": "Blocks common attack patterns like SQL Injection and XSS.",
+      "blockExploitsExceptions": "Add URL patterns that should bypass exploit blocking. Useful for APIs that legitimately pass URLs as parameters (like WordPress oEmbed or webhooks).",
+      "waf": "Web Application Firewall (ModSecurity) provides deep packet inspection to block sophisticated attacks.",
+      "botFilter": "Allows search engines (Google, Bing) while blocking malicious scrapers and spambots.",
+      "geoip": "Restrict access to specific countries.",
+      "cloudProvider": "Block IP ranges from cloud providers like AWS, Azure, and GCP. Useful against spam/scraping bots running on cloud servers. Note: May affect legitimate VPN users.",
+      "cloudProviderChallenge": "Enable challenge mode to show CAPTCHA verification instead of blocking traffic from cloud IPs. Legitimate users can pass the challenge, while bots are blocked."
+    },
+    "protection": {
+      "rateLimit": "Prevents abuse by limiting how many requests an IP can make. 'Burst' is the temporary allowance.",
+      "fail2ban": "Automatically bans IPs that repeatedly fail authentication or make bad requests.",
+      "securityHeaders": "Adds standard security headers to protect against browser-based attacks like Clickjacking.",
+      "securityHeadersDetail": {
+        "hsts": "HSTS tells browsers to ONLY connect via HTTPS. Once enabled, browsers will remember this for the specified duration. Warning: If you later disable SSL, visitors may be unable to access your site until the HSTS cache expires.",
+        "includeSubdomains": "Applies HSTS to all subdomains (e.g., api.example.com, blog.example.com). Only enable if ALL your subdomains support HTTPS.",
+        "xFrameOptions": "Prevents your site from being embedded in iframes on other sites (clickjacking protection).\n• DENY: Never allow framing\n• SAMEORIGIN: Only allow framing from your own domain",
+        "referrerPolicy": "Controls how much URL information is sent when users click links to other sites.\n• no-referrer: Send nothing (most private)\n• strict-origin: Send only domain name over HTTPS\n• strict-origin-when-cross-origin: Full URL to same site, only domain to others (recommended)",
+        "xContentType": "Prevents browsers from guessing file types (MIME sniffing). Protects against attacks where malicious files are disguised as harmless ones like images.",
+        "xssProtection": "Enables the browser's built-in XSS (cross-site scripting) filter. Note: Modern browsers have this deprecated in favor of Content-Security-Policy, but it provides backward compatibility."
+      }
+    },
+    "performance": {
+      "cache": "Caches static assets (images, CSS) to reduce server load and speed up loading.",
+      "compression": "Compresses responses to reduce data usage and improve speed.",
+      "websocket": "Enables WebSocket support (Upgrade header) for real-time communication."
+    },
+    "advanced": {
+      "customConfig": "For experts. Inject custom Nginx directives into the location / { ... } block."
+    }
+  },
+  "actions": {
+    "enable": "Enable",
+    "disable": "Disable",
+    "enableConfirmTitle": "Enable Proxy Host",
+    "enableConfirmMessage": "Are you sure you want to enable the {{domain}} proxy host?",
+    "disableConfirmTitle": "Disable Proxy Host",
+    "disableConfirmMessage": "Are you sure you want to disable the {{domain}} proxy host? Traffic to this domain will be interrupted.",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this proxy host?",
+    "deleteWarning": "This action cannot be undone",
+    "duplicate": "Duplicate",
+    "viewLogs": "View Logs",
+    "testConnection": "Test Connection",
+    "testConfig": "Test Configuration",
+    "edit": "Edit",
+    "toggleEnable": "Toggle Enable/Disable"
+  },
+  "test": {
+    "title": "Configuration Test",
+    "retest": "Retest",
+    "testing": "Testing configuration...",
+    "passed": "Test Passed",
+    "failed": "Test Failed",
+    "responseTime": "Response Time",
+    "statusCode": "Status Code",
+    "protocol": "Protocol",
+    "ssl": "SSL",
+    "featureVerification": "Feature Verification",
+    "testedAt": "Tested at",
+    "valid": "Valid",
+    "invalid": "Invalid",
+    "disabled": "Disabled",
+    "notDetected": "Not detected",
+    "sslNotEnabled": "SSL is not enabled for this host",
+    "validCert": "Valid SSL Certificate",
+    "invalidCert": "Invalid SSL Certificate",
+    "tabs": {
+      "summary": "Summary",
+      "ssl": "SSL/TLS",
+      "http": "HTTP",
+      "cache": "Cache",
+      "security": "Security",
+      "headers": "Headers"
+    },
+    "sslDetails": {
+      "protocol": "Protocol",
+      "cipherSuite": "Cipher Suite",
+      "subject": "Subject",
+      "issuer": "Issuer",
+      "validFrom": "Valid From",
+      "validUntil": "Valid Until",
+      "daysRemaining": "Days Remaining"
+    },
+    "http": {
+      "protocolInfo": "Protocol Information",
+      "detectedProtocol": "Detected Protocol",
+      "versionSupport": "HTTP Version Support",
+      "multiplexing": "Multiplexing, Header Compression",
+      "quic": "UDP-based, 0-RTT Connection",
+      "altSvc": "Alt-Svc Header",
+      "altSvcDesc": "This header advertises HTTP/3 support to compatible browsers"
+    },
+    "cache": {
+      "status": "Cache Status",
+      "noStatus": "No Cache Status",
+      "enabled": "Caching is enabled",
+      "disabled": "Caching is disabled",
+      "headers": "Cache Headers",
+      "legend": "Cache Status Legend",
+      "hit": "Served from cache",
+      "miss": "Not in cache, fetched from origin",
+      "expired": "Cache expired, revalidated",
+      "bypass": "Cache bypassed"
+    },
+    "security": {
+      "score": "Security Headers Score",
+      "serverExposed": "Server Header Exposed",
+      "hideServer": "Consider hiding this header to reduce information disclosure",
+      "headers": "Security Headers",
+      "desc": {
+        "hsts": "Forces HTTPS connections",
+        "xframe": "Prevents clickjacking",
+        "xcontent": "Prevents MIME sniffing",
+        "xxss": "XSS filter (legacy)",
+        "referrer": "Controls referrer info",
+        "permissions": "Controls browser features",
+        "csp": "Controls resource loading"
+      }
+    },
+    "headers": {
+      "response": "Response Headers",
+      "count": "headers",
+      "none": "No headers captured"
+    }
+  },
+  "messages": {
+    "createSuccess": "Proxy host created",
+    "createFailed": "Failed to create proxy host",
+    "updateSuccess": "Proxy host updated",
+    "updateFailed": "Failed to update proxy host",
+    "deleteSuccess": "Proxy host deleted",
+    "deleteFailed": "Failed to delete proxy host",
+    "enableSuccess": "Proxy host enabled",
+    "disableSuccess": "Proxy host disabled"
+  },
+  "validation": {
+    "domainRequired": "Domain is required",
+    "domainAtLeastOne": "At least one domain is required",
+    "hostRequired": "Forward host is required",
+    "portRequired": "Port is required",
+    "portRange": "Port must be between 1 and 65535",
+    "certificateRequired": "Select a certificate to use SSL",
+    "certSelectionRequired": "Please select a certificate or switch to \"Create New\"",
+    "addDomainsBeforeCert": "Add domains first to create certificate"
+  }
+}

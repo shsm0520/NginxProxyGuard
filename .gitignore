@@ -1,0 +1,59 @@
+# Development tools (not for distribution)
+CLAUDE.MD
+.claude/
+.serena/
+docs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+dist/
+build/
+*.exe
+*.dll
+*.so
+*.dylib
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test
+coverage/
+*.test
+*.out
+
+# Docker volumes (local dev)
+nginx/certs/*.pem
+nginx/certs/*.key
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Database
+*.sql
+!api/internal/database/migrations/*.sql
+
+# Backups
+backups/

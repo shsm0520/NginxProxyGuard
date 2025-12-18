@@ -1,0 +1,57 @@
+{
+    "list": {
+        "title": "리다이렉트 호스트",
+        "addNew": "리다이렉트 추가",
+        "empty": "리다이렉트 호스트가 없습니다",
+        "emptyDescription": "도메인 리다이렉트를 설정하려면 호스트를 생성하세요.",
+        "columns": {
+            "source": "소스 도메인",
+            "target": "리다이렉트 대상",
+            "code": "코드",
+            "status": "상태",
+            "actions": "작업"
+        },
+        "edit": "편집",
+        "delete": "삭제"
+    },
+    "form": {
+        "newTitle": "새 리다이렉트 호스트",
+        "editTitle": "리다이렉트 호스트 수정",
+        "domainNames": "도메인 이름 (한 줄에 하나씩)",
+        "scheme": "스키마",
+        "targetDomain": "대상 도메인",
+        "redirectCode": "리다이렉트 코드",
+        "forwardPath": "전달 경로",
+        "preservePath": "원본 경로 유지",
+        "sslConfig": "SSL 설정",
+        "enableSsl": "SSL 활성화",
+        "selectCertificate": "인증서 선택",
+        "forceHttps": "HTTPS 강제",
+        "enabled": "활성화됨",
+        "blockExploits": "익스플로잇 차단",
+        "cancel": "취소",
+        "create": "생성",
+        "update": "수정",
+        "saving": "저장 중..."
+    },
+    "messages": {
+        "deleteConfirm": "이 리다이렉트 호스트를 삭제하시겠습니까?",
+        "loadError": "리다이렉트 호스트를 불러오는 중 오류가 발생했습니다",
+        "saveError": "리다이렉트 호스트 저장 실패",
+        "domainRequired": "최소 하나의 도메인 이름이 필요합니다"
+    },
+    "badges": {
+        "active": "활성",
+        "disabled": "비활성"
+    },
+    "help": {
+        "domainNames": "리다이렉트할 소스 도메인들을 입력합니다. 한 줄에 하나씩 입력하세요.",
+        "scheme": "대상 URL의 프로토콜(HTTP/HTTPS)을 선택합니다. Auto는 자동으로 선택됩니다.",
+        "targetDomain": "리다이렉트될 대상 도메인 주소입니다.",
+        "forwardPath": "전달될 경로입니다. 비워두면 원본 경로가 사용됩니다.",
+        "preservePath": "리다이렉트 시 원본 URL의 경로를 유지합니다.",
+        "enableSsl": "이 호스트에 SSL 인증서를 적용합니다.",
+        "forceHttps": "모든 HTTP 요청을 HTTPS로 강제 리다이렉트합니다.",
+        "blockExploits": "일반적인 웹 공격 패턴을 차단합니다."
+    }
+}

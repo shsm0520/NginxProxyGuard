@@ -1,0 +1,57 @@
+{
+    "list": {
+        "title": "Redirect Hosts",
+        "addNew": "Add Redirect",
+        "empty": "No redirect hosts configured",
+        "emptyDescription": "Create one to set up domain redirects.",
+        "columns": {
+            "source": "Source Domains",
+            "target": "Redirect To",
+            "code": "Code",
+            "status": "Status",
+            "actions": "Actions"
+        },
+        "edit": "Edit",
+        "delete": "Delete"
+    },
+    "form": {
+        "newTitle": "New Redirect Host",
+        "editTitle": "Edit Redirect Host",
+        "domainNames": "Domain Names (one per line)",
+        "scheme": "Scheme",
+        "targetDomain": "Target Domain",
+        "redirectCode": "Redirect Code",
+        "forwardPath": "Forward Path",
+        "preservePath": "Preserve original path",
+        "sslConfig": "SSL Configuration",
+        "enableSsl": "Enable SSL",
+        "selectCertificate": "Select Certificate",
+        "forceHttps": "Force HTTPS",
+        "enabled": "Enabled",
+        "blockExploits": "Block Exploits",
+        "cancel": "Cancel",
+        "create": "Create",
+        "update": "Update",
+        "saving": "Saving..."
+    },
+    "messages": {
+        "deleteConfirm": "Are you sure you want to delete this redirect host?",
+        "loadError": "Error loading redirect hosts",
+        "saveError": "Failed to save redirect host",
+        "domainRequired": "At least one domain name is required"
+    },
+    "badges": {
+        "active": "Active",
+        "disabled": "Disabled"
+    },
+    "help": {
+        "domainNames": "Enter the source domains to redirect. Enter one per line.",
+        "scheme": "Select the protocol (HTTP/HTTPS) for the target URL. Auto selects automatically.",
+        "targetDomain": "The target domain address to redirect to.",
+        "forwardPath": "The path to forward to. Leave empty to use the original path.",
+        "preservePath": "Preserve the path of the original URL when redirecting.",
+        "enableSsl": "Apply an SSL certificate to this host.",
+        "forceHttps": "Force all HTTP requests to redirect to HTTPS.",
+        "blockExploits": "Block common web attack patterns."
+    }
+}

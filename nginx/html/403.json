@@ -1,0 +1,6 @@
+{
+  "error": "blocked",
+  "status": 403,
+  "message": "Access blocked by security policy",
+  "message_ko": "보안 정책에 의해 접근이 차단되었습니다"
+}

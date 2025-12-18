@@ -1,0 +1,80 @@
+{
+  "menu": {
+    "dashboard": "대시보드",
+    "proxyHosts": "프록시 호스트",
+    "hosts": "호스트",
+    "redirects": "리다이렉트",
+    "redirectHosts": "리다이렉트 호스트",
+    "waf": "WAF",
+    "wafBanIp": "WAF / 차단관리",
+    "access": "접근",
+    "accessControl": "접근 제어",
+    "accessLists": "접근 목록",
+    "certificates": "인증서",
+    "sslCerts": "SSL 인증서",
+    "logs": "로그",
+    "settings": "설정"
+  },
+  "header": {
+    "nginxProxyGuard": "Nginx Proxy Guard",
+    "subtitle": "보안 리버스 프록시 관리자",
+    "testConfig": "설정 테스트",
+    "syncAll": "모두 동기화",
+    "notifications": "알림",
+    "noNotifications": "새 알림이 없습니다"
+  },
+  "account": {
+    "myAccount": "내 계정",
+    "settings": "설정",
+    "language": "언어",
+    "theme": "테마",
+    "lightMode": "라이트 모드",
+    "darkMode": "다크 모드",
+    "logout": "로그아웃",
+    "logoutConfirm": "정말 로그아웃 하시겠습니까?"
+  },
+  "footer": {
+    "version": "버전",
+    "documentation": "문서",
+    "support": "지원",
+    "github": "GitHub",
+    "allRightsReserved": "All rights reserved."
+  },
+  "subTabs": {
+    "certificates": {
+      "list": "인증서",
+      "history": "발급/갱신 이력",
+      "dnsProviders": "DNS 프로바이더"
+    },
+    "waf": {
+      "ruleSettings": "WAF 정책 설정",
+      "bannedIps": "차단 IP 관리",
+      "uriBlocks": "차단 URI 관리",
+      "exploitRules": "취약점 차단 관리",
+      "fail2ban": "Fail2ban",
+      "tester": "WAF 테스터"
+    },
+    "logs": {
+      "access": "접근 로그",
+      "wafEvents": "WAF 이벤트",
+      "botFilter": "봇 필터",
+      "exploitBlocks": "Exploit 차단",
+      "error": "에러 로그",
+      "system": "시스템 로그",
+      "audit": "관리자 감사",
+      "rawFiles": "원본 파일"
+    },
+    "settings": {
+      "global": "전역 설정",
+      "captcha": "CAPTCHA",
+      "geoip": "GeoIP",
+      "botfilter": "봇 필터",
+      "wafAutoBan": "WAF 자동 차단",
+      "ssl": "SSL / ACME",
+      "maintenance": "유지보수",
+      "backups": "백업",
+      "systemLogs": "시스템 로그"
+    }
+  },
+  "loading": "로딩 중..."
+}

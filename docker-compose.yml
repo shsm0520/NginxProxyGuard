@@ -1,0 +1,150 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:17-alpine
+    container_name: npg-db
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-UTC}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-nginx_proxy_guard}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Valkey (Redis-compatible) for caching
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: npg-valkey
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-UTC}
+    command: >
+      valkey-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
+    volumes:
+      - valkey_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Go API Server
+  api:
+    image: svrforum/nginxproxyguard-api:1.0.0
+    # build:
+    #   context: ./api
+    #   dockerfile: Dockerfile
+    container_name: npg-api
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-UTC}
+      PORT: "8080"
+      DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-nginx_proxy_guard}?sslmode=disable
+      REDIS_URL: redis://valkey:6379/0
+      JWT_SECRET: ${JWT_SECRET:-change-this-in-production-use-openssl-rand-hex-32}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      NGINX_CONTAINER: npg-proxy
+      NGINX_SKIP_TEST: "false"
+      NGINX_STATUS_URL: "http://nginx:8080/nginx_status"
+      NGINX_ACCESS_LOG: "/var/log/nginx/access.log"
+      BACKUP_PATH: ${BACKUP_PATH:-/app/data/backups}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+      ACME_STAGING: ${ACME_STAGING:-false}
+    volumes:
+      # Consolidated nginx data volume (shared with nginx container)
+      - nginx_data:/etc/nginx:rw
+      # Consolidated API data volume (config + backups)
+      - api_data:/app/data:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Host OS info for system monitoring
+      - /etc/os-release:/host/etc/os-release:ro
+      - /etc/hostname:/host/etc/hostname:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # React UI (Production) - Admin Panel on port 81 (HTTPS)
+  ui:
+    image: svrforum/nginxproxyguard-ui:1.0.0
+    # build:
+    #   context: ./ui
+    #   dockerfile: Dockerfile
+    container_name: npg-ui
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-UTC}
+    ports:
+      - "81:443"
+    volumes:
+      - ui_data:/app/ssl:rw
+    depends_on:
+      - api
+
+  # Nginx Reverse Proxy with HTTP/3, ModSecurity v3, OWASP CRS, and GeoIP2
+  nginx:
+    image: svrforum/nginxproxyguard-nginx:1.0.0
+    # build:
+    #   context: ./nginx
+    #   dockerfile: Dockerfile
+    container_name: npg-proxy
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-UTC}
+      MAXMIND_LICENSE_KEY: ${MAXMIND_LICENSE_KEY:-}
+      MAXMIND_ACCOUNT_ID: ${MAXMIND_ACCOUNT_ID:-0}
+    ports:
+      - "80:80"
+      - "443:443/tcp"
+      - "443:443/udp"
+    sysctls:
+      - net.core.somaxconn=65535
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    volumes:
+      # Consolidated nginx data volume
+      - nginx_data:/etc/nginx:rw
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+    name: npg_postgres_data
+  valkey_data:
+    name: npg_valkey_data
+  nginx_data:
+    name: npg_nginx_data
+  api_data:
+    name: npg_api_data
+  ui_data:
+    name: npg_ui_data
+
+networks:
+  default:
+    name: npg-network

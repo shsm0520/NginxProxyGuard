@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>504 - Nginx Proxy Guard</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Malgun Gothic', '맑은 고딕', sans-serif;
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e0e0e0;
+        }
+        .container { text-align: center; padding: 40px; max-width: 600px; }
+        .icon {
+            width: 120px; height: 120px; margin: 0 auto 30px;
+            background: rgba(168, 85, 247, 0.1);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .icon svg { width: 60px; height: 60px; }
+        .error-code {
+            font-size: 72px; font-weight: 800;
+            background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 10px; letter-spacing: -2px;
+        }
+        .error-title { font-size: 28px; font-weight: 600; color: #f0f0f0; margin-bottom: 20px; }
+        .error-message { font-size: 16px; color: #a0a0a0; line-height: 1.8; margin-bottom: 30px; }
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 12px 24px; background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 50px;
+            color: #a855f7; font-size: 14px; font-weight: 500;
+        }
+        .info-box {
+            margin-top: 40px; padding: 20px; background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .info-title { font-size: 14px; font-weight: 600; color: #808080; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .info-text { font-size: 14px; color: #707070; line-height: 1.6; }
+        .retry-btn {
+            display: inline-block; margin-top: 30px; padding: 12px 30px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white; text-decoration: none; border-radius: 8px;
+            font-weight: 500; cursor: pointer; border: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .retry-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3); }
+        .footer { margin-top: 50px; font-size: 12px; color: #505050; }
+        .footer a { color: #707070; text-decoration: none; }
+        .lang-switch {
+            margin-top: 20px; display: flex; justify-content: center; gap: 10px;
+        }
+        .lang-btn {
+            padding: 6px 16px; border-radius: 20px; border: 1px solid #404050;
+            background: transparent; color: #808080; font-size: 12px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .lang-btn:hover { border-color: #606070; color: #a0a0a0; }
+        .lang-btn.active {
+            background: rgba(59, 130, 246, 0.2); border-color: #3b82f6;
+            color: #3b82f6;
+        }
+        [data-lang="en"] { display: none; }
+        body.en [data-lang="ko"] { display: none; }
+        body.en [data-lang="en"] { display: block; }
+        body.en .error-message[data-lang="en"],
+        body.en .info-text[data-lang="en"] { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+        </div>
+        <div class="error-code">504</div>
+
+        <div class="error-title" data-lang="ko">응답 시간 초과</div>
+        <div class="error-title" data-lang="en">Gateway Timeout</div>
+
+        <div class="error-message" data-lang="ko">
+            서버가 제한 시간 내에 응답하지 않았습니다.<br>
+            요청을 처리하는 데 너무 오랜 시간이 걸리고 있습니다.
+        </div>
+        <div class="error-message" data-lang="en">
+            The server did not respond within the time limit.<br>
+            The request is taking too long to process.
+        </div>
+
+        <div class="status-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span data-lang="ko">요청 시간 초과</span>
+            <span data-lang="en">Request Timeout</span>
+        </div>
+
+        <div class="info-box">
+            <div class="info-title" data-lang="ko">어떻게 해야 하나요?</div>
+            <div class="info-title" data-lang="en">What should I do?</div>
+            <div class="info-text" data-lang="ko">
+                요청 처리에 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해 주세요.<br>
+                문제가 지속되면 관리자에게 문의해 주시기 바랍니다.
+            </div>
+            <div class="info-text" data-lang="en">
+                The request is taking longer than expected. Please try again shortly.<br>
+                If the problem persists, contact the administrator.
+            </div>
+        </div>
+
+        <button class="retry-btn" onclick="location.reload()">
+            <span data-lang="ko">다시 시도</span>
+            <span data-lang="en">Retry</span>
+        </button>
+
+        <div class="footer">
+            Powered by <a href="#">Nginx Proxy Guard</a>
+        </div>
+
+        <div class="lang-switch">
+            <button class="lang-btn active" onclick="setLang('ko')" id="btn-ko">한국어</button>
+            <button class="lang-btn" onclick="setLang('en')" id="btn-en">English</button>
+        </div>
+    </div>
+
+    <script>
+        function setLang(lang) {
+            document.body.className = lang === 'en' ? 'en' : '';
+            document.getElementById('btn-ko').className = 'lang-btn' + (lang === 'ko' ? ' active' : '');
+            document.getElementById('btn-en').className = 'lang-btn' + (lang === 'en' ? ' active' : '');
+            localStorage.setItem('npg_lang', lang);
+        }
+        // Load saved language preference or detect from browser
+        const savedLang = localStorage.getItem('npg_lang');
+        if (savedLang) {
+            setLang(savedLang);
+        } else {
+            const browserLang = navigator.language.split('-')[0];
+            if (browserLang === 'ko') setLang('ko');
+        }
+    </script>
+</body>
+</html>

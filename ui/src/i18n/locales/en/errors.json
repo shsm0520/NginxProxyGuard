@@ -1,0 +1,92 @@
+{
+  "http": {
+    "400": "Bad Request",
+    "401": "Authentication Required",
+    "403": "Access Denied",
+    "404": "Not Found",
+    "405": "Method Not Allowed",
+    "408": "Request Timeout",
+    "409": "Conflict",
+    "413": "Request Too Large",
+    "429": "Too Many Requests",
+    "500": "Server Error",
+    "502": "Bad Gateway",
+    "503": "Service Unavailable",
+    "504": "Gateway Timeout"
+  },
+  "auth": {
+    "INVALID_CREDENTIALS": "Invalid email or password",
+    "ACCOUNT_LOCKED": "Account is locked. Please try again later",
+    "SESSION_EXPIRED": "Session expired. Please log in again",
+    "UNAUTHORIZED": "Authentication required",
+    "FORBIDDEN": "Access denied",
+    "TOKEN_EXPIRED": "Token has expired",
+    "TOKEN_INVALID": "Invalid token"
+  },
+  "validation": {
+    "REQUIRED": "This field is required",
+    "INVALID_EMAIL": "Please enter a valid email",
+    "INVALID_URL": "Please enter a valid URL",
+    "INVALID_IP": "Please enter a valid IP address",
+    "INVALID_DOMAIN": "Please enter a valid domain",
+    "INVALID_PORT": "Port must be between 1 and 65535",
+    "PASSWORD_TOO_SHORT": "Password must be at least 8 characters",
+    "PASSWORD_MISMATCH": "Passwords do not match",
+    "DUPLICATE_DOMAIN": "Domain already exists",
+    "DUPLICATE_NAME": "Name already in use"
+  },
+  "proxy": {
+    "HOST_NOT_FOUND": "Proxy host not found",
+    "HOST_CREATE_FAILED": "Failed to create proxy host",
+    "HOST_UPDATE_FAILED": "Failed to update proxy host",
+    "HOST_DELETE_FAILED": "Failed to delete proxy host",
+    "INVALID_CONFIG": "Invalid configuration",
+    "UPSTREAM_UNREACHABLE": "Cannot connect to upstream server",
+    "SSL_REQUIRED": "SSL certificate is required"
+  },
+  "certificate": {
+    "NOT_FOUND": "Certificate not found",
+    "CREATE_FAILED": "Failed to create certificate",
+    "RENEW_FAILED": "Failed to renew certificate",
+    "DELETE_FAILED": "Failed to delete certificate",
+    "INVALID_CERTIFICATE": "Invalid certificate",
+    "INVALID_PRIVATE_KEY": "Invalid private key",
+    "DOMAIN_VALIDATION_FAILED": "Domain validation failed",
+    "RATE_LIMITED": "Rate limit exceeded. Please try again later",
+    "DNS_CHALLENGE_FAILED": "DNS challenge failed"
+  },
+  "waf": {
+    "CONFIG_ERROR": "WAF configuration error",
+    "RULE_NOT_FOUND": "Rule not found",
+    "INVALID_RULE": "Invalid rule"
+  },
+  "geoip": {
+    "NOT_CONFIGURED": "GeoIP is not configured",
+    "DATABASE_ERROR": "GeoIP database error",
+    "DOWNLOAD_FAILED": "Failed to download GeoIP database",
+    "INVALID_CREDENTIALS": "Invalid MaxMind credentials"
+  },
+  "network": {
+    "CONNECTION_FAILED": "Connection failed",
+    "TIMEOUT": "Connection timed out",
+    "OFFLINE": "No network connection"
+  },
+  "nginx": {
+    "CONFIG_TEST_FAILED": "Nginx configuration test failed",
+    "RELOAD_FAILED": "Failed to reload Nginx",
+    "NOT_RUNNING": "Nginx is not running"
+  },
+  "database": {
+    "CONNECTION_FAILED": "Database connection failed",
+    "QUERY_FAILED": "Database query failed",
+    "MIGRATION_FAILED": "Database migration failed"
+  },
+  "general": {
+    "UNKNOWN_ERROR": "An unknown error occurred",
+    "SERVER_ERROR": "Server error occurred",
+    "NOT_FOUND": "Requested resource not found",
+    "PERMISSION_DENIED": "Permission denied",
+    "RATE_LIMITED": "Too many requests. Please try again later",
+    "MAINTENANCE_MODE": "System is under maintenance"
+  }
+}

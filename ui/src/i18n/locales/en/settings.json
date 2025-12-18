@@ -1,0 +1,1087 @@
+{
+  "title": "Settings",
+  "tabs": {
+    "general": "General",
+    "security": "Security",
+    "geoip": "GeoIP",
+    "waf": "WAF",
+    "system": "System",
+    "backup": "Backup",
+    "logs": "Logs"
+  },
+  "general": {
+    "title": "General Settings",
+    "siteName": "Site Name",
+    "siteNamePlaceholder": "Nginx Proxy Guard",
+    "adminEmail": "Admin Email",
+    "adminEmailPlaceholder": "admin@example.com",
+    "defaultPage": "Default Page",
+    "congratulations": "Congratulations",
+    "notFound": "404 Not Found",
+    "redirect": "Redirect",
+    "custom": "Custom",
+    "timezone": "Timezone",
+    "dateFormat": "Date Format",
+    "language": "Language"
+  },
+  "security": {
+    "title": "Security Settings",
+    "globalDdosProtection": {
+      "title": "Global DDoS Protection",
+      "description": "Enable DDoS protection for all hosts",
+      "enabled": "Enable Global DDoS Protection"
+    },
+    "directIpAccess": {
+      "title": "Direct IP Access",
+      "description": "Handle requests that access via IP instead of domain",
+      "mode": "Mode",
+      "allow": "Allow",
+      "block": "Block",
+      "redirect": "Redirect",
+      "redirectUrl": "Redirect URL",
+      "redirectUrlPlaceholder": "https://example.com"
+    },
+    "failedLoginProtection": {
+      "title": "Failed Login Protection",
+      "description": "Block IP after repeated login failures",
+      "enabled": "Enable Failed Login Protection",
+      "maxAttempts": "Max Attempts",
+      "lockoutDuration": "Lockout Duration (minutes)"
+    },
+    "twoFactor": {
+      "title": "Two-Factor Authentication",
+      "description": "Additional security with 2FA",
+      "enabled": "Enable 2FA",
+      "setup": "Setup",
+      "verify": "Verify"
+    },
+    "apiTokens": {
+      "title": "API Tokens",
+      "description": "Manage API access tokens",
+      "addToken": "Add Token",
+      "tokenName": "Token Name",
+      "permissions": "Permissions",
+      "expiresAt": "Expires",
+      "lastUsed": "Last Used",
+      "revoke": "Revoke",
+      "revokeConfirm": "Revoke this token?"
+    }
+  },
+  "geoip": {
+    "title": "GeoIP Settings",
+    "description": "Enable country-based access control using IP geolocation",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "notConfigured": "Not Configured",
+    "maxmind": {
+      "title": "MaxMind GeoIP",
+      "accountId": "Account ID",
+      "accountIdPlaceholder": "MaxMind account ID",
+      "licenseKey": "License Key",
+      "licenseKeyPlaceholder": "MaxMind license key",
+      "signup": "Sign up for MaxMind",
+      "description": "A MaxMind account is required to use the free GeoLite2 database"
+    },
+    "database": {
+      "title": "Database",
+      "countryDb": "Country Database",
+      "cityDb": "City Database",
+      "asnDb": "ASN Database",
+      "lastUpdated": "Last Updated",
+      "update": "Update",
+      "download": "Download"
+    },
+    "test": {
+      "title": "IP Test",
+      "ipAddress": "IP Address",
+      "ipPlaceholder": "8.8.8.8",
+      "testButton": "Test",
+      "result": "Result",
+      "country": "Country",
+      "city": "City",
+      "isp": "ISP"
+    }
+  },
+  "waf": {
+    "title": "WAF Settings",
+    "globalSettings": {
+      "title": "Global Settings",
+      "enabled": "Enable Global WAF",
+      "description": "Apply default WAF rules to all hosts"
+    },
+    "rules": {
+      "title": "Rules",
+      "coreRules": "Core Rule Set",
+      "customRules": "Custom Rules",
+      "addRule": "Add Rule",
+      "editRule": "Edit Rule",
+      "deleteRule": "Delete Rule"
+    },
+    "exclusions": {
+      "title": "Exclusions",
+      "description": "Paths or rules to exclude from WAF inspection",
+      "addExclusion": "Add Exclusion"
+    },
+    "logs": {
+      "title": "WAF Logs",
+      "viewLogs": "View Logs",
+      "clearLogs": "Clear Logs"
+    }
+  },
+  "system": {
+    "title": "System Settings",
+    "tabs": {
+      "geoip": "GeoIP",
+      "acme": "SSL/ACME",
+      "botfilter": "Bot Filter",
+      "security": "WAF Auto-Ban",
+      "maintenance": "Maintenance",
+      "systemlogs": "System Logs"
+    },
+    "systemlogs": {
+      "title": "System Log Collection",
+      "description": "Configure which logs are collected from the system containers. Reducing log level can improve performance.",
+      "enable": {
+        "label": "Enable System Log Collection",
+        "description": "Collect logs from docker containers"
+      },
+      "levels": {
+        "title": "Container Log Levels"
+      },
+      "exclude": {
+        "label": "Exclude Patterns",
+        "count": "{{count}} patterns",
+        "detailDescription": "Log messages matching these patterns (regex) will be ignored. One pattern per line.",
+        "placeholder": "^/health\nHEAD /"
+      },
+      "help": {
+        "levels": "Log Level Settings:\n- Debug: Detailed debug logs (High volume)\n- Info: General information (Recommended)\n- Warn: Warnings only\n- Error: Errors only (Low volume)\n\nHigher levels reduce the amount of logs collected.",
+        "exclude": "Use Regular Expressions (Regex) to exclude specific log lines.\nExample:\n^/health - Exclude logs starting with /health\nHEAD / - Exclude HEAD requests\n\nEnter one pattern per line."
+      }
+    },
+    "buttons": {
+      "save": "Save Changes",
+      "saving": "Saving...",
+      "updateNow": "Update Now",
+      "updating": "Updating...",
+      "view": "View",
+      "hide": "Hide",
+      "download": "Download",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "test": "Test Settings",
+      "testing": "Testing...",
+      "rotate": "Rotate Logs",
+      "rotating": "Rotating..."
+    },
+    "geoip": {
+      "saveSuccess": "GeoIP settings saved successfully.",
+      "saveFailed": "Save failed: {{error}}",
+      "updateStarted": "GeoIP database update started.",
+      "updateFailed": "Update failed: {{error}}",
+      "status": {
+        "title": "GeoIP Status",
+        "active": "GeoIP database is active.",
+        "inactive": "GeoIP is inactive. Please configure MaxMind license key.",
+        "error": "GeoIP database error",
+        "updating": "Updating GeoIP database...",
+        "lastUpdated": " (Updated: {{date}})",
+        "countryDb": "Country DB",
+        "asnDb": "ASN DB"
+      },
+      "enable": {
+        "label": "Enable GeoIP",
+        "description": "Enabling GeoIP allows country-based access control and location information in logs."
+      },
+      "account": {
+        "idLabel": "MaxMind Account ID",
+        "idPlaceholder": "Enter MaxMind Account ID",
+        "keyLabel": "MaxMind License Key",
+        "keyPlaceholder": "Enter MaxMind License Key",
+        "createAccount": "Create free MaxMind account →",
+        "keyHelp": "You can generate a license key in your MaxMind account settings."
+      },
+      "autoUpdate": {
+        "title": "Auto Update Settings",
+        "enableLabel": "Auto Update",
+        "enableDescription": "Automatically update GeoIP database.",
+        "intervalLabel": "Update Interval",
+        "intervals": {
+          "daily": "Daily",
+          "weekly": "Weekly",
+          "monthly": "Monthly"
+        }
+      },
+      "history": {
+        "title": "Update History",
+        "date": "Date",
+        "trigger": "Trigger",
+        "status": "Status",
+        "duration": "Duration",
+        "details": "Details",
+        "auto": "Auto",
+        "manual": "Manual",
+        "success": "Success",
+        "failed": "Failed",
+        "running": "Running",
+        "pending": "Pending",
+        "empty": "No update history yet"
+      }
+    },
+    "acme": {
+      "saveSuccess": "SSL/ACME settings saved successfully.",
+      "saveFailed": "Save failed: {{error}}",
+      "status": {
+        "disabled": "ACME Disabled"
+      },
+      "enable": {
+        "label": "Enable ACME / Let's Encrypt",
+        "description": "Automatically issue and renew free SSL certificates."
+      },
+      "email": {
+        "label": "ACME Email",
+        "placeholder": "admin@example.com",
+        "help": "Used for certificate expiration notifications and account recovery. Recommended by Let's Encrypt."
+      },
+      "staging": {
+        "label": "Use Staging Server (Test)",
+        "description": "Use staging server to avoid Let's Encrypt rate limits during testing. **Disable for production.**"
+      },
+      "autoRenew": {
+        "title": "Auto Renew Settings",
+        "enableLabel": "Auto Renew",
+        "enableDescription": "Automatically renew certificates before expiration.",
+        "daysBeforeLabel": "Renew Before (Days)",
+        "daysBeforeHelp": "days before",
+        "help": "Recommended: 30 days (Let's Encrypt certificates are valid for 90 days)"
+      },
+      "testButton": "Test ACME Settings",
+      "testResult": {
+        "ok": "ACME configuration is valid.",
+        "disabled": "ACME is disabled.",
+        "pending": "ACME email is not configured. Some certificate authorities require an email."
+      }
+    },
+    "botfilter": {
+      "defaults": {
+        "title": "Bot Filter Defaults",
+        "description": "Define default Bot Filter settings for newly created Proxy Hosts. Each Proxy Host can be configured individually."
+      },
+      "enableDefault": {
+        "label": "Enable Bot Filter by Default",
+        "description": "Bot Filter will be automatically enabled for all new Proxy Hosts."
+      },
+      "options": {
+        "title": "Default Bot Filter Options",
+        "blockBadBots": {
+          "label": "Block Bad Bots",
+          "description": "Block known bad bots like scrapers, spammers, vulnerability scanners."
+        },
+        "blockAiBots": {
+          "label": "Block AI Bots",
+          "description": "Block AI crawlers like GPTBot, ChatGPT-User, Claude-Web, Anthropic, CCBot."
+        },
+        "allowSearchEngines": {
+          "label": "Allow Search Engines",
+          "description": "Always allow search engine crawlers like Google, Bing, Yahoo, Baidu. Essential for SEO."
+        },
+        "challengeSuspicious": {
+          "label": "Challenge Suspicious Requests",
+          "description": "Show JavaScript challenge for suspicious requests or missing User-Agent."
+        }
+      },
+      "customAgents": {
+        "label": "Custom Block User-Agents",
+        "description": "Additional User-Agent patterns to block. One per line.",
+        "placeholder": "Example:\nMyCustomBot\nSomeScraperBot/*\ncurl/*"
+      },
+      "lists": {
+        "title": "Bot List Management",
+        "badge": "Global",
+        "description": "The lists below are used globally across all Proxy Hosts. Enter one User-Agent pattern per line.",
+        "badBots": {
+          "label": "Bad Bot List",
+          "description": "Patterns for bad bots to block (scrapers, spammers, etc.)",
+          "placeholder": "AhrefsBot\nSemrushBot\nMJ12bot\n..."
+        },
+        "aiBots": {
+          "label": "AI Bot List",
+          "description": "Patterns for AI crawlers (GPTBot, ClaudeBot, etc.)",
+          "placeholder": "GPTBot\nChatGPT-User\nClaudeBot\n..."
+        },
+        "searchEngines": {
+          "label": "Search Engine List",
+          "description": "Patterns for search engine bots to always allow for SEO",
+          "placeholder": "Googlebot\nBingbot\nDuckDuckBot\n..."
+        },
+        "suspicious": {
+          "label": "Suspicious Client List",
+          "description": "Patterns for suspicious clients to challenge",
+          "placeholder": "curl\nwget\npython-requests\n..."
+        },
+        "patternCount": "{{count}} patterns"
+      },
+      "summary": {
+        "title": "Current Defaults Summary",
+        "active": "Active",
+        "inactive": "Inactive",
+        "blocked": "Blocked",
+        "allowed": "Allowed"
+      }
+    },
+    "waf": {
+      "title": "WAF Auto-Ban Settings",
+      "description": "Manage WAF event-based automatic IP banning settings.",
+      "status": {
+        "title": "WAF Auto-Ban Status",
+        "activeDescription": "WAF event-based automatic IP banning is active.",
+        "inactiveDescription": "WAF auto-ban is inactive.",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "enable": {
+        "label": "WAF Auto IP Ban",
+        "description": "Automatically ban IPs when WAF events exceed the threshold."
+      },
+      "config": {
+        "title": "Auto-Ban Configuration",
+        "threshold": {
+          "label": "Ban Threshold (WAF Events)",
+          "description": "Ban IP if more than this number of WAF events occur within the detection window."
+        },
+        "window": {
+          "label": "Detection Window (Seconds)",
+          "description": "Time window to aggregate WAF events. (Default: 300s = 5m)"
+        },
+        "duration": {
+          "label": "Ban Duration (Seconds)",
+          "description": "Duration to ban the IP. 0 means permanent ban. (Default: 3600s = 1h)"
+        }
+      },
+      "info": {
+        "title": "How it works",
+        "description": "If blocked requests (SQL Injection, XSS, etc.) from WAF exceed the set threshold, the IP will be automatically blocked. Blocked IPs can be managed in the WAF/Ban IP tab."
+      }
+    },
+    "maintenance": {
+      "title": "Maintenance Settings",
+      "description": "Manage log retention periods and automatic backup settings.",
+      "retention": {
+        "title": "Log Retention Settings",
+        "description": "Set retention period for each log type. Logs older than this period will be automatically deleted.",
+        "access": "Access Logs",
+        "accessDesc": "All HTTP requests including Bot Filter and Exploit block events",
+        "waf": "WAF Events",
+        "wafDesc": "ModSecurity block/detect events",
+        "error": "Error Logs",
+        "errorDesc": "Nginx errors and warnings",
+        "system": "System Logs",
+        "systemDesc": "System and Docker container logs",
+        "audit": "Admin Audit",
+        "auditDesc": "Administrator activity audit logs (for compliance)",
+        "days": "days",
+        "years": "years",
+        "months": "months"
+      },
+      "presets": {
+        "label": "Quick Presets:",
+        "default": "Default",
+        "extended": "Extended",
+        "minimal": "Minimal"
+      },
+      "other": {
+        "title": "Other Data Retention",
+        "stats": {
+          "label": "Dashboard Stats Retention",
+          "description": "Dashboard charts and summary statistics data"
+        },
+        "backup": {
+          "label": "Backup File Retention Count",
+          "description": "Oldest backups will be deleted when count is exceeded"
+        },
+        "count": "files",
+        "backupHint": "Automatic backup settings can be managed in the Settings > Backup tab."
+      },
+      "backup": {
+        "title": "Auto Backup",
+        "enable": {
+          "label": "Enable Auto Backup",
+          "description": "Automatically create backups according to the schedule."
+        },
+        "schedule": {
+          "label": "Backup Schedule (Cron)",
+          "help": "Default: 0 2 * * * (Daily at 2 AM). Format: Minute Hour Day Month DayOfWeek"
+        }
+      },
+      "rawlogs": {
+        "title": "Raw Log File Storage",
+        "description": "Store raw nginx log files on disk in addition to database storage. Useful for security audits, compliance, or external log analysis tools.",
+        "enable": {
+          "label": "Enable Raw Log Storage",
+          "description": "When enabled, access.log and error.log files will be created in /data/logs/."
+        },
+        "maxSize": {
+          "label": "Max Size per File",
+          "help": "Automatically rotated when this size is reached"
+        },
+        "rotateCount": {
+          "label": "Rotation File Count",
+          "help": "Kept as access.log.1, access.log.2 ..."
+        },
+        "retentionDays": {
+          "label": "Rotation Retention Days",
+          "help": "Rotated files older than this will be deleted"
+        },
+        "compress": {
+          "label": "Compress Rotated Files",
+          "help": "Compress rotated files with gzip to save disk space"
+        },
+        "estimate": {
+          "title": "Estimated Max Disk Usage",
+          "description": "Approx. {{size}} MB based on Access + Error logs",
+          "compressed": " (Compressed)"
+        }
+      }
+    },
+    "logfiles": {
+      "status": {
+        "title": "Raw Log File Status",
+        "active": "Raw log storage is active. Total {{count}} files, {{size}}",
+        "inactive": "Raw log storage is inactive. You can enable it in the Maintenance tab."
+      },
+      "list": {
+        "title": "Log File List",
+        "compressed": "Compressed",
+        "empty": "No log files",
+        "emptyHelp": "Files will appear here when Raw log storage is enabled"
+      },
+      "modal": {
+        "empty": "(Empty File)",
+        "delete": {
+          "title": "Delete File",
+          "confirm": "Are you sure you want to delete {{filename}}?"
+        }
+      }
+    },
+    "nginx": {
+      "title": "Nginx",
+      "reload": "Reload Nginx",
+      "testConfig": "Test Config",
+      "viewConfig": "View Config",
+      "status": "Status"
+    },
+    "update": {
+      "title": "Updates",
+      "currentVersion": "Current Version",
+      "latestVersion": "Latest Version",
+      "checkUpdate": "Check for Updates",
+      "updateAvailable": "Update Available",
+      "upToDate": "Up to date"
+    }
+  },
+  "backup": {
+    "title": "Backup & Restore",
+    "create": {
+      "title": "Create Backup",
+      "description": "Save current configuration to a backup file",
+      "button": "Create Backup",
+      "includeData": "Include Data",
+      "includeLogs": "Include Logs",
+      "includeConfig": "Include Configuration"
+    },
+    "restore": {
+      "title": "Restore",
+      "description": "Restore configuration from a backup file",
+      "button": "Restore",
+      "selectFile": "Select File",
+      "warning": "Current configuration will be overwritten"
+    },
+    "history": {
+      "title": "Backup History",
+      "date": "Date",
+      "size": "Size",
+      "download": "Download",
+      "restore": "Restore",
+      "delete": "Delete"
+    },
+    "schedule": {
+      "title": "Automatic Backup",
+      "enabled": "Enable Automatic Backup",
+      "frequency": "Frequency",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "retention": "Retention Period"
+    }
+  },
+  "captcha": {
+    "title": "CAPTCHA Challenge Settings",
+    "description": "Configure CAPTCHA settings when using Challenge Mode in GeoIP restrictions",
+    "enable": {
+      "label": "Enable CAPTCHA Challenge",
+      "description": "If enabled, a CAPTCHA page will be shown instead of blocking when GeoIP Challenge Mode is triggered."
+    },
+    "stats": {
+      "title": "Challenge Statistics (24h)",
+      "total": "Total Challenges",
+      "passed": "Passed",
+      "failed": "Failed",
+      "activeTokens": "Active Tokens"
+    },
+    "provider": {
+      "title": "CAPTCHA Provider",
+      "subTitle": "CAPTCHA Provider",
+      "recaptcha_v2": "Google reCAPTCHA v2 (Checkbox)",
+      "recaptcha_v3": "Google reCAPTCHA v3 (Score based)",
+      "turnstile": "Cloudflare Turnstile",
+      "help": {
+        "recaptcha_v3": "reCAPTCHA v3 detects bots based on a score without user interaction.",
+        "turnstile": "Cloudflare Turnstile is a free, privacy-friendly CAPTCHA.",
+        "recaptcha_v2": "reCAPTCHA v2 shows the \"I am not a robot\" checkbox."
+      },
+      "links": "Get CAPTCHA Keys:"
+    },
+    "keys": {
+      "siteKey": "Site Key",
+      "siteKeyDesc": "Site Key issued by the CAPTCHA provider.",
+      "secretKey": "Secret Key",
+      "secretKeyDesc": "Secret Key issued by the CAPTCHA provider.",
+      "secretKeySet": "Secret Key is already set. Enter a new value to change it."
+    },
+    "recaptcha": {
+      "score": "Minimum Score (0.0 - 1.0)",
+      "scoreDesc": "Requests below this score are considered bots. 0.5 is the recommended default."
+    },
+    "tokenValidity": {
+      "label": "Token Validity (seconds)",
+      "desc": "Time duration access is allowed after passing CAPTCHA. (Default: 86400s = 24h)"
+    },
+    "appearance": {
+      "title": "Challenge Page Appearance",
+      "pageTitle": "Page Title",
+      "theme": "Theme",
+      "message": "Page Message",
+      "messageDesc": "Message displayed above the CAPTCHA."
+    },
+    "messages": {
+      "saveSuccess": "CAPTCHA settings saved successfully."
+    }
+  },
+  "messages": {
+    "saveSuccess": "Settings saved",
+    "saveFailed": "Failed to save settings",
+    "testSuccess": "Test successful",
+    "testFailed": "Test failed",
+    "backupSuccess": "Backup created",
+    "backupFailed": "Failed to create backup",
+    "restoreSuccess": "Restore complete",
+    "restoreFailed": "Failed to restore"
+  },
+  "global": {
+    "title": "Global Settings",
+    "description": "Manage Nginx global settings. Nginx will automatically reload after saving changes.",
+    "buttons": {
+      "reset": "Reset to Defaults",
+      "save": "Save Changes",
+      "saving": "Saving..."
+    },
+    "presets": {
+      "title": "Quick Presets",
+      "current": "Current:",
+      "custom": "Custom",
+      "modified": "(modified)",
+      "descriptions": {
+        "balanced": {
+          "label": "Balanced",
+          "description": "Standard balanced configuration. Suitable for most cases."
+        },
+        "performance": {
+          "label": "Performance",
+          "description": "High performance configuration. Optimized for high traffic and fast responses."
+        },
+        "security": {
+          "label": "Security",
+          "description": "Security hardened configuration. Uses only modern TLS and adds security headers."
+        }
+      }
+    },
+    "tabs": {
+      "worker": "Worker",
+      "http": "HTTP",
+      "compression": "Compression",
+      "ssl": "SSL/TLS",
+      "timeout": "Timeouts",
+      "advanced": "Advanced"
+    },
+    "fields": {
+      "worker_processes": {
+        "label": "Worker Processes",
+        "description": "Number of worker processes handling requests. 0 = auto-detect based on CPU cores. Higher values improve concurrency.",
+        "placeholder": "0 = auto"
+      },
+      "worker_connections": {
+        "label": "Worker Connections",
+        "description": "Maximum number of simultaneous connections per worker process. Higher values allow more concurrent connections."
+      },
+      "multi_accept": {
+        "label": "Multi Accept",
+        "description": "If enabled, a worker will accept all new connections at once. Improves performance under high traffic."
+      },
+      "use_epoll": {
+        "label": "Use Epoll",
+        "description": "Use efficient event processing method (epoll) on Linux. Improves performance with many concurrent connections."
+      },
+      "keepalive_timeout": {
+        "label": "Keepalive Timeout (s)",
+        "description": "Time to keep connections alive. Allows clients to reuse connections for multiple requests."
+      },
+      "keepalive_requests": {
+        "label": "Keepalive Requests",
+        "description": "Maximum number of requests that can be served through a single keepalive connection."
+      },
+      "client_max_body_size": {
+        "label": "Max Body Size",
+        "description": "Maximum allowed size of the client request body (e.g., 100m, 1g). Affects file upload limits."
+      },
+      "types_hash_max_size": {
+        "label": "Types Hash Size",
+        "description": "Maximum size of the MIME types hash table. Default is usually sufficient."
+      },
+      "sendfile": {
+        "label": "Sendfile",
+        "description": "Use sendfile() system call to transfer files directly in the kernel. Improves static file serving speed."
+      },
+      "tcp_nopush": {
+        "label": "TCP Nopush",
+        "description": "Use in conjunction with sendfile. Sends response header and file content in one packet."
+      },
+      "tcp_nodelay": {
+        "label": "TCP Nodelay",
+        "description": "Disable Nagle algorithm. Sends small packets immediately. Useful for real-time applications."
+      },
+      "server_tokens": {
+        "label": "Server Tokens",
+        "description": "If enabled, Nginx version is shown in response headers. Recommended to disable for security."
+      },
+      "gzip_enabled": {
+        "label": "Gzip Compression",
+        "description": "Compress responses with Gzip. Saves bandwidth and improves page load speed."
+      },
+      "gzip_comp_level": {
+        "label": "Compression Level (1-9)",
+        "description": "Compression strength. Higher means better compression but more CPU usage. Recommended: 5-6."
+      },
+      "gzip_min_length": {
+        "label": "Min Compression Length (bytes)",
+        "description": "Responses smaller than this will not be compressed. Compressing tiny files can be inefficient."
+      },
+      "gzip_types": {
+        "label": "Compression MIME Types",
+        "description": "List of MIME types to compress. Effective for text-based content (HTML, CSS, JS, JSON, etc.)."
+      },
+      "gzip_vary": {
+        "label": "Add Vary Header",
+        "description": "Adds 'Vary: Accept-Encoding' header. Ensures CDNs/caches serve the correct version."
+      },
+      "brotli_enabled": {
+        "label": "Brotli Compression",
+        "description": "Enable Brotli compression. Provides higher compression ratio than Gzip. Supported by modern browsers."
+      },
+      "brotli_static": {
+        "label": "Brotli Static",
+        "description": "Serve pre-compressed .br files if available. Reduces CPU overhead for static assets."
+      },
+      "brotli_comp_level": {
+        "label": "Brotli Level (1-11)",
+        "description": "Brotli compression strength. 1-4: Fast, 5-9: Balanced, 10-11: Max (High CPU). Recommended: 4-6."
+      },
+      "brotli_min_length": {
+        "label": "Brotli Min Length",
+        "description": "Minimum response size (bytes) to apply Brotli compression. Small files don't benefit from compression."
+      },
+      "brotli_types": {
+        "label": "Brotli MIME Types",
+        "description": "List of MIME types to compress with Brotli. Most effective for text-based content."
+      },
+      "ssl_protocols": {
+        "label": "SSL Protocols",
+        "description": "Allowed TLS protocol versions. TLSv1.2 and TLSv1.3 are recommended for security."
+      },
+      "ssl_ciphers": {
+        "label": "SSL Ciphers",
+        "description": "List of enabled cipher suites. Balance between security and compatibility."
+      },
+      "ssl_session_cache": {
+        "label": "SSL Session Cache",
+        "description": "Cache SSL sessions to speed up reconnects by skipping handshake."
+      },
+      "ssl_session_timeout": {
+        "label": "SSL Session Timeout",
+        "description": "Validity period of SSL session cache. e.g., 1d (1 day), 1h (1 hour)."
+      },
+      "ssl_prefer_server_ciphers": {
+        "label": "Prefer Server Ciphers",
+        "description": "Use server's preferred cipher suites instead of client's. Recommended for stronger security."
+      },
+      "ssl_stapling": {
+        "label": "OCSP Stapling",
+        "description": "Cache certificate status on server to speed up client connection verification."
+      },
+      "ssl_stapling_verify": {
+        "label": "Stapling Verify",
+        "description": "Verify OCSP response. Used with ssl_stapling."
+      },
+      "ssl_session_tickets": {
+        "label": "Session Tickets",
+        "description": "Enable TLS session tickets for session resumption. Reduces server load."
+      },
+      "client_body_timeout": {
+        "label": "Client Body Timeout (s)",
+        "description": "Timeout for reading client request body. Adjust for slow uploads."
+      },
+      "client_header_timeout": {
+        "label": "Client Header Timeout (s)",
+        "description": "Timeout for reading client request header. Protects against slow clients."
+      },
+      "send_timeout": {
+        "label": "Send Timeout (s)",
+        "description": "Timeout for transmitting response to client."
+      },
+      "proxy_connect_timeout": {
+        "label": "Proxy Connect Timeout (s)",
+        "description": "Timeout for connecting to upstream server."
+      },
+      "proxy_send_timeout": {
+        "label": "Proxy Send Timeout (s)",
+        "description": "Timeout for sending request to upstream server."
+      },
+      "proxy_read_timeout": {
+        "label": "Proxy Read Timeout (s)",
+        "description": "Timeout for reading response from upstream server. Adjust for slow API responses."
+      },
+      "resolver": {
+        "label": "DNS Resolver",
+        "description": "DNS server for resolving domain names. e.g., 8.8.8.8 8.8.4.4 valid=300s"
+      },
+      "error_log_level": {
+        "label": "Error Log Level",
+        "description": "Logging verbosity. 'debug' is most detailed, 'crit' is most concise."
+      },
+      "access_log_enabled": {
+        "label": "Enable Access Log",
+        "description": "Log all requests. High traffic may increase disk usage."
+      },
+      "custom_http_config": {
+        "label": "Custom HTTP Config",
+        "description": "Directly input additional Nginx configuration. For advanced users."
+      }
+    },
+    "tips": {
+      "compression": "Tip: Enabling both Gzip and Brotli allows browsers to automatically choose the best method. Brotli offers 20-30% better compression, but older browsers only support Gzip."
+    },
+    "advanced": {
+      "directIpAccess": {
+        "title": "Direct IP Access Handling",
+        "description": "Configure how to handle requests that access the server directly via IP without a domain. Direct IP access is mostly from bots or scanners.",
+        "options": {
+          "allow": {
+            "label": "Show Nginx Proxy Guard Welcome Page",
+            "description": "Displays Nginx Proxy Guard welcome page when accessing via server IP. Useful for verifying server is running."
+          },
+          "block403": {
+            "label": "Return 403 Forbidden",
+            "description": "Returns 403 Forbidden response with JSON access denied message."
+          },
+          "block444": {
+            "label": "Close Connection (444)",
+            "description": "Immediately closes connection without response. Most effective against scanners."
+          }
+        },
+        "note": {
+          "title": "Note",
+          "description": "Health check (/health) and ACME challenge (/.well-known/acme-challenge/) are always allowed regardless of this setting."
+        }
+      },
+      "ddos": {
+        "title": "DDoS Protection (Global)",
+        "description": "Global DDoS protection settings applied to all hosts. Proxy Host-specific Rate Limits are applied in addition to these settings.",
+        "connectionLimit": {
+          "title": "Connection Limit",
+          "description": "Limit maximum simultaneous connections per IP.",
+          "perIp": "Max Connections per IP",
+          "zoneSize": "Zone Size"
+        },
+        "requestLimit": {
+          "title": "Request Rate Limit",
+          "description": "Limit requests per second per IP.",
+          "rate": "Requests per second (r/s)",
+          "burst": "Burst (excess allowed)",
+          "zoneSize": "Zone Size"
+        },
+        "responseLimit": {
+          "title": "Response Rate Limit (Bandwidth)",
+          "description": "Limit response speed to clients. 0 = unlimited",
+          "rate": "Rate limit (bytes/s, 0=unlimited)",
+          "ratePlaceholder": "e.g., 102400 (100KB/s)",
+          "after": "Apply after size",
+          "afterPlaceholder": "e.g., 500k, 1m"
+        },
+        "connectionReset": {
+          "title": "Timeout Connection Reset",
+          "description": "Immediately reset timed out connections to release resources."
+        },
+        "info": {
+          "title": "Difference from Proxy Host Rate Limit",
+          "description": "These settings are **applied to all hosts by default**. Rate Limits configured in Proxy Hosts are **additionally applied** as more granular control for that specific host."
+        }
+      },
+      "errorLogLevels": {
+        "debug": "debug - All info (development)",
+        "info": "info - General info",
+        "notice": "notice - Notable events",
+        "warn": "warn - Warnings (recommended)",
+        "error": "error - Errors only",
+        "crit": "crit - Critical errors only"
+      },
+      "customConfigPlaceholder": "# Enter additional nginx http configuration here"
+    }
+  },
+  "apiTokens": {
+    "title": "API Tokens",
+    "subtitle": "Manage tokens for programmatic API access.",
+    "apiDocs": "API Documentation",
+    "createToken": "Create Token",
+    "createNew": "Create New Token",
+    "form": {
+      "tokenName": "Token Name",
+      "tokenNamePlaceholder": "My API Token",
+      "permissionGroups": "Permission Groups",
+      "individualPermissions": "Individual Permissions",
+      "allowedIps": "Allowed IPs (Optional)",
+      "allowedIpsPlaceholder": "192.168.1.1, 10.0.0.0/8",
+      "allowedIpsHelp": "Comma separated",
+      "allowedIpsEmptyHelp": "Comma separated, leave empty to allow all IPs",
+      "rateLimit": "Rate Limit (req/hour)",
+      "expiresIn": "Expires In"
+    },
+    "expires": {
+      "7d": "7 Days",
+      "30d": "30 Days",
+      "90d": "90 Days",
+      "1y": "1 Year",
+      "never": "Never"
+    },
+    "table": {
+      "name": "Name",
+      "token": "Token",
+      "permissions": "Permissions",
+      "lastUsed": "Last Used",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "revoked": "Revoked",
+      "expired": "Expired"
+    },
+    "actions": {
+      "edit": "Edit",
+      "revoke": "Revoke",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "copy": "Copy",
+      "close": "Close"
+    },
+    "modal": {
+      "created": "API Token Created",
+      "createdWarning": "This token won't be shown again. Copy it to a safe place."
+    },
+    "confirm": {
+      "revoke": "Are you sure you want to revoke this token?",
+      "delete": "Are you sure you want to permanently delete this token?"
+    },
+    "empty": "No API tokens created yet.",
+    "usage": {
+      "title": "How to use the API",
+      "description": "Include the token in the Authorization header when making API requests:",
+      "example": "Authorization: Bearer ng_your_token_here"
+    },
+    "more": "+{{count}} more"
+  },
+  "backupManager": {
+    "title": "Backup & Restore",
+    "uploadRestore": "Upload & Restore",
+    "createBackup": "Create Backup",
+    "stats": {
+      "totalBackups": "Total Backups",
+      "totalSize": "Total Size",
+      "lastBackup": "Last Backup",
+      "retention": "Retention",
+      "never": "Never",
+      "days": "days"
+    },
+    "autoBackup": {
+      "title": "Auto Backup Settings",
+      "enable": "Enable Auto Backup",
+      "enableDescription": "Automatically create backups according to the schedule",
+      "schedule": "Backup Schedule (Cron)",
+      "scheduleHelp": "Default: {{default}} (Daily at 2 AM). Format: Minute Hour Day Month DayOfWeek",
+      "retentionCount": "Backup Retention Count",
+      "retentionHelp": "Oldest backups will be deleted when count is exceeded",
+      "count": "files"
+    },
+    "history": {
+      "title": "Backup History",
+      "empty": "No backups yet. Create your first backup to get started."
+    },
+    "status": {
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "failed": "Failed"
+    },
+    "labels": {
+      "config": "Config",
+      "certs": "Certs",
+      "database": "Database"
+    },
+    "buttons": {
+      "download": "Download",
+      "restore": "Restore",
+      "delete": "Delete",
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "creating": "Creating...",
+      "restoring": "Restoring..."
+    },
+    "createModal": {
+      "title": "Create Backup",
+      "includeConfig": "Include Configuration Files",
+      "includeCerts": "Include SSL Certificates",
+      "includeDatabase": "Include Database",
+      "description": "Description (optional)",
+      "descriptionPlaceholder": "Backup description..."
+    },
+    "uploadModal": {
+      "title": "Upload & Restore Backup",
+      "warning": "Warning: This will restore all configurations from the uploaded backup file. Current configurations will be overwritten.",
+      "selectFile": "Backup File (.tar.gz)",
+      "clickToSelect": "Click to select a backup file",
+      "dragAndDrop": "or drag and drop here",
+      "restoreInfo": "The restore will import:",
+      "items": {
+        "proxyHosts": "Proxy Hosts and their security settings",
+        "redirectHosts": "Redirect Hosts",
+        "accessLists": "Access Control Lists",
+        "certificates": "SSL Certificates",
+        "wafConfig": "WAF Configuration",
+        "globalSettings": "Global Settings"
+      }
+    },
+    "confirm": {
+      "delete": "Are you sure you want to delete this backup?",
+      "restore": "Are you sure you want to restore from \"{{filename}}\"? This will overwrite current configuration.",
+      "uploadRestore": "Are you sure you want to upload and restore this backup? This will overwrite current configuration."
+    },
+    "messages": {
+      "saveSuccess": "Auto backup settings saved.",
+      "saveFailed": "Save failed: {{error}}",
+      "restoreSuccess": "Restore completed successfully! Please refresh the page to see updated configurations.",
+      "restoreFailed": "Restore failed: {{error}}",
+      "uploadSuccess": "Backup uploaded and restored successfully! Please refresh the page to see updated configurations.",
+      "uploadFailed": "Upload and restore failed: {{error}}",
+      "invalidFormat": "Invalid file format. Please select a .tar.gz backup file."
+    }
+  },
+  "help": {
+    "global": {
+      "worker_processes": "Number of Nginx worker processes. Set to 'auto' to match CPU cores. Matching core count is recommended for high traffic.",
+      "worker_connections": "Max simultaneous connections per worker. Too low values can cause connection errors. (Default: 1024)",
+      "multi_accept": "If enabled, workers accept multiple connections at once. Can improve performance under very high traffic.",
+      "use_epoll": "Uses epoll, a high-performance event processing method on Linux. Essential for handling many concurrent connections.",
+      "keepalive_timeout": "Time to keep connection alive. Too long wastes memory, too short causes reconnection overhead.",
+      "keepalive_requests": "Max requests per keepalive connection. Connection closes after exceeding this limit.",
+      "client_max_body_size": "Limits max upload file size. Increase this if you need to upload large files.",
+      "types_hash_max_size": "Size of hash table for MIME types. Default is usually sufficient.",
+      "sendfile": "Maximizes performance by transferring files at kernel level. Essential for static content.",
+      "tcp_nopush": "Used with sendfile to reduce packet count and improve network efficiency.",
+      "tcp_nodelay": "Sends small packets immediately to improve response speed. Beneficial for real-time apps.",
+      "server_tokens": "Hiding Nginx version information is recommended for security.",
+      "gzip_enabled": "Compresses text data (HTML, CSS, JS) to reduce transfer size. Greatly improves speed.",
+      "gzip_comp_level": "Compression level. 5-6 offers best balance between CPU usage and efficiency.",
+      "gzip_min_length": "Very small files are not compressed as it offers no benefit.",
+      "gzip_types": "File types to compress. Images/videos are already compressed so better to exclude them.",
+      "gzip_vary": "Adds Vary header so cache servers distinguish compressed vs uncompressed versions.",
+      "brotli_enabled": "Uses Google's Brotli compression. Higher compression ratio than Gzip.",
+      "brotli_comp_level": "Brotli compression strength. 4-6 is recommended.",
+      "brotli_types": "Content types to compress with Brotli.",
+      "ssl_protocols": "Avoid using old protocols (SSLv3, TLSv1.0, TLSv1.1) as they have security vulnerabilities.",
+      "ssl_ciphers": "List of encryption algorithms. Keep updated for strong security.",
+      "ssl_session_cache": "Caches SSL handshake info to speed up reconnections.",
+      "ssl_session_timeout": "Duration to keep SSL session cache.",
+      "ssl_prefer_server_ciphers": "Prioritize server's cipher suite preference over client's.",
+      "ssl_stapling": "Speeds up certificate validation to reduce connection latency.",
+      "ssl_stapling_verify": "Server verifies OCSP response validity.",
+      "ssl_session_tickets": "Resumes SSL sessions quickly using session tickets.",
+      "client_body_timeout": "Closes connection if client sends data too slowly.",
+      "client_header_timeout": "Closes connection if client sends headers too slowly.",
+      "send_timeout": "Timeout for sending data to client.",
+      "proxy_connect_timeout": "Timeout for connecting to backend server.",
+      "proxy_send_timeout": "Timeout for sending data to backend server.",
+      "proxy_read_timeout": "Time to wait for response from backend. Increase if you have slow API endpoints.",
+      "resolver": "DNS server used to resolve domain names to IPs.",
+      "error_log_level": "Detail level of error logs. 'warn' or 'error' recommended unless debugging.",
+      "access_log_enabled": "Logs all access records. May require disk space management.",
+      "custom_http_config": "Enter custom configuration to add to Nginx http block.",
+      "ddos": {
+        "connectionLimit": "Limits concurrent connections from same IP to protect server resources.",
+        "requestLimit": "Limits requests per second from same IP to block excessive requests.",
+        "responseLimit": "Limits download speed to prevent bandwidth monopoly.",
+        "connectionReset": "Immediately terminates connection upon timeout."
+      }
+    },
+    "geoip": {
+      "enable": "Enabling GeoIP allows you to block or allow traffic based on country. Requires a free MaxMind account.",
+      "account": "You need a MaxMind Account ID and License Key to download the GeoLite2 database.",
+      "accountId": "The 6-digit ID issued from your MaxMind account settings.",
+      "licenseKey": "The license key generated from your MaxMind account.",
+      "updateInterval": "Frequency to automatically update the GeoIP database."
+    },
+    "acme": {
+      "enable": "Automatically issues and renews free SSL certificates from Let's Encrypt.",
+      "email": "Used for certificate expiration notifications and account recovery.",
+      "staging": "Use Staging for testing to avoid rate limits. Certificates are NOT trusted. Disable for production.",
+      "renewBefore": "Renew certificates this many days before expiration. Default (30) is recommended."
+    },
+    "botfilter": {
+      "defaults": "These settings apply as defaults for NEW Proxy Hosts only. Existing hosts are unaffected.",
+      "badBots": "Blocks known bad bots like scrapers and spammers.",
+      "aiBots": "Blocks AI data scrapers like GPTBot and ClaudeBot.",
+      "searchEngines": "Always allow search engine crawlers (Google, Bing) to protect SEO.",
+      "suspicious": "Challenges suspicious clients (curl, python-requests) with a JavaScript challenge."
+    },
+    "waf": {
+      "autoBan": "Automatically bans IPs that generate frequent WAF alerts (e.g., SQL Injection) within a short time.",
+      "threshold": "Ban IP if detection count exceeds this number within the window.",
+      "window": "Time window to count events.",
+      "duration": "Duration to ban the IP. 0 means permanent ban."
+    },
+    "maintenance": {
+      "logRetention": "Older logs are automatically deleted to save disk space. (Runs daily at midnight or on system restart)",
+      "rawLogs": "Save raw Nginx access/error logs to disk for external analysis or compliance.",
+      "access": "All HTTP request records including Bot Filter and Exploit block events. Used for traffic analysis.",
+      "waf": "ModSecurity block/detection events.",
+      "error": "Nginx errors and warnings.",
+      "system": "System and Docker container logs.",
+      "audit": "Administrator activity audit logs.",
+      "stats": "Retention period for dashboard charts and statistics."
+    },
+    "backup": {
+      "enable": "Automatically backup entire configuration at scheduled times.",
+      "schedule": "Backup schedule in Cron format (e.g., 0 2 * * * = Daily at 2 AM).",
+      "retention": "Maximum number of backup files to keep. Oldest backups are deleted when exceeded."
+    }
+  }
+}

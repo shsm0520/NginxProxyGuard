@@ -1,0 +1,494 @@
+{
+  "saveProgress": {
+    "titleCreate": "프록시 호스트 생성 중",
+    "titleUpdate": "프록시 호스트 수정 중",
+    "steps": {
+      "server": "서버 처리 중",
+      "serverDesc": "DB 저장, 설정 생성, 테스트, Nginx 리로드 중...",
+      "additional": "추가 설정 저장",
+      "additionalDesc": "봇 필터, GeoIP 등 추가 설정 저장 중...",
+      "complete": "완료",
+      "completeDesc": "프록시 호스트가 성공적으로 저장되었습니다!"
+    }
+  },
+  "list": {
+    "title": "프록시 호스트",
+    "description": "프록시 호스트 관리",
+    "addNew": "프록시 호스트 추가",
+    "empty": "프록시 호스트가 없습니다",
+    "emptyDescription": "첫 번째 프록시 호스트를 추가하세요",
+    "search": "호스트 검색...",
+    "filter": {
+      "all": "전체",
+      "enabled": "활성화",
+      "disabled": "비활성화",
+      "ssl": "SSL 활성화",
+      "waf": "WAF 활성화"
+    },
+    "columns": {
+      "domain": "도메인",
+      "target": "대상",
+      "ssl": "SSL",
+      "status": "상태",
+      "actions": "작업",
+      "source": "소스",
+      "destination": "목적지",
+      "features": "기능"
+    },
+    "status": {
+      "active": "활성",
+      "disabled": "비활성"
+    },
+    "showing": "{{count}}개 / 총 {{total}}개 프록시 호스트"
+  },
+  "form": {
+    "addTitle": "프록시 호스트 추가",
+    "editTitle": "프록시 호스트 수정",
+    "tabs": {
+      "basic": "기본",
+      "ssl": "SSL/TLS",
+      "security": "보안",
+      "protection": "보호",
+      "performance": "성능",
+      "advanced": "고급"
+    },
+    "basic": {
+      "domainNames": "도메인 이름",
+      "domainPlaceholder": "example.com",
+      "addDomain": "도메인 추가",
+      "forwardHost": "포워드 호스트",
+      "forwardHostPlaceholder": "192.168.1.100 또는 container_name",
+      "forwardPort": "포워드 포트",
+      "forwardScheme": "포워드 프로토콜",
+      "websocket": "웹소켓 지원",
+      "websocketDescription": "WebSocket 연결을 허용합니다"
+    },
+    "ssl": {
+      "enabled": "SSL 활성화",
+      "enabledDescription": "HTTPS 연결을 활성화합니다",
+      "forceHttps": "HTTPS 강제",
+      "forceHttpsDescription": "HTTP 요청을 HTTPS로 리다이렉트합니다",
+      "http2": "HTTP/2",
+      "http2Description": "HTTP/2 프로토콜을 활성화합니다",
+      "http3": "HTTP/3",
+      "http3Description": "HTTP/3 (QUIC) 프로토콜을 활성화합니다",
+      "certificate": "인증서",
+      "selectCertificate": "인증서 선택",
+      "noCertificate": "인증서 없음",
+      "createCertificate": "새 인증서 생성",
+      "existingCertificate": "기존 인증서 사용",
+      "pendingCertificates": "발급 대기 중인 인증서",
+      "certificateProvider": "인증서 제공자",
+      "dnsProvider": "DNS 제공자",
+      "dnsChallenge": "DNS 챌린지",
+      "httpChallenge": "HTTP 챌린지",
+      "creatingCertificate": "인증서 생성 중...",
+      "certificateSuccess": "인증서가 생성되었습니다",
+      "certificateFailed": "인증서 생성에 실패했습니다"
+    },
+    "security": {
+      "priorityAllowIPs": {
+        "title": "우선 허용 IP",
+        "overrideTag": "최우선",
+        "description": "이 IP/CIDR은 GeoIP 제한, 봇 필터 등을 우회하여 항상 접속이 허용됩니다. 내부 서비스나 모니터링 시스템을 등록하세요.",
+        "placeholder": "한 줄에 하나의 IP 또는 CIDR 입력\n예: 192.168.1.100\n10.0.0.0/8\n172.16.0.0/16",
+        "note": "이 목록의 IP/CIDR은 가장 높은 우선순위를 가지며 모든 차단을 우회합니다.",
+        "registeredCount": "{{count}}개 등록됨"
+      },
+      "blockExploits": "취약점 공격 차단 (Block Exploits)",
+      "blockExploitsDescription": "일반적인 공격 패턴을 차단합니다",
+      "exploitRulesManagement": "취약점 규칙 관리",
+      "exploitRulesDescription": "중앙 집중화된 WAF 설정에서 취약점 차단 규칙과 예외를 관리합니다.",
+      "manageRules": "규칙 관리",
+      "fail2ban": "Fail2ban (자동 IP 차단)",
+      "fail2banDescription": "반복된 로그인 실패(401/403 오류) 후 IP를 자동으로 차단합니다.",
+      "fail2banSettings": "Fail2ban 설정",
+      "fail2banSettingsDescription": "차단 시간, 최대 재시도 횟수 등을 구성합니다.",
+      "configureSettings": "설정",
+      "blockExploitsExceptionsPlaceholder": "^/wp-json/\n^/api/v1/webhook/",
+      "blockExploitsExceptionsDescription": "RFI/취약점 차단을 우회할 URI 경로 패턴을 입력하세요 (줄바꿈으로 구분). 예: ^/wp-json/은 WordPress REST API를 허용합니다.",
+      "accessList": "접근 목록",
+      "noAccessList": "접근 제한 없음",
+      "selectAccessList": "접근 목록 선택",
+      "botFilter": {
+        "title": "봇 필터",
+        "enabled": "봇 필터 활성화",
+        "description": "악성 봇과 스크래퍼를 차단합니다",
+        "blockBadBots": "악성 봇 차단",
+        "blockBadBotsDescription": "알려진 악성 봇을 차단합니다",
+        "blockAiBots": "AI 봇 차단",
+        "blockAiBotsDescription": "AI 학습용 봇을 차단합니다",
+        "allowSearchEngines": "검색엔진 허용",
+        "allowSearchEnginesDescription": "Google, Bing 등 검색엔진 봇을 허용합니다",
+        "blockSuspicious": "의심스러운 클라이언트 차단",
+        "blockSuspiciousDescription": "비정상적인 요청 패턴을 보이는 클라이언트를 차단합니다",
+        "challengeSuspicious": "의심스러운 요청에 챌린지",
+        "challengeSuspiciousDescription": "의심스러운 요청에 CAPTCHA를 표시합니다",
+        "customBlocked": "사용자 정의 차단 목록",
+        "customBlockedPlaceholder": "차단할 User-Agent를 한 줄에 하나씩 입력",
+        "settingsLink": "봇 목록은 <1>설정 &rarr; Bot Filter</1>에서 관리할 수 있습니다"
+      },
+      "geoip": {
+        "title": "GeoIP 제한",
+        "notAvailable": "GeoIP 사용 불가",
+        "notAvailableDescription": "설정 → GeoIP에서 MaxMind GeoIP를 구성하세요",
+        "enabled": "GeoIP 제한 활성화",
+        "description": "특정 국가의 트래픽을 허용하거나 차단합니다",
+        "mode": "모드",
+        "modeBlock": "차단",
+        "modeBlockDescription": "선택한 국가 차단",
+        "modeAllow": "허용만",
+        "modeAllowDescription": "선택한 국가만 허용",
+        "challengeMode": "챌린지 모드",
+        "challengeModeDescription": "차단 대신 CAPTCHA를 표시합니다",
+        "allowPrivateIPs": "사설 IP 허용",
+        "allowPrivateIPsDescription": "사설 IP 대역(10.x.x.x, 172.16-31.x.x, 192.168.x.x)은 GeoIP 차단을 우회합니다",
+        "allowSearchBots": "검색봇 허용",
+        "allowSearchBotsDescription": "Google, Bing, Yahoo 등 검색엔진 봇은 GeoIP 제한을 우회하여 항상 접근 가능합니다",
+        "searchCountries": "국가 검색",
+        "selectedCountries": "선택됨",
+        "selectFiltered": "필터된 항목 선택",
+        "clearAll": "모두 지우기",
+        "quickAdd": "빠른 추가",
+        "highRisk": "고위험 국가",
+        "majorMarkets": "주요 시장",
+        "euCountries": "EU 국가",
+        "asiaPacific": "아시아 태평양",
+        "korea": "대한민국",
+        "noCountries": "국가를 찾을 수 없습니다"
+      },
+      "cloudProvider": {
+        "title": "클라우드 서비스 차단",
+        "description": "알려진 클라우드 서비스 제공자의 IP를 차단합니다",
+        "blocked": "개 차단됨",
+        "warning": "선택한 클라우드 제공자의 트래픽이 차단됩니다. VPN이나 클라우드 기반 서비스를 통해 접속하는 정상 사용자에게 영향을 줄 수 있습니다.",
+        "challengeMode": "챌린지 모드",
+        "challengeModeDescription": "차단 대신 CAPTCHA 인증을 요구합니다",
+        "challengeWarning": "선택한 클라우드 제공자의 트래픽은 사이트 접속 전 CAPTCHA 챌린지를 통과해야 합니다.",
+        "quickAdd": "빠른 추가",
+        "majorClouds": "주요 클라우드",
+        "budgetVps": "저가형 호스팅/VPS",
+        "asiaProviders": "아시아 클라우드",
+        "ipRanges": "개 IP 대역",
+        "regions": {
+          "us": "미국",
+          "eu": "유럽",
+          "cn": "중국",
+          "kr": "한국"
+        }
+      },
+      "uriBlock": {
+        "title": "URI 경로 차단",
+        "description": "특정 URI 경로에 대한 접근을 차단합니다",
+        "quickAdd": "빠른 추가",
+        "addRule": "차단 규칙 추가",
+        "patternPlaceholder": "URI 패턴 입력 (예: /wp-admin)",
+        "descriptionPlaceholder": "설명 (선택사항)",
+        "matchTypes": {
+          "exact": "정확히 일치",
+          "prefix": "접두사 일치",
+          "regex": "정규식 일치"
+        },
+        "add": "추가",
+        "rules": "차단 규칙",
+        "exceptionIPs": "예외 IP",
+        "exceptionIPsPlaceholder": "차단을 우회할 IP 주소 입력\n한 줄에 하나씩",
+        "allowPrivateIPs": "사설 IP 허용",
+        "allowPrivateIPsDescription": "사설 IP(10.x, 172.16-31.x, 192.168.x)는 URI 차단을 우회합니다"
+      }
+    },
+    "protection": {
+      "title": "보호 설정",
+      "notAvailable": {
+        "title": "보호 설정은 호스트 생성 후 사용 가능합니다",
+        "description": "먼저 프록시 호스트를 저장한 후, 다시 편집하여 Rate Limit, Fail2ban, 보안 헤더 등의 보호 설정을 구성할 수 있습니다."
+      },
+      "rateLimit": {
+        "title": "Rate Limit",
+        "description": "요청 속도 제한을 설정합니다",
+        "enabled": "Rate Limit 활성화",
+        "requestsPerSecond": "초당 요청 수",
+        "burst": "버스트 크기",
+        "burstDescription": "일시적으로 허용되는 최대 요청 수",
+        "limitBy": "제한 기준",
+        "limitByOptions": {
+          "ip": "IP 주소",
+          "uri": "URI",
+          "ipUri": "IP + URI"
+        },
+        "responseCode": "응답 코드",
+        "whitelistIPs": "화이트리스트 IP",
+        "banDuration": "차단 시간",
+        "banDurationDescription": "제한 초과 시 차단 시간 (초)"
+      },
+      "fail2ban": {
+        "title": "Fail2ban",
+        "description": "반복적인 실패 시도를 차단합니다",
+        "enabled": "Fail2ban 활성화",
+        "maxRetries": "최대 재시도",
+        "maxRetriesDescription": "차단 전 허용되는 실패 횟수",
+        "findTime": "검사 시간 (초)",
+        "findTimeDescription": "실패 횟수를 카운트하는 시간 (초)",
+        "banTime": "차단 시간 (초)",
+        "banTimeDescription": "IP 차단 시간 (초)",
+        "action": "동작",
+        "actionOptions": {
+          "block": "차단",
+          "log": "로그만",
+          "notify": "알림"
+        },
+        "failCodes": "실패 코드"
+      },
+      "securityHeaders": {
+        "title": "보안 헤더",
+        "description": "보안 HTTP 헤더를 추가합니다",
+        "enabled": "보안 헤더 활성화",
+        "preset": {
+          "strict": "엄격",
+          "moderate": "보통",
+          "relaxed": "완화"
+        },
+        "hsts": "HSTS (HTTP Strict Transport Security)",
+        "hstsDescription": "HTTP Strict Transport Security",
+        "hstsEnabled": "활성화",
+        "includeSubdomains": "하위 도메인 포함",
+        "preload": "미리 로드",
+        "maxAge": {
+          "1day": "1일",
+          "1week": "1주",
+          "30days": "30일",
+          "1year": "1년"
+        },
+        "xFrameOptions": "X-Frame-Options",
+        "referrerPolicy": "Referrer-Policy",
+        "xContentType": "X-Content-Type-Options: nosniff",
+        "xssProtection": "X-XSS-Protection",
+        "csp": "Content-Security-Policy",
+        "advancedHeadersTitle": "Content-Security-Policy, Permissions-Policy 설정",
+        "advancedHeadersDesc": "이 헤더들은 잘못 설정하면 웹사이트가 깨질 수 있어 위험합니다. 고급 설정(Advanced) 탭에서 직접 nginx 설정으로 추가해주세요."
+      },
+      "bannedIPs": {
+        "title": "차단된 IP",
+        "description": "현재 차단된 IP 목록",
+        "manageCentrally": "중앙 차단된 IP 관리 페이지에서 모든 IP를 관리합니다",
+        "empty": "차단된 IP가 없습니다",
+        "ip": "IP 주소",
+        "reason": "사유",
+        "duration": "차단 기간",
+        "durationOptions": {
+          "1hour": "1시간",
+          "1day": "1일",
+          "1week": "1주",
+          "permanent": "영구"
+        },
+        "ban": "차단",
+        "banning": "차단 중...",
+        "expiresAt": "만료 시간",
+        "bannedAt": "차단 시간",
+        "unban": "차단 해제",
+        "unbanConfirm": "이 IP의 차단을 해제하시겠습니까?",
+        "permanent": "영구 차단"
+      }
+    },
+    "performance": {
+      "cache": {
+        "title": "캐싱",
+        "enabled": "캐시 활성화",
+        "description": "정적 파일을 캐시하여 성능을 향상시킵니다"
+      },
+      "compression": {
+        "title": "압축",
+        "enabled": "압축 활성화",
+        "description": "응답을 압축하여 전송량을 줄입니다"
+      },
+      "timeout": {
+        "title": "타임아웃",
+        "connectTimeout": "연결 타임아웃",
+        "readTimeout": "읽기 타임아웃",
+        "sendTimeout": "전송 타임아웃"
+      }
+    },
+    "advanced": {
+      "config": {
+        "title": "사용자 정의 Nginx 설정",
+        "description": "사용자 정의 Nginx location 블록 설정",
+        "placeholder": "# 사용자 정의 설정을 입력하세요\nproxy_read_timeout 3600;\n",
+        "warning": "잘못된 설정은 프록시 호스트가 작동하지 않을 수 있습니다"
+      }
+    },
+    "waf": {
+      "title": "WAF (웹 방화벽)",
+      "enabled": "WAF 활성화",
+      "description": "ModSecurity 웹 방화벽을 활성화합니다",
+      "mode": "모드",
+      "modeBlocking": "차단",
+      "modeBlockingDescription": "공격을 차단합니다",
+      "modeDetection": "탐지",
+      "modeDetectionDescription": "공격을 탐지하고 로그만 기록합니다",
+      "paranoiaLevel": "민감도 수준",
+      "paranoiaLevelDescription": "높을수록 더 민감하게 탐지합니다 (1-4)",
+      "anomalyThreshold": "이상 임계값",
+      "anomalyThresholdDescription": "차단하기 위한 최소 점수"
+    }
+  },
+  "help": {
+    "domainNames": "방문자가 접속할 웹 주소(예: blog.mysite.com)를 입력합니다. 엔터를 눌러 여러 개를 추가할 수 있으며, *.mysite.com과 같은 와일드카드도 지원합니다.",
+    "forwardHost": "실제 서비스가 실행 중인 내부 서버의 IP 또는 컨테이너 이름입니다. 같은 도커 네트워크에 있다면 '컨테이너 이름'을 입력하는 것이 가장 좋습니다.",
+    "forwardScheme": "내부 서비스와 통신할 때 사용할 프로토콜입니다. 대부분 'http'이지만, 내부 서비스가 자체 SSL을 사용한다면 'https'를 선택하세요.",
+    "forwardPort": "내부 서비스가 사용 중인 포트 번호입니다. 예를 들어 웹 서버는 보통 80, node.js 앱은 3000 등을 사용합니다.",
+    "websocket": "실시간 채팅이나 알림 기능이 있는 앱(Signal, Socket.io 등)을 사용한다면 반드시 켜야 합니다.",
+    "ssl": {
+      "enabled": "SSL/TLS 암호화를 활성화하여 데이터를 안전하게 전송합니다.",
+      "forceHttps": "사용자가 http://로 접속해도 자동으로 안전한 https://로 이동시킵니다. 보안을 위해 항상 켜두는 것이 좋습니다.",
+      "http2": "더 빠른 웹 로딩을 위한 최신 프로토콜입니다. 대부분의 경우 켜두는 것이 성능에 좋습니다.",
+      "http3": "QUIC 기반의 차세대 프로토콜로, 모바일 환경이나 불안정한 네트워크에서 더 빠릅니다. UDP 443 포트가 열려있어야 합니다.",
+      "hsts": "웹 브라우저에게 '이 사이트는 무조건 HTTPS로만 접속해'라고 알리는 보안 기능입니다. 보안성은 높지만 실수로 설정하면 접속이 안 될 수 있으니 주의하세요."
+    },
+    "security": {
+      "priorityAllowIPs": "특정 IP나 대역을 차단 목록(GeoIP, Bot Filter 등)에서 제외합니다. 내부 모니터링 서버나 신뢰할 수 있는 파트너의 IP를 입력하세요.",
+      "blockExploits": "SQL 인젝션이나 XSS 같은 널리 알려진 해킹 시도를 기본적으로 차단합니다.",
+      "blockExploitsExceptions": "취약점 차단을 우회해야 하는 URL 패턴을 추가합니다. WordPress oEmbed나 웹훅처럼 URL을 파라미터로 전달하는 API에 유용합니다.",
+      "waf": "웹 방화벽(WAF)은 사이트를 지키는 가장 강력한 방패입니다. ModSecurity 엔진을 사용하여 지능적인 공격을 막아냅니다.",
+      "botFilter": "구글 같은 검색엔진은 허용하고, 정보를 훔쳐가는 나쁜 로봇(크롤러)이나 스패머는 차단합니다.",
+      "geoip": "특정 국가에서의 접속을 막거나, 반대로 우리나라에서만 접속되게 할 수 있습니다.",
+      "cloudProvider": "AWS, Azure, GCP 등 클라우드 서비스의 IP 대역을 차단합니다. 스팸봇이나 스크래퍼가 클라우드 서버에서 오는 경우 유용하지만, 정상적인 VPN 사용자도 차단될 수 있으니 주의하세요.",
+      "cloudProviderChallenge": "챌린지 모드를 활성화하면 클라우드 IP에서 오는 트래픽을 완전히 차단하는 대신 CAPTCHA 인증을 요구합니다. 정상 사용자는 인증 후 접속할 수 있고, 봇은 차단됩니다."
+    },
+    "protection": {
+      "rateLimit": "한 사람이 너무 빨리 새로고침을 하거나 공격을 시도할 때, 잠시 접속을 막는 기능입니다. '버스트(Burst)'는 봐줄 수 있는 최대 횟수입니다.",
+      "fail2ban": "로그인을 계속 틀리거나 비정상적인 행동을 반복하면 해당 IP를 자동으로 차단하여 무차별 대입 공격을 막습니다.",
+      "securityHeaders": "브라우저 보안 기능을 활성화하는 '꼬리표'를 붙여줍니다. 사이트가 다른 곳에 납치되거나(클릭재킹) 가짜 스크립트가 실행되는 것을 막습니다.",
+      "securityHeadersDetail": {
+        "hsts": "HSTS는 브라우저에게 '이 사이트는 반드시 HTTPS로만 접속해'라고 알립니다. 한번 설정되면 브라우저가 이를 기억합니다. 주의: 나중에 SSL을 끄면 HSTS 캐시가 만료될 때까지 방문자가 사이트에 접속하지 못할 수 있습니다.",
+        "includeSubdomains": "HSTS를 모든 하위 도메인(예: api.example.com, blog.example.com)에도 적용합니다. 모든 하위 도메인이 HTTPS를 지원할 때만 활성화하세요.",
+        "xFrameOptions": "다른 사이트에서 iframe으로 귀하의 사이트를 삽입하는 것을 방지합니다 (클릭재킹 방지).\n• DENY: 모든 프레임 삽입 차단\n• SAMEORIGIN: 같은 도메인에서만 프레임 삽입 허용",
+        "referrerPolicy": "사용자가 외부 링크를 클릭할 때 얼마나 많은 URL 정보를 전달할지 제어합니다.\n• no-referrer: 아무것도 전송 안함 (가장 안전)\n• strict-origin: HTTPS에서 도메인 이름만 전송\n• strict-origin-when-cross-origin: 같은 사이트는 전체 URL, 외부는 도메인만 (권장)",
+        "xContentType": "브라우저가 파일 유형을 추측(MIME 스니핑)하는 것을 방지합니다. 악성 파일이 이미지 등 무해한 파일로 위장되는 공격을 막아줍니다.",
+        "xssProtection": "브라우저에 내장된 XSS(크로스 사이트 스크립팅) 필터를 활성화합니다. 참고: 최신 브라우저에서는 Content-Security-Policy로 대체되었지만, 이전 브라우저와의 호환성을 제공합니다."
+      }
+    },
+    "performance": {
+      "websocket": "웹소켓 연결(Upgrade 헤더)을 허용하여 실시간 통신을 지원합니다.",
+      "cache": "이미지나 CSS 같은 파일들을 잠시 저장해두었다가, 다음 방문 때 빠르게 보여주는 기능입니다.",
+      "compression": "데이터를 압축해서 전송합니다. 인터넷 데이터를 아끼고 속도도 빨라집니다."
+    },
+    "advanced": {
+      "customConfig": "Nginx 설정을 직접 작성할 수 있는 전문가용 기능입니다. location / { ... } 블록 안에 들어갈 내용을 입력하세요."
+    }
+  },
+  "actions": {
+    "enable": "활성화",
+    "disable": "비활성화",
+    "enableConfirmTitle": "프록시 호스트 활성화",
+    "enableConfirmMessage": "{{domain}} 프록시 호스트를 활성화하시겠습니까?",
+    "disableConfirmTitle": "프록시 호스트 비활성화",
+    "disableConfirmMessage": "{{domain}} 프록시 호스트를 비활성화하시겠습니까? 해당 도메인으로의 트래픽이 중단됩니다.",
+    "delete": "삭제",
+    "deleteConfirm": "이 프록시 호스트를 삭제하시겠습니까?",
+    "deleteWarning": "이 작업은 취소할 수 없습니다",
+    "duplicate": "복제",
+    "viewLogs": "로그 보기",
+    "testConnection": "연결 테스트",
+    "testConfig": "설정 테스트",
+    "edit": "수정",
+    "toggleEnable": "활성화/비활성화 전환"
+  },
+  "test": {
+    "title": "설정 테스트",
+    "retest": "재테스트",
+    "testing": "설정 테스트 중...",
+    "passed": "테스트 통과",
+    "failed": "테스트 실패",
+    "responseTime": "응답 시간",
+    "statusCode": "상태 코드",
+    "protocol": "프로토콜",
+    "ssl": "SSL",
+    "featureVerification": "기능 검증",
+    "testedAt": "테스트 시간",
+    "valid": "유효함",
+    "invalid": "유효하지 않음",
+    "disabled": "비활성",
+    "notDetected": "감지되지 않음",
+    "sslNotEnabled": "이 호스트에 SSL이 활성화되지 않았습니다",
+    "validCert": "유효한 SSL 인증서",
+    "invalidCert": "유효하지 않은 SSL 인증서",
+    "tabs": {
+      "summary": "요약",
+      "ssl": "SSL/TLS",
+      "http": "HTTP",
+      "cache": "캐시",
+      "security": "보안",
+      "headers": "헤더"
+    },
+    "sslDetails": {
+      "protocol": "프로토콜",
+      "cipherSuite": "암호화 제품군",
+      "subject": "대상 (Subject)",
+      "issuer": "발급자 (Issuer)",
+      "validFrom": "유효 시작일",
+      "validUntil": "유효 만료일",
+      "daysRemaining": "남은 일수"
+    },
+    "http": {
+      "protocolInfo": "프로토콜 정보",
+      "detectedProtocol": "감지된 프로토콜",
+      "versionSupport": "HTTP 버전 지원",
+      "multiplexing": "멀티플렉싱, 헤더 압축",
+      "quic": "UDP 기반, 0-RTT 연결",
+      "altSvc": "Alt-Svc 헤더",
+      "altSvcDesc": "이 헤더는 호환되는 브라우저에 HTTP/3 지원을 알립니다"
+    },
+    "cache": {
+      "status": "캐시 상태",
+      "noStatus": "캐시 상태 없음",
+      "enabled": "캐싱이 활성화되었습니다",
+      "disabled": "캐싱이 비활성화되었습니다",
+      "headers": "캐시 헤더",
+      "legend": "캐시 상태 범례",
+      "hit": "캐시에서 제공됨",
+      "miss": "캐시에 없음, 원본에서 가져옴",
+      "expired": "캐시 만료됨, 재검증",
+      "bypass": "캐시 우회"
+    },
+    "security": {
+      "score": "보안 헤더 점수",
+      "serverExposed": "Server 헤더 노출됨",
+      "hideServer": "정보 노출을 줄이기 위해 이 헤더를 숨기는 것을 고려하세요",
+      "headers": "보안 헤더",
+      "desc": {
+        "hsts": "HTTPS 연결 강제",
+        "xframe": "클릭재킹 방지",
+        "xcontent": "MIME 스니핑 방지",
+        "xxss": "XSS 필터 (레거시)",
+        "referrer": "리퍼러 정보 제어",
+        "permissions": "브라우저 기능 제어",
+        "csp": "리소스 로딩 제어"
+      }
+    },
+    "headers": {
+      "response": "응답 헤더",
+      "count": "개 헤더",
+      "none": "캡처된 헤더 없음"
+    }
+  },
+  "messages": {
+    "createSuccess": "프록시 호스트가 생성되었습니다",
+    "createFailed": "프록시 호스트 생성에 실패했습니다",
+    "updateSuccess": "프록시 호스트가 업데이트되었습니다",
+    "updateFailed": "프록시 호스트 업데이트에 실패했습니다",
+    "deleteSuccess": "프록시 호스트가 삭제되었습니다",
+    "deleteFailed": "프록시 호스트 삭제에 실패했습니다",
+    "enableSuccess": "프록시 호스트가 활성화되었습니다",
+    "disableSuccess": "프록시 호스트가 비활성화되었습니다"
+  },
+  "validation": {
+    "domainRequired": "도메인이 필요합니다",
+    "domainAtLeastOne": "적어도 하나의 도메인이 필요합니다",
+    "hostRequired": "포워드 호스트가 필요합니다",
+    "portRequired": "포트가 필요합니다",
+    "portRange": "포트는 1-65535 사이여야 합니다",
+    "certificateRequired": "SSL을 사용하려면 인증서를 선택하세요",
+    "certSelectionRequired": "인증서를 선택하거나 \"새 인증서 생성\"으로 전환하세요",
+    "addDomainsBeforeCert": "인증서를 생성하려면 먼저 도메인을 추가하세요"
+  }
+}

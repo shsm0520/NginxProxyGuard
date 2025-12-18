@@ -1,0 +1,265 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY: docker.io
+  IMAGE_PREFIX: svrforum/nginxproxyguard
+
+jobs:
+  # Detect which components have changes since the last tag
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.changes.outputs.api }}
+      ui: ${{ steps.changes.outputs.ui }}
+      nginx: ${{ steps.changes.outputs.nginx }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get previous tag
+        id: prev_tag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+          echo "Previous tag: $PREV_TAG"
+
+      - name: Detect changed components
+        id: changes
+        run: |
+          PREV_TAG="${{ steps.prev_tag.outputs.prev_tag }}"
+
+          if [ -z "$PREV_TAG" ]; then
+            # First release - build all
+            echo "api=true" >> $GITHUB_OUTPUT
+            echo "ui=true" >> $GITHUB_OUTPUT
+            echo "nginx=true" >> $GITHUB_OUTPUT
+            echo "First release - building all components"
+          else
+            # Check each component for changes
+            if git diff --name-only $PREV_TAG HEAD | grep -q "^api/"; then
+              echo "api=true" >> $GITHUB_OUTPUT
+              echo "API has changes"
+            else
+              echo "api=false" >> $GITHUB_OUTPUT
+              echo "API unchanged"
+            fi
+
+            if git diff --name-only $PREV_TAG HEAD | grep -q "^ui/"; then
+              echo "ui=true" >> $GITHUB_OUTPUT
+              echo "UI has changes"
+            else
+              echo "ui=false" >> $GITHUB_OUTPUT
+              echo "UI unchanged"
+            fi
+
+            if git diff --name-only $PREV_TAG HEAD | grep -q "^nginx/"; then
+              echo "nginx=true" >> $GITHUB_OUTPUT
+              echo "Nginx has changes"
+            else
+              echo "nginx=false" >> $GITHUB_OUTPUT
+              echo "Nginx unchanged"
+            fi
+          fi
+
+  # Build API (only if changed)
+  build-api:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push API
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-api:${{ needs.detect-changes.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}-api:latest
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+  # Build UI (only if changed)
+  build-ui:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ui == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push UI
+        uses: docker/build-push-action@v6
+        with:
+          context: ./ui
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-ui:${{ needs.detect-changes.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}-ui:latest
+          cache-from: type=gha,scope=ui
+          cache-to: type=gha,mode=max,scope=ui
+
+  # Build Nginx (only if changed)
+  build-nginx:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.nginx == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Nginx
+        uses: docker/build-push-action@v6
+        with:
+          context: ./nginx
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-nginx:${{ needs.detect-changes.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}-nginx:latest
+          cache-from: type=gha,scope=nginx
+          cache-to: type=gha,mode=max,scope=nginx
+
+  # Create GitHub Release (always runs)
+  create-release:
+    needs: [detect-changes, build-api, build-ui, build-nginx]
+    if: always() && needs.detect-changes.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --pretty=format:"- %s" $PREV_TAG..HEAD)
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s" -20)
+          fi
+
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Generate build summary
+        id: summary
+        run: |
+          SUMMARY=""
+          if [ "${{ needs.detect-changes.outputs.api }}" == "true" ]; then
+            SUMMARY="${SUMMARY}- ✅ API rebuilt\n"
+          else
+            SUMMARY="${SUMMARY}- ⏭️ API skipped (no changes)\n"
+          fi
+          if [ "${{ needs.detect-changes.outputs.ui }}" == "true" ]; then
+            SUMMARY="${SUMMARY}- ✅ UI rebuilt\n"
+          else
+            SUMMARY="${SUMMARY}- ⏭️ UI skipped (no changes)\n"
+          fi
+          if [ "${{ needs.detect-changes.outputs.nginx }}" == "true" ]; then
+            SUMMARY="${SUMMARY}- ✅ Nginx rebuilt\n"
+          else
+            SUMMARY="${SUMMARY}- ⏭️ Nginx skipped (no changes)\n"
+          fi
+
+          echo "summary<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$SUMMARY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: v${{ needs.detect-changes.outputs.version }}
+          body: |
+            ## Docker Images
+
+            ```bash
+            docker pull svrforum/nginxproxyguard-api:${{ needs.detect-changes.outputs.version }}
+            docker pull svrforum/nginxproxyguard-ui:${{ needs.detect-changes.outputs.version }}
+            docker pull svrforum/nginxproxyguard-nginx:${{ needs.detect-changes.outputs.version }}
+            ```
+
+            ## Build Summary
+
+            ${{ steps.summary.outputs.summary }}
+
+            ## Changes
+
+            ${{ steps.changelog.outputs.changelog }}
+
+            ## Installation
+
+            ```bash
+            curl -O https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yml
+
+            cat > .env << 'EOF'
+            TZ=Asia/Seoul
+            JWT_SECRET=$(openssl rand -hex 32)
+            DB_PASSWORD=$(openssl rand -hex 16)
+            EOF
+
+            docker compose up -d
+            ```
+          draft: false
+          prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') || contains(github.ref, '-alpha') }}
+          generate_release_notes: true

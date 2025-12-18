@@ -1,0 +1,73 @@
+{
+  "title": "Dashboard",
+  "actions": {
+    "selfCheck": "Self Check",
+    "refresh": "Refresh"
+  },
+  "status": {
+    "systemStatus": "System Status: {{status}}",
+    "healthy": "Healthy",
+    "unhealthy": "Unhealthy"
+  },
+  "hostResources": {
+    "title": "Host System Resources",
+    "memory": "Memory",
+    "disk": "Disk",
+    "uptime": "Uptime",
+    "network": "Network I/O",
+    "networkIn": "Download",
+    "networkOut": "Upload",
+    "history": "Resource History (Last 1 Hour)",
+    "networkHistory": "Network I/O History (Last 1 Hour)",
+    "showCharts": "Charts",
+    "hideCharts": "Hide",
+    "noData": "No history data available yet. Data is collected every 30 seconds.",
+    "timeRange": "Time Range"
+  },
+  "containers": {
+    "title": "Docker Containers",
+    "running": "{{healthy}} / {{total}} running",
+    "cpu": "CPU",
+    "memory": "Memory",
+    "networkIo": "Network I/O",
+    "blockIo": "Block I/O",
+    "totalCpu": "Total CPU",
+    "totalMemory": "Total Memory"
+  },
+  "stats": {
+    "blockedRequests": "Blocked Requests",
+    "customBlocked": "Custom Rule Blocked",
+    "blockedIps": "Blocked Unique IPs",
+    "last24h": "Last 24 hours",
+    "requests": "Requests",
+    "bandwidth": "Bandwidth",
+    "avgResponseTime": "Avg Response Time",
+    "errorRate": "Error Rate"
+  },
+  "security": {
+    "title": "Security (24h)",
+    "wafBlocked": "WAF Blocked",
+    "rateLimited": "Rate Limited",
+    "botsBlocked": "Bots Blocked",
+    "bannedIps": "Banned IPs"
+  },
+  "hosts": {
+    "title": "Hosts Overview",
+    "proxyHosts": "Proxy Hosts",
+    "redirectHosts": "Redirect Hosts",
+    "certificates": "Certificates",
+    "expiringSoon": "Expiring Soon"
+  },
+  "topLists": {
+    "hostsTitle": "Top Hosts (24h)",
+    "ipsTitle": "Top IPs (24h)",
+    "userAgentsTitle": "Top User Agents (24h)",
+    "noData": "No traffic data yet"
+  },
+  "geo": {
+    "title": "Global Traffic (24h)",
+    "subtitle": "Traffic by region",
+    "topCountries": "Top Countries (24h)",
+    "total": "Total: {{count}} requests"
+  }
+}

@@ -1,0 +1,52 @@
+{
+    "title": "접근 목록 (IP 허용/차단)",
+    "actions": {
+        "add": "접근 목록 추가",
+        "edit": "편집",
+        "delete": "삭제",
+        "cancel": "취소",
+        "update": "업데이트",
+        "create": "생성",
+        "save": "저장 중...",
+        "addRule": "규칙 추가"
+    },
+    "form": {
+        "newTitle": "새 접근 목록",
+        "editTitle": "접근 목록 편집",
+        "name": "이름",
+        "namePlaceholder": "예: 사무실 IP",
+        "description": "설명",
+        "descriptionPlaceholder": "설명 (선택 사항)",
+        "satisfyAny": "조건 완화 (OR 로직)",
+        "passAuth": "인증 헤더 전달",
+        "accessRules": "접근 규칙",
+        "ipPlaceholder": "IP 주소 또는 CIDR (예: 192.168.1.0/24)",
+        "ruleDescription": "설명 (선택)",
+        "allow": "허용",
+        "deny": "차단"
+    },
+    "list": {
+        "name": "이름",
+        "rules": "규칙",
+        "options": "옵션",
+        "actions": "작업",
+        "empty": "구성된 접근 목록이 없습니다. IP 기반 접근 제어를 관리하려면 목록을 생성하세요.",
+        "rulesCount": "{{count}}개 규칙",
+        "expand": "[+]",
+        "collapse": "[-]",
+        "statisfyAny": "조건 완화",
+        "passAuth": "인증 전달"
+    },
+    "messages": {
+        "deleteConfirm": "이 접근 목록을 삭제하시겠습니까?",
+        "loadError": "접근 목록을 불러오는데 실패했습니다",
+        "saveError": "접근 목록 저장 실패"
+    },
+    "help": {
+        "name": "접근 목록의 이름을 입력하세요.",
+        "description": "이 접근 목록에 대한 설명을 입력하세요.",
+        "satisfyAny": "활성화시, 하위 규칙 중 하나라도 만족하면 접근이 허용됩니다 (OR 로직). 비활성화시 기본적으로 모든 규칙이 검사됩니다.",
+        "passAuth": "Basic 인증 헤더를 업스트림 서버로 전달합니다.",
+        "accessRules": "허용 또는 차단할 IP 대역과 규칙을 정의합니다."
+    }
+}

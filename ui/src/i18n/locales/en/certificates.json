@@ -1,0 +1,252 @@
+{
+  "title": "Certificates",
+  "subtitle": "SSL/TLS Certificate Management",
+  "certStatuses": {
+    "pending": "Pending",
+    "issued": "Issued",
+    "expired": "Expired",
+    "error": "Error",
+    "renewing": "Renewing"
+  },
+  "certProviders": {
+    "letsencrypt": "Let's Encrypt",
+    "selfsigned": "Self-signed",
+    "custom": "Custom"
+  },
+  "list": {
+    "title": "Certificate List",
+    "actionNew": "New Certificate",
+    "domains": "Domains",
+    "status": "Status",
+    "provider": "Provider",
+    "expires": "Expires",
+    "daysLeft": "Days Left",
+    "actions": "Actions",
+    "empty": "No certificates found. Create one to get started.",
+    "more": "+{{count}} more",
+    "error": "Error",
+    "days": "{{count}} days",
+    "view": "View",
+    "renew": "Renew",
+    "delete": "Delete"
+  },
+  "form": {
+    "title": "New Certificate",
+    "provider": "Certificate Provider",
+    "providers": {
+      "selfSigned": "Self-signed",
+      "selfSignedDesc": "Development/Testing",
+      "letsEncrypt": "Let's Encrypt",
+      "letsEncryptDesc": "Free SSL (Recommended)",
+      "custom": "Custom Upload",
+      "customDesc": "Existing Certificate"
+    },
+    "domains": "Domain Names",
+    "domainsPlaceholder": "example.com\n*.example.com",
+    "domainsHint": "One per line or comma separated. Wildcard (*.domain.com) requires Let's Encrypt + DNS verification.",
+    "letsEncryptSettings": "Let's Encrypt Settings",
+    "verificationMethod": "Verification Method",
+    "methods": {
+      "http": "HTTP-01 (Port 80)",
+      "httpDesc": "Requires Port 80 open",
+      "dns": "DNS-01 (API)",
+      "dnsDesc": "Supports wildcard certificates"
+    },
+    "dnsProvider": "DNS Provider",
+    "selectDnsProvider": "Select DNS Provider",
+    "noDnsProvider": "No DNS Provider found. Please add a DNS Provider first.",
+    "httpChallengeInfo": "HTTP-01 Challenge: Domain must point to this server (Port 80). Wildcard certificates are not supported.",
+    "autoRenew": "Auto Renew before expiration",
+    "selfSignedSettings": "Self-signed Settings",
+    "validityPeriod": "Validity Period",
+    "daysOption": "{{count}} days",
+    "yearOption": "{{count}} year",
+    "yearsOption": "{{count}} years",
+    "uploadTitle": "Upload Certificates",
+    "certPem": "Certificate (PEM)",
+    "privateKey": "Private Key (PEM)",
+    "issuerPem": "Issuer Certificate (PEM, Optional)",
+    "issuerHint": "Include intermediate certificate if a chain is required.",
+    "cancel": "Cancel",
+    "create": "Create Certificate",
+    "errors": {
+      "create": "Failed to create certificate",
+      "upload": "Failed to upload certificate",
+      "domainRequired": "At least one domain is required",
+      "certKeyRequired": "Certificate and private key are required"
+    }
+  },
+  "detail": {
+    "title": "Certificate Details",
+    "errorLoad": "Error loading certificate details",
+    "autoRenew": "Auto-renew",
+    "domains": "Domains",
+    "issuedAt": "Issued At",
+    "expiresAt": "Expires At",
+    "timeUntilExpiry": "Time Until Expiry",
+    "needsRenewal": "Certificate needs renewal soon",
+    "dnsProvider": "DNS Provider",
+    "files": "Certificate Files",
+    "id": "ID",
+    "created": "Created",
+    "close": "Close"
+  },
+  "messages": {
+    "deleteConfirm": "Are you sure you want to delete this certificate?",
+    "loadError": "Error loading certificates",
+    "createSuccess": "Certificate request submitted",
+    "createFailed": "Failed to request certificate",
+    "renewSuccess": "Certificate renewal started",
+    "renewFailed": "Failed to renew certificate",
+    "deleteSuccess": "Certificate deleted",
+    "deleteFailed": "Failed to delete certificate"
+  },
+  "dnsProviders": {
+    "title": "DNS Providers",
+    "addProvider": "Add DNS Provider",
+    "editProvider": "Edit DNS Provider",
+    "deleteProvider": "Delete DNS Provider",
+    "name": "Name",
+    "type": "Type",
+    "types": {
+      "cloudflare": "Cloudflare",
+      "route53": "AWS Route 53",
+      "manual": "Manual"
+    },
+    "default": "Default",
+    "configured": "Configured",
+    "notConfigured": "Not Configured",
+    "credentials": "Credentials",
+    "test": "Test Connection",
+    "actions": "Actions",
+    "empty": "No DNS providers configured. Add one to enable Let's Encrypt certificates.",
+    "add": "Add Provider",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete this DNS provider?",
+    "form": {
+      "addTitle": "Add DNS Provider",
+      "editTitle": "Edit DNS Provider",
+      "providerName": "Provider Name",
+      "providerNamePlaceholder": "My Cloudflare Account",
+      "providerType": "Provider Type",
+      "setDefault": "Set as Default",
+      "setDefaultDesc": "Used as default when creating new certificates",
+      "cancel": "Cancel",
+      "create": "Create",
+      "update": "Update",
+      "manual": {
+        "title": "Manual DNS Challenge",
+        "desc": "You verify domain ownership by manually adding DNS TXT records. Suitable for unsupported providers."
+      },
+      "cloudflare": {
+        "title": "Cloudflare Credentials",
+        "apiToken": "API Token (Recommended)",
+        "apiTokenPlaceholder": "Enter Cloudflare API Token",
+        "apiTokenHelp": "Create an API Token with Zone:DNS:Edit permissions.",
+        "orGlobalKey": "Or use Global API Key (Legacy)",
+        "apiKey": "API Key",
+        "email": "Email",
+        "zoneId": "Zone ID (Optional)",
+        "zoneIdPlaceholder": "Leave empty for auto-detect"
+      },
+      "route53": {
+        "title": "AWS Credentials",
+        "accessKeyId": "Access Key ID",
+        "secretAccessKey": "Secret Access Key",
+        "region": "Region",
+        "hostedZoneId": "Hosted Zone ID (Optional)"
+      },
+      "test": {
+        "button": "Test Connection",
+        "testing": "Testing...",
+        "success": "Connection test successful!",
+        "failed": "Connection test failed. Please check your credentials."
+      },
+      "errors": {
+        "nameRequired": "Name is required",
+        "createFailed": "Failed to create DNS provider",
+        "updateFailed": "Failed to update DNS provider"
+      }
+    }
+  },
+  "providers": {
+    "cloudflare": "Cloudflare",
+    "route53": "Amazon Route 53",
+    "godaddy": "GoDaddy",
+    "digitalocean": "DigitalOcean",
+    "namecheap": "Namecheap",
+    "gandi": "Gandi",
+    "ovh": "OVH",
+    "custom": "Custom"
+  },
+  "fields": {
+    "apiKey": "API Key",
+    "apiToken": "API Token",
+    "apiSecret": "API Secret",
+    "email": "Email",
+    "accessKeyId": "Access Key ID",
+    "secretAccessKey": "Secret Access Key",
+    "region": "Region"
+  },
+  "validation": {
+    "domainRequired": "At least one domain is required",
+    "invalidDomain": "Please enter a valid domain",
+    "providerRequired": "Please select a DNS provider",
+    "certificateRequired": "Please enter the certificate",
+    "privateKeyRequired": "Please enter the private key",
+    "invalidCertificate": "Invalid certificate format",
+    "invalidPrivateKey": "Invalid private key format"
+  },
+  "help": {
+    "provider": "Select the type of certificate to issue.",
+    "domains": "Enter the domains to issue the certificate for.",
+    "verificationMethod": "Choose the domain ownership verification method. Wildcard domains satisfy DNS method.",
+    "dnsProvider": "Select the DNS provider to perform the DNS challenge.",
+    "autoRenew": "Automatically renew the certificate when it nears expiration.",
+    "validityPeriod": "Set the validity period for the self-signed certificate."
+  },
+  "status": {
+    "pending": "In Progress",
+    "issued": "Issued",
+    "error": "Error",
+    "expired": "Expired",
+    "renewing": "Renewing"
+  },
+  "issuance": {
+    "title": "Certificate Issuance",
+    "subtitle": "Real-time progress log",
+    "waiting": "Waiting for logs...",
+    "processing": "Processing...",
+    "completed": "Certificate issuance completed",
+    "inProgress": "Certificate issuance in progress...",
+    "pleaseWait": "Please wait..."
+  },
+  "renewal": {
+    "title": "Certificate Renewal",
+    "subtitle": "Real-time renewal log",
+    "completed": "Certificate renewal completed",
+    "inProgress": "Certificate renewal in progress..."
+  },
+  "history": {
+    "title": "Certificate History",
+    "domains": "Domains",
+    "action": "Action",
+    "provider": "Provider",
+    "date": "Date",
+    "message": "Message",
+    "viewLogs": "View Logs",
+    "empty": "No certificate history found",
+    "issued": "Issued",
+    "renewed": "Renewed",
+    "expired": "Expired",
+    "error": "Error",
+    "logTitle": "Operation Log",
+    "noLogs": "No detailed logs available"
+  },
+  "tabs": {
+    "list": "Certificate List",
+    "history": "Issuance/Renewal History",
+    "dnsProviders": "DNS Providers"
+  }
+}

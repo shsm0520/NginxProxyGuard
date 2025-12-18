@@ -1,0 +1,1615 @@
+openapi: 3.0.3
+info:
+  title: Nginx Proxy Guard API
+  description: |
+    Nginx Proxy Guard API Documentation
+
+    A modern reverse proxy management system with enterprise-grade security features.
+
+    ## Authentication
+
+    All endpoints except `/api/v1/auth/login` require authentication via:
+    - **JWT Bearer Token**: `Authorization: Bearer <jwt_token>`
+    - **API Token**: `Authorization: Bearer ng_<api_token>`
+
+    ## Rate Limiting
+
+    API requests are rate limited. Check response headers for limits:
+    - `X-RateLimit-Limit`: Maximum requests per window
+    - `X-RateLimit-Remaining`: Remaining requests
+    - `X-RateLimit-Reset`: Window reset time
+
+  version: 1.0.0
+  contact:
+    name: Nginx Proxy Guard Support
+    url: https://github.com/dalso0418/nginx_guard
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+tags:
+  - name: Auth
+    description: Authentication and user management
+  - name: Proxy Hosts
+    description: Reverse proxy host management
+  - name: Certificates
+    description: SSL/TLS certificate management
+  - name: Security
+    description: Security features (Rate Limit, Bot Filter, Headers, etc.)
+  - name: WAF
+    description: Web Application Firewall management
+  - name: GeoIP
+    description: Geographic IP restrictions
+  - name: Settings
+    description: Global settings and dashboard
+  - name: Backups
+    description: Backup and restore operations
+  - name: Logs
+    description: System and audit logs
+  - name: API Tokens
+    description: API token management
+
+paths:
+  # ============================================================================
+  # Authentication
+  # ============================================================================
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      description: Authenticate user and get JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  example: admin
+                password:
+                  type: string
+                  format: password
+                  example: admin
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT access token
+                  expires_at:
+                    type: string
+                    format: date-time
+                  requires_2fa:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout
+      description: Invalidate current session
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Change password
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password:
+                  type: string
+                new_password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password changed
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # ============================================================================
+  # Proxy Hosts
+  # ============================================================================
+  /proxy-hosts:
+    get:
+      tags: [Proxy Hosts]
+      summary: List proxy hosts
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of proxy hosts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProxyHost'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+
+    post:
+      tags: [Proxy Hosts]
+      summary: Create proxy host
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProxyHost'
+      responses:
+        '201':
+          description: Proxy host created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProxyHost'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /proxy-hosts/{id}:
+    get:
+      tags: [Proxy Hosts]
+      summary: Get proxy host by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      responses:
+        '200':
+          description: Proxy host details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProxyHost'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Proxy Hosts]
+      summary: Update proxy host
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProxyHost'
+      responses:
+        '200':
+          description: Proxy host updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProxyHost'
+
+    delete:
+      tags: [Proxy Hosts]
+      summary: Delete proxy host
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      responses:
+        '204':
+          description: Proxy host deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ============================================================================
+  # Security Features (Per Proxy Host)
+  # ============================================================================
+  /proxy-hosts/{id}/rate-limit:
+    get:
+      tags: [Security]
+      summary: Get rate limit config
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      responses:
+        '200':
+          description: Rate limit configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimit'
+
+    put:
+      tags: [Security]
+      summary: Update rate limit config
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RateLimit'
+      responses:
+        '200':
+          description: Rate limit updated
+
+  /proxy-hosts/{id}/bot-filter:
+    get:
+      tags: [Security]
+      summary: Get bot filter config
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      responses:
+        '200':
+          description: Bot filter configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotFilter'
+
+    put:
+      tags: [Security]
+      summary: Update bot filter config
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BotFilter'
+      responses:
+        '200':
+          description: Bot filter updated
+
+  /proxy-hosts/{id}/security-headers:
+    get:
+      tags: [Security]
+      summary: Get security headers config
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      responses:
+        '200':
+          description: Security headers configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityHeaders'
+
+    put:
+      tags: [Security]
+      summary: Update security headers
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecurityHeaders'
+      responses:
+        '200':
+          description: Security headers updated
+
+  /proxy-hosts/{id}/geo:
+    get:
+      tags: [GeoIP]
+      summary: Get geo restriction config
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      responses:
+        '200':
+          description: Geo restriction configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoRestriction'
+
+    post:
+      tags: [GeoIP]
+      summary: Create geo restriction
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeoRestriction'
+      responses:
+        '200':
+          description: Geo restriction created
+
+    put:
+      tags: [GeoIP]
+      summary: Update geo restriction
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeoRestriction'
+      responses:
+        '200':
+          description: Geo restriction updated
+
+    delete:
+      tags: [GeoIP]
+      summary: Delete geo restriction
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      responses:
+        '204':
+          description: Geo restriction deleted
+
+  /proxy-hosts/{id}/upstream:
+    get:
+      tags: [Security]
+      summary: Get upstream/load balancing config
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      responses:
+        '200':
+          description: Upstream configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Upstream'
+
+    put:
+      tags: [Security]
+      summary: Update upstream config
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Upstream'
+      responses:
+        '200':
+          description: Upstream updated
+
+  # ============================================================================
+  # Certificates
+  # ============================================================================
+  /certificates:
+    get:
+      tags: [Certificates]
+      summary: List certificates
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of certificates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Certificate'
+
+    post:
+      tags: [Certificates]
+      summary: Request new certificate
+      description: Request a new Let's Encrypt certificate
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [domains]
+              properties:
+                domains:
+                  type: array
+                  items:
+                    type: string
+                  example: ["example.com", "www.example.com"]
+                dns_provider_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Certificate requested
+
+  /certificates/{id}:
+    get:
+      tags: [Certificates]
+      summary: Get certificate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Certificate details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Certificate'
+
+    delete:
+      tags: [Certificates]
+      summary: Delete certificate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Certificate deleted
+
+  /certificates/{id}/renew:
+    post:
+      tags: [Certificates]
+      summary: Renew certificate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Certificate renewal initiated
+
+  # ============================================================================
+  # WAF
+  # ============================================================================
+  /waf/rules:
+    get:
+      tags: [WAF]
+      summary: List WAF rules
+      description: Get all OWASP CRS rules, optionally filtered by proxy host
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: proxy_host_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of WAF rules
+
+  /waf/hosts:
+    get:
+      tags: [WAF]
+      summary: Get WAF config for all hosts
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: WAF configurations
+
+  /waf/hosts/{id}/config:
+    get:
+      tags: [WAF]
+      summary: Get WAF config for specific host
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+      responses:
+        '200':
+          description: WAF configuration
+
+  /waf/hosts/{id}/rules/{ruleId}/disable:
+    post:
+      tags: [WAF]
+      summary: Disable WAF rule for host
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+        - name: ruleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Rule disabled
+
+    delete:
+      tags: [WAF]
+      summary: Enable WAF rule for host
+      description: Remove rule exclusion
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProxyHostId'
+        - name: ruleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Rule enabled
+
+  # ============================================================================
+  # Settings & Dashboard
+  # ============================================================================
+  /settings:
+    get:
+      tags: [Settings]
+      summary: Get global settings
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Global settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalSettings'
+
+    put:
+      tags: [Settings]
+      summary: Update global settings
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalSettings'
+      responses:
+        '200':
+          description: Settings updated
+
+  /dashboard:
+    get:
+      tags: [Settings]
+      summary: Get dashboard data
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+
+  /dashboard/health:
+    get:
+      tags: [Settings]
+      summary: Get system health
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: System health status
+
+  # ============================================================================
+  # Backups
+  # ============================================================================
+  /backups:
+    get:
+      tags: [Backups]
+      summary: List backups
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of backups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Backup'
+
+    post:
+      tags: [Backups]
+      summary: Create backup
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                includes_config:
+                  type: boolean
+                  default: true
+                includes_certificates:
+                  type: boolean
+                  default: true
+                includes_database:
+                  type: boolean
+                  default: true
+      responses:
+        '201':
+          description: Backup created
+
+  /backups/{id}:
+    get:
+      tags: [Backups]
+      summary: Get backup details
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Backup details
+
+    delete:
+      tags: [Backups]
+      summary: Delete backup
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Backup deleted
+
+  /backups/{id}/restore:
+    post:
+      tags: [Backups]
+      summary: Restore from backup
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Restore initiated
+
+  /backups/{id}/download:
+    get:
+      tags: [Backups]
+      summary: Download backup file
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Backup file
+          content:
+            application/gzip:
+              schema:
+                type: string
+                format: binary
+
+  # ============================================================================
+  # System Settings (GeoIP, ACME)
+  # ============================================================================
+  /system-settings:
+    get:
+      tags: [Settings]
+      summary: Get system settings
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: System settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettings'
+
+    put:
+      tags: [Settings]
+      summary: Update system settings
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemSettings'
+      responses:
+        '200':
+          description: Settings updated
+
+  /system-settings/geoip/status:
+    get:
+      tags: [GeoIP]
+      summary: Get GeoIP database status
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: GeoIP status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                  status:
+                    type: string
+                    enum: [active, inactive, updating, error]
+                  country_db:
+                    type: boolean
+                  asn_db:
+                    type: boolean
+                  last_updated:
+                    type: string
+                    format: date-time
+
+  /system-settings/geoip/update:
+    post:
+      tags: [GeoIP]
+      summary: Update GeoIP databases
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Update initiated
+
+  # ============================================================================
+  # Logs
+  # ============================================================================
+  /audit-logs:
+    get:
+      tags: [Logs]
+      summary: List audit logs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: resource_type
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Audit log entries
+
+  /system-logs:
+    get:
+      tags: [Logs]
+      summary: List system logs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: source
+          in: query
+          schema:
+            type: string
+        - name: level
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: System log entries
+
+  # ============================================================================
+  # API Tokens
+  # ============================================================================
+  /api-tokens:
+    get:
+      tags: [API Tokens]
+      summary: List API tokens
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of API tokens
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/APIToken'
+
+    post:
+      tags: [API Tokens]
+      summary: Create API token
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, permissions]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                permissions:
+                  type: array
+                  items:
+                    type: string
+                expires_at:
+                  type: string
+                  format: date-time
+                ip_restrictions:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Token created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: Full token (only shown once)
+                  api_token:
+                    $ref: '#/components/schemas/APIToken'
+
+  /api-tokens/{id}:
+    get:
+      tags: [API Tokens]
+      summary: Get API token
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Token details
+
+    put:
+      tags: [API Tokens]
+      summary: Update API token
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                permissions:
+                  type: array
+                  items:
+                    type: string
+                ip_restrictions:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Token updated
+
+    delete:
+      tags: [API Tokens]
+      summary: Delete API token
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Token deleted
+
+  /api-tokens/{id}/revoke:
+    post:
+      tags: [API Tokens]
+      summary: Revoke API token
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Token revoked
+
+  /geo/countries:
+    get:
+      tags: [GeoIP]
+      summary: Get country codes
+      description: Get list of available country codes for geo restriction
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Country codes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    code:
+                      type: string
+                    name:
+                      type: string
+
+  /banned-ips:
+    get:
+      tags: [Security]
+      summary: List banned IPs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: proxy_host_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of banned IPs
+
+    post:
+      tags: [Security]
+      summary: Ban IP address
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ip_address, reason]
+              properties:
+                ip_address:
+                  type: string
+                proxy_host_id:
+                  type: string
+                  format: uuid
+                reason:
+                  type: string
+                duration:
+                  type: integer
+                  description: Ban duration in seconds (0 = permanent)
+      responses:
+        '201':
+          description: IP banned
+
+  /banned-ips/{id}:
+    delete:
+      tags: [Security]
+      summary: Unban IP by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: IP unbanned
+
+# ============================================================================
+# Components
+# ============================================================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token or API token (ng_xxx)
+
+  parameters:
+    ProxyHostId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Proxy host UUID
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, user]
+        two_factor_enabled:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    ProxyHost:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        domain_names:
+          type: array
+          items:
+            type: string
+        forward_scheme:
+          type: string
+          enum: [http, https]
+        forward_host:
+          type: string
+        forward_port:
+          type: integer
+        enabled:
+          type: boolean
+        ssl_enabled:
+          type: boolean
+        ssl_force:
+          type: boolean
+        ssl_http3:
+          type: boolean
+        waf_enabled:
+          type: boolean
+        waf_mode:
+          type: string
+          enum: [detection, blocking]
+        block_exploits:
+          type: boolean
+        websocket_support:
+          type: boolean
+        caching_enabled:
+          type: boolean
+        certificate_id:
+          type: string
+          format: uuid
+        access_list_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateProxyHost:
+      type: object
+      required: [domain_names, forward_host, forward_port]
+      properties:
+        domain_names:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        forward_scheme:
+          type: string
+          enum: [http, https]
+          default: http
+        forward_host:
+          type: string
+        forward_port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        enabled:
+          type: boolean
+          default: true
+        ssl_enabled:
+          type: boolean
+          default: false
+        waf_enabled:
+          type: boolean
+          default: false
+        block_exploits:
+          type: boolean
+          default: true
+
+    UpdateProxyHost:
+      type: object
+      properties:
+        domain_names:
+          type: array
+          items:
+            type: string
+        forward_scheme:
+          type: string
+        forward_host:
+          type: string
+        forward_port:
+          type: integer
+        enabled:
+          type: boolean
+        ssl_enabled:
+          type: boolean
+        waf_enabled:
+          type: boolean
+        waf_mode:
+          type: string
+
+    Certificate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        domains:
+          type: array
+          items:
+            type: string
+        type:
+          type: string
+          enum: [letsencrypt, custom, self-signed]
+        status:
+          type: string
+          enum: [pending, valid, expired, error]
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    RateLimit:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        requests_per_second:
+          type: integer
+          minimum: 1
+        burst_size:
+          type: integer
+          minimum: 1
+        zone_size:
+          type: string
+          default: "10m"
+        limit_by:
+          type: string
+          enum: [ip, uri, ip_uri]
+        limit_response:
+          type: integer
+          default: 429
+
+    BotFilter:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        block_bad_bots:
+          type: boolean
+        block_ai_bots:
+          type: boolean
+        allow_search_engines:
+          type: boolean
+        challenge_suspicious:
+          type: boolean
+        custom_blocked_agents:
+          type: array
+          items:
+            type: string
+
+    SecurityHeaders:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        hsts_enabled:
+          type: boolean
+        hsts_max_age:
+          type: integer
+        hsts_include_subdomains:
+          type: boolean
+        hsts_preload:
+          type: boolean
+        x_frame_options:
+          type: string
+          enum: [DENY, SAMEORIGIN, ""]
+        x_content_type_options:
+          type: boolean
+        x_xss_protection:
+          type: boolean
+        referrer_policy:
+          type: string
+        content_security_policy:
+          type: string
+
+    GeoRestriction:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        mode:
+          type: string
+          enum: [whitelist, blacklist]
+        countries:
+          type: array
+          items:
+            type: string
+          description: ISO 3166-1 alpha-2 country codes
+        allowed_ips:
+          type: array
+          items:
+            type: string
+          description: IPs/CIDRs that bypass geo restriction
+        challenge_mode:
+          type: boolean
+          description: Show CAPTCHA instead of blocking
+
+    Upstream:
+      type: object
+      properties:
+        name:
+          type: string
+        load_balance:
+          type: string
+          enum: [round_robin, least_conn, ip_hash, random]
+        servers:
+          type: array
+          items:
+            type: object
+            properties:
+              address:
+                type: string
+              port:
+                type: integer
+              weight:
+                type: integer
+              backup:
+                type: boolean
+        health_check_enabled:
+          type: boolean
+        health_check_path:
+          type: string
+        health_check_interval:
+          type: integer
+
+    GlobalSettings:
+      type: object
+      properties:
+        worker_processes:
+          type: string
+        worker_connections:
+          type: integer
+        keepalive_timeout:
+          type: integer
+        client_max_body_size:
+          type: string
+        gzip_enabled:
+          type: boolean
+        brotli_enabled:
+          type: boolean
+        ssl_protocols:
+          type: array
+          items:
+            type: string
+
+    SystemSettings:
+      type: object
+      properties:
+        geoip_enabled:
+          type: boolean
+        maxmind_account_id:
+          type: string
+        maxmind_license_key:
+          type: string
+          description: Masked in responses
+        geoip_auto_update:
+          type: boolean
+        geoip_update_interval:
+          type: string
+        acme_enabled:
+          type: boolean
+        acme_email:
+          type: string
+        acme_staging:
+          type: boolean
+
+    Dashboard:
+      type: object
+      properties:
+        proxy_hosts:
+          type: object
+          properties:
+            total:
+              type: integer
+            enabled:
+              type: integer
+            disabled:
+              type: integer
+        certificates:
+          type: object
+          properties:
+            total:
+              type: integer
+            expiring_soon:
+              type: integer
+        security:
+          type: object
+          properties:
+            waf_blocks_24h:
+              type: integer
+            rate_limit_hits_24h:
+              type: integer
+            bot_blocks_24h:
+              type: integer
+        requests:
+          type: object
+          properties:
+            total_24h:
+              type: integer
+            errors_24h:
+              type: integer
+
+    Backup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        size:
+          type: integer
+        description:
+          type: string
+        includes_config:
+          type: boolean
+        includes_certificates:
+          type: boolean
+        includes_database:
+          type: boolean
+        status:
+          type: string
+          enum: [pending, completed, failed]
+        created_at:
+          type: string
+          format: date-time
+
+    APIToken:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        token_prefix:
+          type: string
+          description: First 8 characters of token
+        permissions:
+          type: array
+          items:
+            type: string
+        ip_restrictions:
+          type: array
+          items:
+            type: string
+        expires_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+        is_revoked:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+security:
+  - BearerAuth: []

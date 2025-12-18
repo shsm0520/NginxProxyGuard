@@ -1,0 +1,73 @@
+{
+  "title": "대시보드",
+  "actions": {
+    "selfCheck": "셀프 체크",
+    "refresh": "새로고침"
+  },
+  "status": {
+    "systemStatus": "시스템 상태: {{status}}",
+    "healthy": "정상",
+    "unhealthy": "비정상"
+  },
+  "hostResources": {
+    "title": "호스트 시스템 자원",
+    "memory": "메모리",
+    "disk": "디스크",
+    "uptime": "가동 시간",
+    "network": "네트워크 I/O",
+    "networkIn": "다운로드",
+    "networkOut": "업로드",
+    "history": "자원 사용 추이 (최근 1시간)",
+    "networkHistory": "네트워크 I/O 추이 (최근 1시간)",
+    "showCharts": "차트",
+    "hideCharts": "숨기기",
+    "noData": "아직 기록된 데이터가 없습니다. 데이터는 30초마다 수집됩니다.",
+    "timeRange": "시간 범위"
+  },
+  "containers": {
+    "title": "도커 컨테이너",
+    "running": "{{healthy}} / {{total}} 실행 중",
+    "cpu": "CPU",
+    "memory": "메모리",
+    "networkIo": "네트워크 I/O",
+    "blockIo": "블록 I/O",
+    "totalCpu": "전체 CPU",
+    "totalMemory": "전체 메모리"
+  },
+  "stats": {
+    "blockedRequests": "차단된 요청",
+    "customBlocked": "사용자 규칙 차단",
+    "blockedIps": "차단된 고유 IP",
+    "last24h": "최근 24시간",
+    "requests": "요청",
+    "bandwidth": "대역폭",
+    "avgResponseTime": "평균 응답 시간",
+    "errorRate": "오류율"
+  },
+  "security": {
+    "title": "보안 (24시간)",
+    "wafBlocked": "WAF 차단",
+    "rateLimited": "속도 제한",
+    "botsBlocked": "봇 차단",
+    "bannedIps": "차단된 IP"
+  },
+  "hosts": {
+    "title": "호스트 개요",
+    "proxyHosts": "프록시 호스트",
+    "redirectHosts": "리다이렉트 호스트",
+    "certificates": "인증서",
+    "expiringSoon": "만료 임박"
+  },
+  "topLists": {
+    "hostsTitle": "상위 호스트 (24시간)",
+    "ipsTitle": "상위 IP (24시간)",
+    "userAgentsTitle": "상위 사용자 에이전트 (24시간)",
+    "noData": "트래픽 데이터 없음"
+  },
+  "geo": {
+    "title": "글로벌 트래픽 (24시간)",
+    "subtitle": "지역별 트래픽",
+    "topCountries": "상위 국가 (24시간)",
+    "total": "총: {{count}} 요청"
+  }
+}

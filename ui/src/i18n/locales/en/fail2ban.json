@@ -1,0 +1,41 @@
+{
+  "title": "Fail2ban Management",
+  "subtitle": "Manage automatic IP banning settings for all hosts",
+  "viewBannedIPs": "View Banned IPs",
+  "info": {
+    "title": "About Fail2ban",
+    "description": "Fail2ban automatically blocks IP addresses that have too many failed login attempts (401/403 errors). Configure settings per host to protect against brute force attacks."
+  },
+  "hostList": {
+    "title": "Hosts",
+    "empty": "No hosts configured"
+  },
+  "status": {
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
+  "settings": {
+    "maxRetries": "Max Retries",
+    "maxRetriesHelp": "Number of failed attempts before ban",
+    "findTime": "Find Time (sec)",
+    "findTimeHelp": "Time window to count failures",
+    "banTime": "Ban Time (sec)",
+    "banTimeHelp": "Duration of the IP ban",
+    "failCodes": "Fail Codes",
+    "failCodesHelp": "HTTP status codes that count as failures",
+    "action": "Action",
+    "actionOptions": {
+      "block": "Block IP",
+      "log": "Log Only",
+      "notify": "Notify Only"
+    }
+  },
+  "actions": {
+    "configure": "Configure",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "editModal": {
+    "title": "Fail2ban Settings - {{host}}"
+  }
+}

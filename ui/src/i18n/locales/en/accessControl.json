@@ -1,0 +1,52 @@
+{
+    "title": "Access Lists (IP Allow/Deny)",
+    "actions": {
+        "add": "Add Access List",
+        "edit": "Edit",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "update": "Update",
+        "create": "Create",
+        "save": "Saving...",
+        "addRule": "Add Rule"
+    },
+    "form": {
+        "newTitle": "New Access List",
+        "editTitle": "Edit Access List",
+        "name": "Name",
+        "namePlaceholder": "e.g., Office IPs",
+        "description": "Description",
+        "descriptionPlaceholder": "Optional description",
+        "satisfyAny": "Satisfy Any (OR logic)",
+        "passAuth": "Pass Auth Header",
+        "accessRules": "Access Rules",
+        "ipPlaceholder": "IP address or CIDR (e.g., 192.168.1.0/24)",
+        "ruleDescription": "Description",
+        "allow": "Allow",
+        "deny": "Deny"
+    },
+    "list": {
+        "name": "Name",
+        "rules": "Rules",
+        "options": "Options",
+        "actions": "Actions",
+        "empty": "No access lists configured. Create one to manage IP-based access control.",
+        "rulesCount": "{{count}} rules",
+        "expand": "[+]",
+        "collapse": "[-]",
+        "statisfyAny": "Satisfy Any",
+        "passAuth": "Pass Auth"
+    },
+    "messages": {
+        "deleteConfirm": "Are you sure you want to delete this access list?",
+        "loadError": "Error loading access lists",
+        "saveError": "Failed to save access list"
+    },
+    "help": {
+        "name": "Enter a name for this access list.",
+        "description": "Enter a description for this access list.",
+        "satisfyAny": "If enabled, access is satisfied if ANY rule matches (OR logic). If disabled, standard rule processing applies.",
+        "passAuth": "Pass the Basic Authorization header to the upstream server.",
+        "accessRules": "Define IP ranges and rules to allow or deny."
+    }
+}

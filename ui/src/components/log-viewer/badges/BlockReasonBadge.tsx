@@ -1,0 +1,30 @@
+import { useTranslation } from 'react-i18next';
+import type { BlockReason, BotCategory } from '../types';
+
+interface BlockReasonBadgeProps {
+  reason?: BlockReason;
+  category?: BotCategory;
+}
+
+export function BlockReasonBadge({ reason, category }: BlockReasonBadgeProps) {
+  const { t } = useTranslation('logs');
+  if (!reason || reason === 'none') return null;
+
+  const config: Record<string, { bg: string; text: string; label: string }> = {
+    waf: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-800 dark:text-orange-400', label: t('reasons.waf') },
+    bot_filter: { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-800 dark:text-purple-400', label: t('reasons.botFilter') },
+    rate_limit: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-800 dark:text-yellow-400', label: t('reasons.rateLimit') },
+    geo_block: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-800 dark:text-blue-400', label: t('reasons.geoBlock') },
+    banned_ip: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-400', label: t('reasons.bannedIp') },
+    exploit_block: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-400', label: t('reasons.exploitBlock') },
+  };
+
+  const cfg = config[reason] || { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-800 dark:text-gray-300', label: reason };
+  const categoryLabel = category ? ` (${category.replace('_', ' ')})` : '';
+
+  return (
+    <span className={`px-2 py-0.5 rounded text-xs font-medium ${cfg.bg} ${cfg.text}`} title={`${cfg.label}${categoryLabel}`}>
+      {cfg.label}
+    </span>
+  );
+}
