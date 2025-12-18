@@ -6,7 +6,7 @@
 
 [English](./README.md) | **한국어**
 
-<img src="https://nginxproxyguard.com/images/homepage/hero/bannerImages/0.png" alt="Nginx Proxy Guard Dashboard" width="800">
+<img src="./NPG_banner.png" alt="Nginx Proxy Guard" width="800">
 
 [![Nginx](https://img.shields.io/badge/Nginx-1.28.0-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
 [![ModSecurity](https://img.shields.io/badge/ModSecurity-v3.0.14-red?style=for-the-badge)](https://modsecurity.org/)
