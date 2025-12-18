@@ -124,3 +124,9 @@ type FontFamilyRequest struct {
 type FontFamilyResponse struct {
 	FontFamily string `json:"font_family"`
 }
+
+// Username change
+type ChangeUsernameRequest struct {
+	CurrentPassword string `json:"current_password" validate:"required"`
+	NewUsername     string `json:"new_username" validate:"required,min=3"`
+}

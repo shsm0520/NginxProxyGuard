@@ -87,6 +87,16 @@ export interface ChangePasswordRequest {
   new_password_confirm: string
 }
 
+export interface ChangeUsernameRequest {
+  current_password: string
+  new_username: string
+}
+
+export interface ChangeUsernameResponse {
+  message: string
+  username: string
+}
+
 // Token storage
 const TOKEN_KEY = 'npg_token'
 
@@ -207,6 +217,21 @@ export async function changePassword(request: ChangePasswordRequest): Promise<vo
     const error = await res.json()
     throw new Error(error.error || 'Failed to change password')
   }
+}
+
+export async function changeUsername(request: ChangeUsernameRequest): Promise<ChangeUsernameResponse> {
+  const res = await fetch(`${API_BASE}/auth/change-username`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(request)
+  })
+
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.error || 'Failed to change username')
+  }
+
+  return res.json()
 }
 
 export async function verify2FA(request: Verify2FARequest): Promise<LoginResponse> {

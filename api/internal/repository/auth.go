@@ -169,6 +169,17 @@ func (r *AuthRepository) UpdateFontFamily(ctx context.Context, userID, fontFamil
 	return err
 }
 
+func (r *AuthRepository) UpdateUsername(ctx context.Context, userID, username string) error {
+	query := `
+		UPDATE users
+		SET username = $2,
+		    updated_at = NOW()
+		WHERE id = $1
+	`
+	_, err := r.db.ExecContext(ctx, query, userID, username)
+	return err
+}
+
 func (r *AuthRepository) CheckUsernameExists(ctx context.Context, username, excludeUserID string) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 AND id != $2)`
 	var exists bool

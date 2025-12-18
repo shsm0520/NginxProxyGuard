@@ -406,6 +406,7 @@ func main() {
 		protected.GET("/auth/me", authHandler.GetCurrentUser)
 		protected.POST("/auth/change-credentials", authHandler.ChangeCredentials)
 		protected.POST("/auth/change-password", authHandler.ChangePassword)
+		protected.POST("/auth/change-username", authHandler.ChangeUsername)
 		protected.GET("/auth/account", authHandler.GetAccountInfo)
 		protected.POST("/auth/2fa/setup", authHandler.Setup2FA)
 		protected.POST("/auth/2fa/enable", authHandler.Enable2FA)

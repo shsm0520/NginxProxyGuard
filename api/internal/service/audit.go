@@ -308,6 +308,14 @@ func (s *AuditService) LogPasswordChanged(ctx context.Context, username string) 
 	return s.logEntry(ctx, "password_changed", "user", "", username, nil)
 }
 
+// LogUsernameChanged logs username change
+func (s *AuditService) LogUsernameChanged(ctx context.Context, oldUsername, newUsername string) error {
+	return s.logEntry(ctx, "username_changed", "user", "", newUsername, map[string]interface{}{
+		"old_username": oldUsername,
+		"new_username": newUsername,
+	})
+}
+
 // Log2FAEnabled logs 2FA being enabled
 func (s *AuditService) Log2FAEnabled(ctx context.Context, username string) error {
 	return s.logEntry(ctx, "totp_enabled", "user", "", username, nil)

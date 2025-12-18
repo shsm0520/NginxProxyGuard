@@ -572,6 +572,43 @@ func (s *AuthService) SetFontFamily(ctx context.Context, userID string, fontFami
 	return s.repo.UpdateFontFamily(ctx, userID, fontFamily)
 }
 
+// ChangeUsername updates the username after verifying current password
+func (s *AuthService) ChangeUsername(ctx context.Context, userID string, req *model.ChangeUsernameRequest) error {
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return ErrUnauthorized
+	}
+
+	// Verify current password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.CurrentPassword)); err != nil {
+		return ErrInvalidCredentials
+	}
+
+	// Validate new username length
+	if len(req.NewUsername) < 3 {
+		return errors.New("username must be at least 3 characters")
+	}
+
+	// Check if new username is same as current
+	if req.NewUsername == user.Username {
+		return errors.New("new username must be different from current")
+	}
+
+	// Check if new username is available
+	exists, err := s.repo.CheckUsernameExists(ctx, req.NewUsername, userID)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return ErrUsernameTaken
+	}
+
+	return s.repo.UpdateUsername(ctx, userID, req.NewUsername)
+}
+
 // CleanupSessions removes expired sessions and old login attempts
 func (s *AuthService) CleanupSessions(ctx context.Context) error {
 	if _, err := s.repo.CleanExpiredSessions(ctx); err != nil {

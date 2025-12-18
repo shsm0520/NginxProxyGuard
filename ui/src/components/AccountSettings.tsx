@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   getAccountInfo,
   changePassword,
+  changeUsername,
   setup2FA,
   enable2FA,
   disable2FA,
@@ -10,6 +11,7 @@ import {
   AccountInfo,
   Setup2FAResponse,
   ChangePasswordRequest,
+  ChangeUsernameRequest,
   Disable2FARequest
 } from '../api/auth'
 import { updateSystemSettings } from '../api/settings'
@@ -63,6 +65,14 @@ export default function AccountSettings({ onClose, onLogout }: AccountSettingsPr
   // Font family state
   const [currentFontFamily, setCurrentFontFamily] = useState('system')
   const [changingFont, setChangingFont] = useState(false)
+
+  // Username change state
+  const [usernameForm, setUsernameForm] = useState({
+    current_password: '',
+    new_username: ''
+  })
+  const [changingUsername, setChangingUsername] = useState(false)
+  const [showUsernameForm, setShowUsernameForm] = useState(false)
 
   useEffect(() => {
     loadAccountInfo()
@@ -124,6 +134,38 @@ export default function AccountSettings({ onClose, onLogout }: AccountSettingsPr
       setError(err instanceof Error ? err.message : t('errors.failedToChangePassword'))
     } finally {
       setChangingPassword(false)
+    }
+  }
+
+  const handleUsernameChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+
+    if (usernameForm.new_username.length < 3) {
+      setError(t('account.username.minLengthError'))
+      return
+    }
+
+    if (usernameForm.new_username === accountInfo?.username) {
+      setError(t('account.username.sameAsCurrentError'))
+      return
+    }
+
+    try {
+      setChangingUsername(true)
+      const result = await changeUsername(usernameForm as ChangeUsernameRequest)
+      setSuccess(t('account.username.success'))
+      setUsernameForm({ current_password: '', new_username: '' })
+      setShowUsernameForm(false)
+      // Reload account info to reflect the new username
+      if (accountInfo) {
+        setAccountInfo({ ...accountInfo, username: result.username })
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('errors.failedToChangeUsername'))
+    } finally {
+      setChangingUsername(false)
     }
   }
 
@@ -274,7 +316,59 @@ export default function AccountSettings({ onClose, onLogout }: AccountSettingsPr
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-700/50 p-4 rounded">
                   <p className="text-gray-400 text-sm">{t('account.info.username')}</p>
-                  <p className="text-white font-medium">{accountInfo.username}</p>
+                  {!showUsernameForm ? (
+                    <div className="flex items-center justify-between">
+                      <p className="text-white font-medium">{accountInfo.username}</p>
+                      <button
+                        onClick={() => {
+                          setShowUsernameForm(true)
+                          setUsernameForm({ ...usernameForm, new_username: accountInfo.username })
+                        }}
+                        className="text-blue-400 hover:text-blue-300 text-sm"
+                      >
+                        {t('common:buttons.edit')}
+                      </button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleUsernameChange} className="mt-2 space-y-2">
+                      <input
+                        type="text"
+                        value={usernameForm.new_username}
+                        onChange={(e) => setUsernameForm({ ...usernameForm, new_username: e.target.value })}
+                        className="w-full px-3 py-1.5 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:border-blue-500 focus:outline-none"
+                        placeholder={t('account.username.newUsername')}
+                        minLength={3}
+                        required
+                      />
+                      <input
+                        type="password"
+                        value={usernameForm.current_password}
+                        onChange={(e) => setUsernameForm({ ...usernameForm, current_password: e.target.value })}
+                        className="w-full px-3 py-1.5 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:border-blue-500 focus:outline-none"
+                        placeholder={t('account.username.currentPassword')}
+                        required
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="submit"
+                          disabled={changingUsername}
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded disabled:opacity-50"
+                        >
+                          {changingUsername ? t('common:buttons.saving') : t('common:buttons.save')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowUsernameForm(false)
+                            setUsernameForm({ current_password: '', new_username: '' })
+                          }}
+                          className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded"
+                        >
+                          {t('common:buttons.cancel')}
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </div>
                 <div className="bg-gray-700/50 p-4 rounded">
                   <p className="text-gray-400 text-sm">{t('account.info.role')}</p>

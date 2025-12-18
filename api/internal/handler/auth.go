@@ -562,6 +562,61 @@ func (h *AuthHandler) GetFontFamily(c echo.Context) error {
 	})
 }
 
+// ChangeUsername handles username change
+func (h *AuthHandler) ChangeUsername(c echo.Context) error {
+	user, ok := getUserFromContext(c)
+	if !ok {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "authentication required"})
+	}
+
+	var req model.ChangeUsernameRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid request body",
+		})
+	}
+
+	if req.CurrentPassword == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Current password is required",
+		})
+	}
+
+	if len(req.NewUsername) < 3 {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Username must be at least 3 characters",
+		})
+	}
+
+	oldUsername := user.Username
+	err := h.authService.ChangeUsername(c.Request().Context(), user.ID, &req)
+	if err != nil {
+		switch err {
+		case service.ErrInvalidCredentials:
+			return c.JSON(http.StatusUnauthorized, map[string]string{
+				"error": "Current password is incorrect",
+			})
+		case service.ErrUsernameTaken:
+			return c.JSON(http.StatusConflict, map[string]string{
+				"error": "Username is already taken",
+			})
+		default:
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": err.Error(),
+			})
+		}
+	}
+
+	// Log username change
+	auditCtx := service.ContextWithAudit(c.Request().Context(), c)
+	h.auditService.LogUsernameChanged(auditCtx, oldUsername, req.NewUsername)
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message":  "Username changed successfully",
+		"username": req.NewUsername,
+	})
+}
+
 func extractToken(c echo.Context) string {
 	// Check Authorization header
 	auth := c.Request().Header.Get("Authorization")
