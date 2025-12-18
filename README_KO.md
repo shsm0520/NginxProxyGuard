@@ -2,7 +2,7 @@
 
 # Nginx Proxy Guard
 
-### 엔터프라이즈 보안을 갖춘 차세대 Nginx 리버스 프록시 매니저
+### Make Your Nginx Smarter & Safer
 
 [English](./README.md) | **한국어**
 
@@ -13,7 +13,14 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
 <p align="center">
-  <strong>강력한 WAF, 봇 보호, GeoIP 차단, Rate Limiting을 갖춘<br/>현대적인 리버스 프록시 관리 시스템</strong>
+  <strong>직관적인 웹 UI를 통해 프록시 호스트, SSL 인증서,<br/>보안 규칙을 관리할 수 있는 안전하고 빠른 솔루션</strong>
+</p>
+
+<p align="center">
+  <a href="https://nginxproxyguard.com">웹사이트</a> •
+  <a href="#-주요-기능">기능</a> •
+  <a href="#-빠른-시작">빠른 시작</a> •
+  <a href="#-기술-스택">기술 스택</a>
 </p>
 
 ---
@@ -22,19 +29,46 @@
 
 ## ✨ 주요 기능
 
-| 카테고리 | 기능 |
-|----------|------|
-| **WAF** | ModSecurity v3 + OWASP CRS v4.21, Paranoia Level 1-4, 호스트별 예외 설정 |
-| **봇 보호** | 200+ 봇 시그니처, 검색엔진 허용목록, AI 봇 탐지 |
-| **GeoIP** | 국가별 차단/챌린지, MaxMind 통합, 트래픽 시각화 |
-| **Rate Limiting** | 호스트별/전역 제한, 버스트 처리, 자동 차단 |
-| **챌린지** | reCAPTCHA v2/v3, hCaptcha, Cloudflare Turnstile |
-| **SSL/TLS** | Let's Encrypt 자동 갱신, HTTP/3 QUIC 지원 |
-| **모니터링** | 실시간 대시보드, GeoIP 로그 뷰어, 트래픽 분석 |
+**강력한 보안, 쉬운 관리** - Nginx의 복잡함은 줄이고, 보안은 극대화
+
+### SSL 자동화
+Let's Encrypt 통합 및 자동 갱신. DNS-01 챌린지(Cloudflare)를 통한 와일드카드 인증서 지원.
+
+### 봇 보호
+80개 이상의 악성 봇과 50개 이상의 AI 크롤러를 자동 차단. 검색 엔진 허용 목록으로 정상 트래픽 보장.
+
+### 직관적인 대시보드
+실시간 트래픽 모니터링, 차단 로그, 서버 상태를 한눈에 확인.
+
+### GeoIP 접근 제어
+국가별 트래픽 차단/허용 및 인터랙티브 지도 시각화. MaxMind GeoIP2 통합.
+
+### 로그 뷰어 & 분석
+강력한 필터링과 제외 패턴으로 Nginx 접근/에러 로그 분석.
+
+### 웹 애플리케이션 방화벽
+ModSecurity v3 + OWASP Core Rule Set v4.21. Paranoia Level 1-4, 호스트별 룰 예외 처리.
+
+---
+
+## 🛠 기술 스택
+
+**견고한 기술 스택** - 현대적인 기술과 마이크로서비스 아키텍처로 설계
+
+| 기술 | 용도 |
+|------|------|
+| **Nginx** | HTTP/3 & QUIC 지원 고성능 리버스 프록시 코어 |
+| **PostgreSQL** | 설정 및 로그 데이터의 안전한 저장, 쿼리 최적화 |
+| **Valkey (Redis)** | 고속 캐싱, 세션 관리, 실시간 데이터 처리 |
+| **Go (Golang)** | 효율적인 리소스 관리와 동시성 처리 백엔드 API |
+| **React & TypeScript** | 타입 안전성과 컴포넌트 기반의 모던 UI |
+| **ModSecurity** | OWASP Core Rule Set 기반 웹 애플리케이션 방화벽 |
 
 ---
 
 ## 🚀 빠른 시작
+
+**1분 안에 시작하기** - Docker Compose로 Nginx Proxy Guard 실행
 
 ### 필요 조건
 
@@ -55,11 +89,7 @@ wget -O .env https://raw.githubusercontent.com/svrforum/nginxproxyguard/main/.en
 sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$(openssl rand -base64 24)/" .env
 sed -i "s/JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" .env
 
-# 4. 시간대 자동 감지
-TZ=$(cat /etc/timezone 2>/dev/null || readlink /etc/localtime | sed 's|/usr/share/zoneinfo/||' 2>/dev/null || echo "UTC")
-sed -i "s|TZ=.*|TZ=$TZ|" .env
-
-# 5. 서비스 시작
+# 4. 서비스 시작
 docker compose up -d
 ```
 
@@ -82,21 +112,24 @@ docker compose up -d
 
 ---
 
-## 📚 문서
+## 📖 추가 정보
 
-- [설정 가이드](./docs/configuration.md) - 환경 변수, SSL 설정, GeoIP
-- [API 레퍼런스](./docs/api.md) - REST API 문서
-- [아키텍처](./docs/architecture.md) - 시스템 설계 및 기술 스택
-- [문제 해결](./docs/troubleshooting.md) - 일반적인 문제와 해결 방법
-- [개발](./docs/development.md) - 기여 및 로컬 설정
+- **웹사이트**: [nginxproxyguard.com](https://nginxproxyguard.com)
+- **문서**: [nginxproxyguard.com/docs](https://nginxproxyguard.com/docs)
 
 ---
 
 ## 📄 라이선스
 
-이 프로젝트는 MIT 라이선스에 따라 라이선스가 부여됩니다 - 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+이 프로젝트는 MIT 라이선스에 따라 배포됩니다 - 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 
 ## 💬 지원
 
 - [GitHub Issues](https://github.com/svrforum/nginxproxyguard/issues) - 버그 리포트 및 기능 요청
 - [Discussions](https://github.com/svrforum/nginxproxyguard/discussions) - 질문 및 커뮤니티
+
+---
+
+<div align="center">
+  <sub>© 2025 Nginx Proxy Guard. 강력하고 안전하고 빠른 Nginx 프록시 매니저 & WAF.</sub>
+</div>

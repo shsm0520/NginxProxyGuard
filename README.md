@@ -2,7 +2,7 @@
 
 # Nginx Proxy Guard
 
-### Next-Generation Nginx Reverse Proxy Manager with Enterprise Security
+### Make Your Nginx Smarter & Safer
 
 **English** | [한국어](./README_KO.md)
 
@@ -13,7 +13,14 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
 <p align="center">
-  <strong>Modern reverse proxy management system with<br/>powerful WAF, Bot Protection, GeoIP Blocking, and Rate Limiting</strong>
+  <strong>A secure and fast solution to manage proxy hosts, SSL certificates,<br/>and security rules through an intuitive web UI</strong>
+</p>
+
+<p align="center">
+  <a href="https://nginxproxyguard.com">Website</a> •
+  <a href="#-key-features">Features</a> •
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-tech-stack">Tech Stack</a>
 </p>
 
 ---
@@ -22,19 +29,46 @@
 
 ## ✨ Key Features
 
-| Category | Features |
-|----------|----------|
-| **WAF** | ModSecurity v3 + OWASP CRS v4.21, Paranoia Level 1-4, Per-host exceptions |
-| **Bot Protection** | 200+ bot signatures, Search engine allowlist, AI bot detection |
-| **GeoIP** | Country blocking/challenge, MaxMind integration, Traffic visualization |
-| **Rate Limiting** | Per-host/global limits, Burst handling, Auto-ban |
-| **Challenge** | reCAPTCHA v2/v3, hCaptcha, Cloudflare Turnstile |
-| **SSL/TLS** | Let's Encrypt auto-renewal, HTTP/3 QUIC support |
-| **Monitoring** | Real-time dashboard, Log viewer with GeoIP, Traffic analytics |
+**Robust Security, Easy Management** - Reduced Nginx complexity, maximized security
+
+### SSL Automation
+Let's Encrypt integration with automatic renewal. Supports wildcard certificates via DNS-01 challenge (Cloudflare).
+
+### Bot Protection
+Block 80+ malicious bots and 50+ AI crawlers automatically. Search engine allowlist ensures legitimate traffic.
+
+### Intuitive Dashboard
+Real-time traffic monitoring, block logs, and server status at a glance.
+
+### GeoIP Access Control
+Block or allow traffic by country with interactive map visualization. MaxMind GeoIP2 integration.
+
+### Log Viewer & Analytics
+Analyze Nginx access/error logs with powerful filtering and exclusion patterns.
+
+### Web Application Firewall
+ModSecurity v3 with OWASP Core Rule Set v4.21. Paranoia Level 1-4, per-host rule exceptions.
+
+---
+
+## 🛠 Tech Stack
+
+**Solid Tech Stack** - Designed with modern technologies, a microservices architecture
+
+| Technology | Purpose |
+|------------|---------|
+| **Nginx** | High-performance reverse proxy core with HTTP/3 & QUIC support |
+| **PostgreSQL** | Secure storage for configurations and logs with optimized queries |
+| **Valkey (Redis)** | High-speed caching, session management, real-time data processing |
+| **Go (Golang)** | Backend API with efficient resource management and concurrency |
+| **React & TypeScript** | Type-safe, component-based modern UI |
+| **ModSecurity** | Web Application Firewall with OWASP Core Rule Set |
 
 ---
 
 ## 🚀 Quick Start
+
+**Get Started in 1 Minute** - Run Nginx Proxy Guard using Docker Compose
 
 ### Prerequisites
 
@@ -55,11 +89,7 @@ wget -O .env https://raw.githubusercontent.com/svrforum/nginxproxyguard/main/.en
 sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$(openssl rand -base64 24)/" .env
 sed -i "s/JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" .env
 
-# 4. Auto-detect timezone
-TZ=$(cat /etc/timezone 2>/dev/null || readlink /etc/localtime | sed 's|/usr/share/zoneinfo/||' 2>/dev/null || echo "UTC")
-sed -i "s|TZ=.*|TZ=$TZ|" .env
-
-# 5. Start services
+# 4. Start services
 docker compose up -d
 ```
 
@@ -82,13 +112,10 @@ docker compose up -d
 
 ---
 
-## 📚 Documentation
+## 📖 More Information
 
-- [Configuration Guide](./docs/configuration.md) - Environment variables, SSL setup, GeoIP
-- [API Reference](./docs/api.md) - REST API documentation
-- [Architecture](./docs/architecture.md) - System design and tech stack
-- [Troubleshooting](./docs/troubleshooting.md) - Common issues and solutions
-- [Development](./docs/development.md) - Contributing and local setup
+- **Website**: [nginxproxyguard.com](https://nginxproxyguard.com)
+- **Documentation**: [nginxproxyguard.com/docs](https://nginxproxyguard.com/docs)
 
 ---
 
@@ -100,3 +127,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [GitHub Issues](https://github.com/svrforum/nginxproxyguard/issues) - Bug reports and feature requests
 - [Discussions](https://github.com/svrforum/nginxproxyguard/discussions) - Questions and community
+
+---
+
+<div align="center">
+  <sub>© 2025 Nginx Proxy Guard. Powerful, secure, and fast Nginx proxy manager & WAF.</sub>
+</div>
