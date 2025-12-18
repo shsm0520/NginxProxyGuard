@@ -371,16 +371,23 @@ The following conditions bypass blocking in each security layer:
 ### Installation
 
 ```bash
-# 1. Clone repository
-git clone https://github.com/dalso0418/nginx-proxy-guard.git
-cd nginx-proxy-guard
+# 1. Create directory
+mkdir -p ~/nginx-proxy-guard && cd ~/nginx-proxy-guard
 
-# 2. Configure environment
-cp env.example .env
-nano .env  # Edit DB_PASSWORD, JWT_SECRET (required!)
+# 2. Download files
+wget https://raw.githubusercontent.com/svrforum/nginxproxyguard/main/docker-compose.yml
+wget -O .env https://raw.githubusercontent.com/svrforum/nginxproxyguard/main/.env.example
 
-# 3. Start
-docker compose up -d --build
+# 3. Auto-generate secure secrets
+sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$(openssl rand -base64 24)/" .env
+sed -i "s/JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" .env
+
+# 4. Auto-detect timezone
+TZ=$(cat /etc/timezone 2>/dev/null || readlink /etc/localtime | sed 's|/usr/share/zoneinfo/||' 2>/dev/null || echo "UTC")
+sed -i "s|TZ=.*|TZ=$TZ|" .env
+
+# 5. Start services
+docker compose up -d
 ```
 
 ### Access
@@ -396,8 +403,7 @@ docker compose up -d --build
 ### Update
 
 ```bash
-git pull
-docker compose build --no-cache
+docker compose pull
 docker compose up -d
 ```
 

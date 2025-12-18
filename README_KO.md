@@ -371,16 +371,23 @@ GeoIP 정보, 고급 필터링, 실시간 시각화 차트
 ### 설치
 
 ```bash
-# 1. 저장소 클론
-git clone https://github.com/dalso0418/nginx-proxy-guard.git
-cd nginx-proxy-guard
+# 1. 디렉토리 생성
+mkdir -p ~/nginx-proxy-guard && cd ~/nginx-proxy-guard
 
-# 2. 환경 설정
-cp env.example .env
-nano .env  # DB_PASSWORD, JWT_SECRET 수정 (필수!)
+# 2. 파일 다운로드
+wget https://raw.githubusercontent.com/svrforum/nginxproxyguard/main/docker-compose.yml
+wget -O .env https://raw.githubusercontent.com/svrforum/nginxproxyguard/main/.env.example
 
-# 3. 시작
-docker compose up -d --build
+# 3. 보안 시크릿 자동 생성
+sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$(openssl rand -base64 24)/" .env
+sed -i "s/JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" .env
+
+# 4. 시간대 자동 감지
+TZ=$(cat /etc/timezone 2>/dev/null || readlink /etc/localtime | sed 's|/usr/share/zoneinfo/||' 2>/dev/null || echo "UTC")
+sed -i "s|TZ=.*|TZ=$TZ|" .env
+
+# 5. 서비스 시작
+docker compose up -d
 ```
 
 ### 접속
@@ -396,8 +403,7 @@ docker compose up -d --build
 ### 업데이트
 
 ```bash
-git pull
-docker compose build --no-cache
+docker compose pull
 docker compose up -d
 ```
 
