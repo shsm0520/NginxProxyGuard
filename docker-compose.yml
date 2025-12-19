@@ -9,6 +9,7 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: ${DB_NAME:-nginx_proxy_guard}
+    command: postgres -c timezone=${TZ:-UTC} -c log_timezone=${TZ:-UTC}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
