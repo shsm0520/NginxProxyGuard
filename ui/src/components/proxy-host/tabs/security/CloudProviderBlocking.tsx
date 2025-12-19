@@ -25,6 +25,8 @@ interface CloudProviderBlockingProps {
   setBlockedProviders: (providers: string[]) => void
   challengeMode: boolean
   setChallengeMode: (enabled: boolean) => void
+  allowSearchBots: boolean
+  setAllowSearchBots: (enabled: boolean) => void
 }
 
 const REGION_FLAGS: Record<string, string> = {
@@ -45,6 +47,8 @@ export function CloudProviderBlocking({
   setBlockedProviders,
   challengeMode,
   setChallengeMode,
+  allowSearchBots,
+  setAllowSearchBots,
 }: CloudProviderBlockingProps) {
   const { t } = useTranslation('proxyHost')
   const [isEnabled, setIsEnabled] = useState(blockedProviders.length > 0)
@@ -70,6 +74,7 @@ export function CloudProviderBlocking({
     if (!checked) {
       setBlockedProviders([])
       setChallengeMode(false)
+      setAllowSearchBots(false)
     }
   }
 
@@ -187,6 +192,25 @@ export function CloudProviderBlocking({
               </span>
               <p className="text-xs text-blue-600 dark:text-blue-400">
                 {t('form.security.cloudProvider.challengeModeDescription', 'Show CAPTCHA verification instead of blocking')}
+              </p>
+            </div>
+          </label>
+
+          {/* Allow Search Bots */}
+          <label className="flex items-center gap-2 cursor-pointer py-2 px-3 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800">
+            <input
+              type="checkbox"
+              checked={allowSearchBots}
+              onChange={(e) => setAllowSearchBots(e.target.checked)}
+              className="rounded border-green-300 dark:border-green-700 text-green-600 focus:ring-green-500 bg-white dark:bg-slate-700 focus:ring-offset-0 dark:focus:ring-offset-slate-800"
+            />
+            <div>
+              <span className="text-sm font-medium text-green-800 dark:text-green-300 flex items-center gap-2">
+                {t('form.security.cloudProvider.allowSearchBots', 'Allow Search Bots')}
+                <HelpTip contentKey="help.security.cloudProviderAllowSearchBots" />
+              </span>
+              <p className="text-xs text-green-600 dark:text-green-400">
+                {t('form.security.cloudProvider.allowSearchBotsDescription', 'Allow search engine bots (Google, Bing, etc.) to bypass cloud blocking')}
               </p>
             </div>
           </label>

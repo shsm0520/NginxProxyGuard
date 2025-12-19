@@ -269,6 +269,7 @@ func (s *ProxyHostService) getHostConfigData(ctx context.Context, host *model.Pr
 					mu.Lock()
 					data.BlockedCloudIPRanges = ipRanges
 					data.CloudProviderChallengeMode = settings.ChallengeMode
+					data.CloudProviderAllowSearchBots = settings.AllowSearchBots
 					mu.Unlock()
 				}
 			}

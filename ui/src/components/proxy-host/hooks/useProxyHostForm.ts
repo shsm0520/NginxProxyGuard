@@ -98,6 +98,7 @@ export function useProxyHostForm(host: ProxyHost | null | undefined, onClose: ()
   // Cloud provider blocking state
   const [blockedCloudProviders, setBlockedCloudProviders] = useState<string[]>([])
   const [cloudProviderChallengeMode, setCloudProviderChallengeMode] = useState(false)
+  const [cloudProviderAllowSearchBots, setCloudProviderAllowSearchBots] = useState(false)
 
   // Queries
   const { data: certificatesData } = useQuery({
@@ -143,10 +144,11 @@ export function useProxyHostForm(host: ProxyHost | null | undefined, onClose: ()
   const { data: existingCloudProviderSettings } = useQuery({
     queryKey: ['blockedCloudProviders', host?.id],
     queryFn: async () => {
-      const response = await api.get<{ blocked_providers: string[]; challenge_mode: boolean }>(`/api/v1/proxy-hosts/${host!.id}/blocked-cloud-providers`)
+      const response = await api.get<{ blocked_providers: string[]; challenge_mode: boolean; allow_search_bots: boolean }>(`/api/v1/proxy-hosts/${host!.id}/blocked-cloud-providers`)
       return {
         blocked_providers: response.blocked_providers || [],
         challenge_mode: response.challenge_mode || false,
+        allow_search_bots: response.allow_search_bots || false,
       }
     },
     enabled: !!host?.id,
@@ -192,6 +194,7 @@ export function useProxyHostForm(host: ProxyHost | null | undefined, onClose: ()
     if (existingCloudProviderSettings) {
       setBlockedCloudProviders(existingCloudProviderSettings.blocked_providers)
       setCloudProviderChallengeMode(existingCloudProviderSettings.challenge_mode)
+      setCloudProviderAllowSearchBots(existingCloudProviderSettings.allow_search_bots || false)
     }
   }, [existingCloudProviderSettings])
 
@@ -274,11 +277,12 @@ export function useProxyHostForm(host: ProxyHost | null | undefined, onClose: ()
         )
       }
 
-      if (blockedCloudProviders.length > 0 || cloudProviderChallengeMode) {
+      if (blockedCloudProviders.length > 0 || cloudProviderChallengeMode || cloudProviderAllowSearchBots) {
         additionalSettingsPromises.push(
           api.put(`/api/v1/proxy-hosts/${newHost.id}/blocked-cloud-providers?skip_reload=true`, {
             blocked_providers: blockedCloudProviders,
             challenge_mode: cloudProviderChallengeMode,
+            allow_search_bots: cloudProviderAllowSearchBots,
           }).catch(err => console.error('Failed to save blocked cloud providers:', err))
         )
       }
@@ -350,6 +354,7 @@ export function useProxyHostForm(host: ProxyHost | null | undefined, onClose: ()
         api.put(`/api/v1/proxy-hosts/${variables.id}/blocked-cloud-providers?skip_reload=true`, {
           blocked_providers: blockedCloudProviders,
           challenge_mode: cloudProviderChallengeMode,
+          allow_search_bots: cloudProviderAllowSearchBots,
         })
           .then(() => queryClient.invalidateQueries({ queryKey: ['blockedCloudProviders', variables.id] }))
           .catch(err => console.error('Failed to save blocked cloud providers:', err)),
@@ -607,6 +612,8 @@ export function useProxyHostForm(host: ProxyHost | null | undefined, onClose: ()
     setBlockedCloudProviders,
     cloudProviderChallengeMode,
     setCloudProviderChallengeMode,
+    cloudProviderAllowSearchBots,
+    setCloudProviderAllowSearchBots,
 
     // Data from queries
     availableCerts,

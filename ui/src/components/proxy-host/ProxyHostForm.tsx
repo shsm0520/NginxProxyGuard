@@ -55,6 +55,8 @@ export function ProxyHostForm({ host, initialTab, onClose }: ProxyHostFormProps)
     setBlockedCloudProviders,
     cloudProviderChallengeMode,
     setCloudProviderChallengeMode,
+    cloudProviderAllowSearchBots,
+    setCloudProviderAllowSearchBots,
 
     // Data from queries
     availableCerts,
@@ -219,6 +221,8 @@ export function ProxyHostForm({ host, initialTab, onClose }: ProxyHostFormProps)
                 setBlockedCloudProviders={setBlockedCloudProviders}
                 cloudProviderChallengeMode={cloudProviderChallengeMode}
                 setCloudProviderChallengeMode={setCloudProviderChallengeMode}
+                cloudProviderAllowSearchBots={cloudProviderAllowSearchBots}
+                setCloudProviderAllowSearchBots={setCloudProviderAllowSearchBots}
                 availableAccessLists={availableAccessLists}
                 geoipStatus={geoipStatus}
                 countryCodes={countryCodes}

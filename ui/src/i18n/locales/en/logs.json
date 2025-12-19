@@ -124,7 +124,9 @@
     "geoBlock": "Geo Block",
     "bannedIp": "Banned IP",
     "exploitBlock": "Exploit",
-    "uriBlock": "URI Block"
+    "uriBlock": "URI Block",
+    "cloudChallenge": "Cloud",
+    "cloudBlock": "Cloud"
   },
   "bots": {
     "badBot": "Bad Bot",

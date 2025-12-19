@@ -274,6 +274,7 @@ func (r *CloudProviderRepository) UpdateIPRanges(ctx context.Context, slug strin
 type CloudProviderBlockingSettings struct {
 	BlockedProviders []string `json:"blocked_providers"`
 	ChallengeMode    bool     `json:"challenge_mode"`
+	AllowSearchBots  bool     `json:"allow_search_bots"`
 }
 
 // GetBlockedCloudProviders returns blocked cloud provider slugs for a proxy host
@@ -298,17 +299,19 @@ func (r *CloudProviderRepository) GetBlockedCloudProviders(ctx context.Context, 
 // GetCloudProviderBlockingSettings returns blocked providers and challenge mode for a proxy host
 func (r *CloudProviderRepository) GetCloudProviderBlockingSettings(ctx context.Context, proxyHostID string) (*CloudProviderBlockingSettings, error) {
 	query := `
-		SELECT COALESCE(blocked_cloud_providers, '{}'), COALESCE(challenge_cloud_providers, false)
+		SELECT COALESCE(blocked_cloud_providers, '{}'), COALESCE(challenge_cloud_providers, false), COALESCE(allow_search_bots_cloud_providers, false)
 		FROM geo_restrictions
 		WHERE proxy_host_id = $1`
 
 	var providers []string
 	var challengeMode bool
-	err := r.db.QueryRowContext(ctx, query, proxyHostID).Scan(pq.Array(&providers), &challengeMode)
+	var allowSearchBots bool
+	err := r.db.QueryRowContext(ctx, query, proxyHostID).Scan(pq.Array(&providers), &challengeMode, &allowSearchBots)
 	if err == sql.ErrNoRows {
 		return &CloudProviderBlockingSettings{
 			BlockedProviders: []string{},
 			ChallengeMode:    false,
+			AllowSearchBots:  false,
 		}, nil
 	}
 	if err != nil {
@@ -318,6 +321,7 @@ func (r *CloudProviderRepository) GetCloudProviderBlockingSettings(ctx context.C
 	return &CloudProviderBlockingSettings{
 		BlockedProviders: providers,
 		ChallengeMode:    challengeMode,
+		AllowSearchBots:  allowSearchBots,
 	}, nil
 }
 
@@ -369,16 +373,16 @@ func (r *CloudProviderRepository) SetCloudProviderBlockingSettings(ctx context.C
 	if exists {
 		_, err = r.db.ExecContext(ctx,
 			`UPDATE geo_restrictions
-			 SET blocked_cloud_providers = $1, challenge_cloud_providers = $2, updated_at = NOW()
-			 WHERE proxy_host_id = $3`,
-			pq.Array(settings.BlockedProviders), settings.ChallengeMode, proxyHostID,
+			 SET blocked_cloud_providers = $1, challenge_cloud_providers = $2, allow_search_bots_cloud_providers = $3, updated_at = NOW()
+			 WHERE proxy_host_id = $4`,
+			pq.Array(settings.BlockedProviders), settings.ChallengeMode, settings.AllowSearchBots, proxyHostID,
 		)
 	} else {
 		// Create a new geo_restriction with cloud provider settings
 		_, err = r.db.ExecContext(ctx,
-			`INSERT INTO geo_restrictions (proxy_host_id, mode, countries, enabled, blocked_cloud_providers, challenge_cloud_providers)
-			 VALUES ($1, 'blacklist', '{}', false, $2, $3)`,
-			proxyHostID, pq.Array(settings.BlockedProviders), settings.ChallengeMode,
+			`INSERT INTO geo_restrictions (proxy_host_id, mode, countries, enabled, blocked_cloud_providers, challenge_cloud_providers, allow_search_bots_cloud_providers)
+			 VALUES ($1, 'blacklist', '{}', false, $2, $3, $4)`,
+			proxyHostID, pq.Array(settings.BlockedProviders), settings.ChallengeMode, settings.AllowSearchBots,
 		)
 	}
 

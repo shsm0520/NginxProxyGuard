@@ -124,7 +124,9 @@
     "geoBlock": "지역 차단",
     "bannedIp": "차단된 IP",
     "exploitBlock": "Exploit 차단",
-    "uriBlock": "URI 차단"
+    "uriBlock": "URI 차단",
+    "cloudChallenge": "클라우드",
+    "cloudBlock": "클라우드"
   },
   "bots": {
     "badBot": "Bad Bot",

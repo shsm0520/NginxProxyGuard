@@ -29,6 +29,8 @@ interface SecurityTabProps {
   setBlockedCloudProviders: (providers: string[]) => void
   cloudProviderChallengeMode: boolean
   setCloudProviderChallengeMode: (enabled: boolean) => void
+  cloudProviderAllowSearchBots: boolean
+  setCloudProviderAllowSearchBots: (enabled: boolean) => void
   availableAccessLists: Array<{
     id: string
     name: string
@@ -54,6 +56,8 @@ export function SecurityTabContent({
   setBlockedCloudProviders,
   cloudProviderChallengeMode,
   setCloudProviderChallengeMode,
+  cloudProviderAllowSearchBots,
+  setCloudProviderAllowSearchBots,
   availableAccessLists,
   geoipStatus,
   countryCodes,
@@ -290,6 +294,8 @@ export function SecurityTabContent({
         setBlockedProviders={setBlockedCloudProviders}
         challengeMode={cloudProviderChallengeMode}
         setChallengeMode={setCloudProviderChallengeMode}
+        allowSearchBots={cloudProviderAllowSearchBots}
+        setAllowSearchBots={setCloudProviderAllowSearchBots}
       />
     </div>
   )

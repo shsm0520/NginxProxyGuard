@@ -163,11 +163,14 @@
         "challengeMode": "Challenge Mode",
         "challengeModeDescription": "Show CAPTCHA verification instead of blocking",
         "challengeWarning": "Traffic from selected cloud providers will be shown a CAPTCHA challenge before accessing the site.",
+        "allowSearchBots": "Allow Search Bots",
+        "allowSearchBotsDescription": "Allow search engine bots (Google, Bing, etc.) to bypass cloud blocking",
         "quickAdd": "Quick Add",
         "majorClouds": "Major Clouds",
         "budgetVps": "Budget VPS",
         "asiaProviders": "Asian Clouds",
         "ipRanges": "IP ranges",
+        "selectProviders": "Select Providers",
         "regions": {
           "us": "United States",
           "eu": "Europe",
@@ -364,7 +367,8 @@
       "botFilter": "Allows search engines (Google, Bing) while blocking malicious scrapers and spambots.",
       "geoip": "Restrict access to specific countries.",
       "cloudProvider": "Block IP ranges from cloud providers like AWS, Azure, and GCP. Useful against spam/scraping bots running on cloud servers. Note: May affect legitimate VPN users.",
-      "cloudProviderChallenge": "Enable challenge mode to show CAPTCHA verification instead of blocking traffic from cloud IPs. Legitimate users can pass the challenge, while bots are blocked."
+      "cloudProviderChallenge": "Enable challenge mode to show CAPTCHA verification instead of blocking traffic from cloud IPs. Legitimate users can pass the challenge, while bots are blocked.",
+      "cloudProviderAllowSearchBots": "Allow search engine bots (Google, Bing, Yandex, etc.) to bypass cloud provider blocking. This ensures your site can be indexed even when cloud IPs are blocked."
     },
     "protection": {
       "rateLimit": "Prevents abuse by limiting how many requests an IP can make. 'Burst' is the temporary allowance.",

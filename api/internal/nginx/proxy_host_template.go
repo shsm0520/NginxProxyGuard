@@ -427,6 +427,27 @@ server {
 
 {{if .BlockedCloudIPRanges}}
     # Blocked Cloud Provider IPs check
+{{if .CloudProviderAllowSearchBots}}{{if .SearchEnginesList}}
+    # Allow search engine bots to bypass cloud provider blocking
+    set $is_search_bot_cloud 0;
+    if ($http_user_agent ~* ({{toRegexPattern .SearchEnginesList}})) {
+        set $is_search_bot_cloud 1;
+    }
+    set $cloud_block_check_{{sanitizeID .Host.ID}} "${blocked_cloud_{{sanitizeID .Host.ID}}}${is_search_bot_cloud}";
+{{if .CloudProviderChallengeMode}}
+    # Challenge mode - redirect to challenge page instead of blocking (skip for search bots)
+    if ($cloud_block_check_{{sanitizeID .Host.ID}} = "10") {
+        set $block_reason_var "cloud_provider_challenge";
+        return 418; # Use 418 as internal marker for cloud challenge redirect
+    }
+    error_page 418 = @cloud_challenge;
+{{else}}
+    if ($cloud_block_check_{{sanitizeID .Host.ID}} = "10") {
+        set $block_reason_var "cloud_provider_block";
+        return 403;
+    }
+{{end}}
+{{end}}{{else}}
 {{if .CloudProviderChallengeMode}}
     # Challenge mode - redirect to challenge page instead of blocking
     if ($blocked_cloud_{{sanitizeID .Host.ID}} = 1) {
@@ -439,6 +460,7 @@ server {
         set $block_reason_var "cloud_provider_block";
         return 403;
     }
+{{end}}
 {{end}}
 {{end}}
 
@@ -1169,6 +1191,27 @@ server {
 
 {{if .BlockedCloudIPRanges}}
     # Blocked Cloud Provider IPs check
+{{if .CloudProviderAllowSearchBots}}{{if .SearchEnginesList}}
+    # Allow search engine bots to bypass cloud provider blocking
+    set $is_search_bot_cloud 0;
+    if ($http_user_agent ~* ({{toRegexPattern .SearchEnginesList}})) {
+        set $is_search_bot_cloud 1;
+    }
+    set $cloud_block_check_{{sanitizeID .Host.ID}} "${blocked_cloud_{{sanitizeID .Host.ID}}}${is_search_bot_cloud}";
+{{if .CloudProviderChallengeMode}}
+    # Challenge mode - redirect to challenge page instead of blocking (skip for search bots)
+    if ($cloud_block_check_{{sanitizeID .Host.ID}} = "10") {
+        set $block_reason_var "cloud_provider_challenge";
+        return 418; # Use 418 as internal marker for cloud challenge redirect
+    }
+    error_page 418 = @cloud_challenge;
+{{else}}
+    if ($cloud_block_check_{{sanitizeID .Host.ID}} = "10") {
+        set $block_reason_var "cloud_provider_block";
+        return 403;
+    }
+{{end}}
+{{end}}{{else}}
 {{if .CloudProviderChallengeMode}}
     # Challenge mode - redirect to challenge page instead of blocking
     if ($blocked_cloud_{{sanitizeID .Host.ID}} = 1) {
@@ -1181,6 +1224,7 @@ server {
         set $block_reason_var "cloud_provider_block";
         return 403;
     }
+{{end}}
 {{end}}
 {{end}}
 
@@ -1497,6 +1541,7 @@ type ProxyHostConfigData struct {
 	SearchEnginesList             string                // Newline-separated list of allowed search engines from system settings
 	BlockedCloudIPRanges          []string              // CIDR ranges of blocked cloud providers
 	CloudProviderChallengeMode    bool                  // If true, show challenge instead of blocking cloud providers
+	CloudProviderAllowSearchBots  bool                  // If true, allow search engine bots to bypass cloud provider blocking
 	URIBlock                      *model.URIBlock       // URI path blocking settings
 	GlobalBlockExploitsExceptions string                // Global newline-separated list of exploit exceptions from system settings
 	ExploitBlockRules             []model.ExploitBlockRule // Dynamic exploit blocking rules from database

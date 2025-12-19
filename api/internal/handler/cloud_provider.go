@@ -137,8 +137,9 @@ func (h *CloudProviderHandler) GetBlockedProviders(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"blocked_providers": settings.BlockedProviders,
-		"challenge_mode":    settings.ChallengeMode,
+		"blocked_providers":  settings.BlockedProviders,
+		"challenge_mode":     settings.ChallengeMode,
+		"allow_search_bots":  settings.AllowSearchBots,
 	})
 }
 
@@ -157,6 +158,7 @@ func (h *CloudProviderHandler) SetBlockedProviders(c echo.Context) error {
 	settings := &repository.CloudProviderBlockingSettings{
 		BlockedProviders: req.BlockedProviders,
 		ChallengeMode:    req.ChallengeMode,
+		AllowSearchBots:  req.AllowSearchBots,
 	}
 
 	if err := h.repo.SetCloudProviderBlockingSettings(ctx, proxyHostID, settings); err != nil {
@@ -175,14 +177,16 @@ func (h *CloudProviderHandler) SetBlockedProviders(c echo.Context) error {
 	// Audit log
 	auditCtx := service.ContextWithAudit(ctx, c)
 	h.audit.LogSettingsUpdate(auditCtx, "Blocked Cloud Providers", map[string]interface{}{
-		"proxy_host_id":  proxyHostID,
-		"providers":      req.BlockedProviders,
-		"challenge_mode": req.ChallengeMode,
+		"proxy_host_id":     proxyHostID,
+		"providers":         req.BlockedProviders,
+		"challenge_mode":    req.ChallengeMode,
+		"allow_search_bots": req.AllowSearchBots,
 	})
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"blocked_providers": req.BlockedProviders,
-		"challenge_mode":    req.ChallengeMode,
-		"message":           "Cloud provider blocking updated successfully",
+		"blocked_providers":  req.BlockedProviders,
+		"challenge_mode":     req.ChallengeMode,
+		"allow_search_bots":  req.AllowSearchBots,
+		"message":            "Cloud provider blocking updated successfully",
 	})
 }
