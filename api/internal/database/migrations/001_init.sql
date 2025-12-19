@@ -1028,6 +1028,8 @@ CREATE TABLE public.proxy_hosts (
     certificate_id uuid,
     allow_websocket_upgrade boolean DEFAULT true NOT NULL,
     cache_enabled boolean DEFAULT false NOT NULL,
+    cache_static_only boolean DEFAULT true NOT NULL,
+    cache_ttl character varying(20) DEFAULT '7d'::character varying NOT NULL,
     block_exploits boolean DEFAULT true NOT NULL,
     custom_locations jsonb DEFAULT '[]'::jsonb,
     advanced_config text DEFAULT ''::text,
@@ -1060,6 +1062,8 @@ COMMENT ON COLUMN public.proxy_hosts.ssl_http3 IS 'Enable HTTP/3 (QUIC) support 
 COMMENT ON COLUMN public.proxy_hosts.waf_paranoia_level IS 'OWASP CRS paranoia level (1-4). Higher = more rules, more false positives';
 COMMENT ON COLUMN public.proxy_hosts.waf_anomaly_threshold IS 'Anomaly score threshold for blocking. Lower = stricter';
 COMMENT ON COLUMN public.proxy_hosts.block_exploits_exceptions IS 'Newline-separated regex patterns for URI paths that bypass RFI/exploit blocking. Example: ^/wp-json/';
+COMMENT ON COLUMN public.proxy_hosts.cache_static_only IS 'Only cache static assets (js, css, images, fonts) - excludes API paths';
+COMMENT ON COLUMN public.proxy_hosts.cache_ttl IS 'Cache duration for static assets (e.g., 1h, 7d, 30m)';
 CREATE TABLE public.rate_limits (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     proxy_host_id uuid NOT NULL,
