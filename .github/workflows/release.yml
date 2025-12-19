@@ -246,20 +246,6 @@ jobs:
             ## Changes
 
             ${{ steps.changelog.outputs.changelog }}
-
-            ## Installation
-
-            ```bash
-            curl -O https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yml
-
-            cat > .env << 'EOF'
-            TZ=Asia/Seoul
-            JWT_SECRET=$(openssl rand -hex 32)
-            DB_PASSWORD=$(openssl rand -hex 16)
-            EOF
-
-            docker compose up -d
-            ```
           draft: false
           prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') || contains(github.ref, '-alpha') }}
           generate_release_notes: true
