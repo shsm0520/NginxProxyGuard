@@ -954,7 +954,8 @@
       "saving": "Saving...",
       "cancel": "Cancel",
       "creating": "Creating...",
-      "restoring": "Restoring..."
+      "restoring": "Restoring...",
+      "close": "Close"
     },
     "createModal": {
       "title": "Create Backup",
@@ -993,6 +994,19 @@
       "uploadSuccess": "Backup uploaded and restored successfully! Please refresh the page to see updated configurations.",
       "uploadFailed": "Upload and restore failed: {{error}}",
       "invalidFormat": "Invalid file format. Please select a .tar.gz backup file."
+    },
+    "progress": {
+      "title": "Creating Backup",
+      "titleComplete": "Backup Complete",
+      "titleFailed": "Backup Failed",
+      "initializing": "Initializing backup...",
+      "exportingDatabase": "Exporting database...",
+      "exportingConfig": "Exporting configuration files...",
+      "exportingCerts": "Exporting SSL certificates...",
+      "creatingArchive": "Creating archive...",
+      "complete": "Complete!",
+      "completedAt": "Completed at",
+      "pleaseWait": "Please wait..."
     }
   },
   "help": {

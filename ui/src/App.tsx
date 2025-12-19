@@ -91,6 +91,10 @@ function AppContent({ user, onLogout }: AppContentProps) {
 
   const handleSyncAll = async () => {
     if (isSyncing) return
+
+    const confirmed = confirm(t('common:actions.syncAllConfirm', 'Regenerate all Nginx configs for Proxy Hosts and Redirect Hosts?'))
+    if (!confirmed) return
+
     setIsSyncing(true)
     try {
       await apiPost('/api/v1/proxy-hosts/sync')

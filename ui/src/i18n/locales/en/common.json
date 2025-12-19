@@ -192,6 +192,7 @@
     "reload": "Reload Page"
   },
   "actions": {
-    "syncAll": "Sync All Configs"
+    "syncAll": "Sync All Configs",
+    "syncAllConfirm": "Regenerate all Nginx configs for Proxy Hosts and Redirect Hosts?"
   }
 }
