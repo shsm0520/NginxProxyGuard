@@ -579,8 +579,8 @@ func (c *LogCollector) parseErrorLog(line string) (*model.CreateLogRequest, erro
 		return nil, fmt.Errorf("failed to parse error log: %s", line)
 	}
 
-	// Parse timestamp
-	timestamp, err := time.Parse("2006/01/02 15:04:05", matches[1])
+	// Parse timestamp (nginx error log doesn't include timezone, use local)
+	timestamp, err := time.ParseInLocation("2006/01/02 15:04:05", matches[1], time.Local)
 	if err != nil {
 		timestamp = time.Now()
 	}
@@ -657,10 +657,11 @@ func (c *LogCollector) parseModSecLog(line string) (*model.CreateLogRequest, err
 	tx := auditLog.Transaction
 
 	// Parse timestamp (format: "Tue Dec  2 00:42:29 2025")
-	timestamp, err := time.Parse("Mon Jan 2 15:04:05 2006", tx.TimeStamp)
+	// ModSecurity timestamp doesn't include timezone, so use local timezone
+	timestamp, err := time.ParseInLocation("Mon Jan 2 15:04:05 2006", tx.TimeStamp, time.Local)
 	if err != nil {
 		// Try alternate format with double space for single digit day
-		timestamp, err = time.Parse("Mon Jan  2 15:04:05 2006", tx.TimeStamp)
+		timestamp, err = time.ParseInLocation("Mon Jan  2 15:04:05 2006", tx.TimeStamp, time.Local)
 		if err != nil {
 			timestamp = time.Now()
 		}
