@@ -58,8 +58,9 @@ type CreateCloudProviderRequest struct {
 
 // BlockedCloudProvidersRequest for updating blocked providers on a proxy host
 type BlockedCloudProvidersRequest struct {
-	BlockedProviders []string `json:"blocked_providers"` // List of provider slugs
-	ChallengeMode    bool     `json:"challenge_mode"`    // Show challenge instead of blocking
+	BlockedProviders  []string `json:"blocked_providers"`   // List of provider slugs
+	ChallengeMode     bool     `json:"challenge_mode"`      // Show challenge instead of blocking
+	AllowSearchBots   bool     `json:"allow_search_bots"`   // Allow search engine bots to bypass cloud blocking
 }
 
 // RegionInfo provides metadata about regions

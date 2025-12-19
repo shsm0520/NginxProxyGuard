@@ -165,11 +165,14 @@
         "challengeMode": "챌린지 모드",
         "challengeModeDescription": "차단 대신 CAPTCHA 인증을 요구합니다",
         "challengeWarning": "선택한 클라우드 제공자의 트래픽은 사이트 접속 전 CAPTCHA 챌린지를 통과해야 합니다.",
+        "allowSearchBots": "검색봇 허용",
+        "allowSearchBotsDescription": "검색엔진 봇(Google, Bing 등)이 클라우드 차단을 우회하도록 허용합니다",
         "quickAdd": "빠른 추가",
         "majorClouds": "주요 클라우드",
         "budgetVps": "저가형 호스팅/VPS",
         "asiaProviders": "아시아 클라우드",
         "ipRanges": "개 IP 대역",
+        "selectProviders": "제공자 선택",
         "regions": {
           "us": "미국",
           "eu": "유럽",
@@ -366,7 +369,8 @@
       "botFilter": "구글 같은 검색엔진은 허용하고, 정보를 훔쳐가는 나쁜 로봇(크롤러)이나 스패머는 차단합니다.",
       "geoip": "특정 국가에서의 접속을 막거나, 반대로 우리나라에서만 접속되게 할 수 있습니다.",
       "cloudProvider": "AWS, Azure, GCP 등 클라우드 서비스의 IP 대역을 차단합니다. 스팸봇이나 스크래퍼가 클라우드 서버에서 오는 경우 유용하지만, 정상적인 VPN 사용자도 차단될 수 있으니 주의하세요.",
-      "cloudProviderChallenge": "챌린지 모드를 활성화하면 클라우드 IP에서 오는 트래픽을 완전히 차단하는 대신 CAPTCHA 인증을 요구합니다. 정상 사용자는 인증 후 접속할 수 있고, 봇은 차단됩니다."
+      "cloudProviderChallenge": "챌린지 모드를 활성화하면 클라우드 IP에서 오는 트래픽을 완전히 차단하는 대신 CAPTCHA 인증을 요구합니다. 정상 사용자는 인증 후 접속할 수 있고, 봇은 차단됩니다.",
+      "cloudProviderAllowSearchBots": "검색엔진 봇(Google, Bing, Yandex 등)이 클라우드 차단을 우회하도록 허용합니다. 클라우드 IP를 차단해도 사이트가 검색엔진에 정상적으로 인덱싱됩니다."
     },
     "protection": {
       "rateLimit": "한 사람이 너무 빨리 새로고침을 하거나 공격을 시도할 때, 잠시 접속을 막는 기능입니다. '버스트(Burst)'는 봐줄 수 있는 최대 횟수입니다.",

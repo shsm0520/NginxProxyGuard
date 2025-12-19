@@ -488,6 +488,7 @@ CREATE TABLE IF NOT EXISTS public.geo_restrictions (
     challenge_mode boolean DEFAULT false,
     blocked_cloud_providers text[] DEFAULT '{}'::text[],
     challenge_cloud_providers boolean DEFAULT false,
+    allow_search_bots_cloud_providers boolean DEFAULT false,
     allow_private_ips boolean DEFAULT true,
     allow_search_bots boolean DEFAULT false,
     CONSTRAINT geo_restrictions_mode_check CHECK (((mode)::text = ANY ((ARRAY['whitelist'::character varying, 'blacklist'::character varying])::text[])))
