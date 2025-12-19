@@ -134,6 +134,28 @@ func (h *RedirectHostHandler) Update(c echo.Context) error {
 	return c.JSON(http.StatusOK, host)
 }
 
+func (h *RedirectHostHandler) SyncAll(c echo.Context) error {
+	hosts, _, err := h.repo.List(c.Request().Context(), 1, 10000)
+	if err != nil {
+		return databaseError(c, "list redirect hosts for sync", err)
+	}
+
+	if err := h.nginxManager.GenerateAllRedirectConfigs(c.Request().Context(), hosts); err != nil {
+		return internalError(c, "sync all redirect configs", err)
+	}
+
+	if err := h.nginxManager.TestConfig(c.Request().Context()); err != nil {
+		return internalError(c, "test nginx config", err)
+	}
+	if err := h.nginxManager.ReloadNginx(c.Request().Context()); err != nil {
+		return internalError(c, "reload nginx", err)
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "All redirect configs synced successfully",
+	})
+}
+
 func (h *RedirectHostHandler) Delete(c echo.Context) error {
 	id := c.Param("id")
 

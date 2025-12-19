@@ -958,7 +958,8 @@
       "saving": "저장 중...",
       "cancel": "취소",
       "creating": "생성 중...",
-      "restoring": "복원 중..."
+      "restoring": "복원 중...",
+      "close": "닫기"
     },
     "createModal": {
       "title": "백업 생성",
@@ -997,6 +998,19 @@
       "uploadSuccess": "백업이 업로드되고 복원되었습니다! 페이지를 새로고침하여 업데이트된 설정을 확인하세요.",
       "uploadFailed": "업로드 및 복원 실패: {{error}}",
       "invalidFormat": "잘못된 파일 형식입니다. .tar.gz 백업 파일을 선택하세요."
+    },
+    "progress": {
+      "title": "백업 생성 중",
+      "titleComplete": "백업 완료",
+      "titleFailed": "백업 실패",
+      "initializing": "백업 초기화 중...",
+      "exportingDatabase": "데이터베이스 내보내기 중...",
+      "exportingConfig": "설정 파일 내보내기 중...",
+      "exportingCerts": "SSL 인증서 내보내기 중...",
+      "creatingArchive": "압축 파일 생성 중...",
+      "complete": "완료!",
+      "completedAt": "완료 시각",
+      "pleaseWait": "잠시만 기다려주세요..."
     }
   },
   "help": {

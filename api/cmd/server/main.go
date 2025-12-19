@@ -613,6 +613,7 @@ func main() {
 		{
 			redirectHosts.GET("", redirectHostHandler.List)
 			redirectHosts.POST("", redirectHostHandler.Create)
+			redirectHosts.POST("/sync", redirectHostHandler.SyncAll)
 			redirectHosts.GET("/:id", redirectHostHandler.Get)
 			redirectHosts.PUT("/:id", redirectHostHandler.Update)
 			redirectHosts.DELETE("/:id", redirectHostHandler.Delete)
