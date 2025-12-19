@@ -190,5 +190,8 @@
     "description": "애플리케이션에서 예기치 않은 오류가 발생했습니다",
     "tryAgain": "다시 시도",
     "reload": "페이지 새로고침"
+  },
+  "actions": {
+    "syncAll": "전체 설정 동기화"
   }
 }

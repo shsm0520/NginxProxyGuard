@@ -294,7 +294,21 @@
       "cache": {
         "title": "캐싱",
         "enabled": "캐시 활성화",
-        "description": "정적 파일을 캐시하여 성능을 향상시킵니다"
+        "description": "정적 파일을 캐시하여 성능을 향상시킵니다",
+        "staticOnly": "정적 자원만 캐시",
+        "staticOnlyDesc": "정적 파일(js, css, 이미지, 폰트)만 캐시합니다. API 경로는 항상 제외됩니다.",
+        "ttl": "캐시 기간",
+        "ttl30m": "30분",
+        "ttl1h": "1시간",
+        "ttl6h": "6시간",
+        "ttl1d": "1일",
+        "ttl7d": "7일",
+        "ttl30d": "30일",
+        "info": "캐시 동작:",
+        "infoStaticOnly": "정적 자원(js, css, 이미지, 폰트)만 캐시됩니다",
+        "infoAll": "/api/* 경로를 제외한 모든 응답이 캐시됩니다",
+        "infoTTL": "캐시 기간:",
+        "infoHeader": "X-Cache-Status 헤더로 HIT/MISS 확인 가능"
       },
       "compression": {
         "title": "압축",
@@ -370,6 +384,8 @@
     "performance": {
       "websocket": "웹소켓 연결(Upgrade 헤더)을 허용하여 실시간 통신을 지원합니다.",
       "cache": "이미지나 CSS 같은 파일들을 잠시 저장해두었다가, 다음 방문 때 빠르게 보여주는 기능입니다.",
+      "cacheStaticOnly": "정적 파일(js, css, 이미지, 폰트)만 캐시합니다. API 응답이나 HTML은 캐시하지 않아 동적 콘텐츠가 항상 최신 상태로 유지됩니다.",
+      "cacheTTL": "캐시된 파일이 얼마나 오래 저장될지 설정합니다. 자주 변경되는 사이트는 짧게, 정적 사이트는 길게 설정하세요.",
       "compression": "데이터를 압축해서 전송합니다. 인터넷 데이터를 아끼고 속도도 빨라집니다."
     },
     "advanced": {

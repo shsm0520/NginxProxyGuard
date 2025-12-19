@@ -292,7 +292,21 @@
       "cache": {
         "title": "Caching",
         "enabled": "Enable Cache",
-        "description": "Cache static files to improve performance"
+        "description": "Cache static files to improve performance",
+        "staticOnly": "Static Assets Only",
+        "staticOnlyDesc": "Only cache static files (js, css, images, fonts). API paths are always excluded.",
+        "ttl": "Cache Duration",
+        "ttl30m": "30 minutes",
+        "ttl1h": "1 hour",
+        "ttl6h": "6 hours",
+        "ttl1d": "1 day",
+        "ttl7d": "7 days",
+        "ttl30d": "30 days",
+        "info": "Cache behavior:",
+        "infoStaticOnly": "Only static assets (js, css, images, fonts) will be cached",
+        "infoAll": "All responses except /api/* paths will be cached",
+        "infoTTL": "Cache duration:",
+        "infoHeader": "X-Cache-Status header shows HIT/MISS"
       },
       "compression": {
         "title": "Compression",
@@ -367,6 +381,8 @@
     },
     "performance": {
       "cache": "Caches static assets (images, CSS) to reduce server load and speed up loading.",
+      "cacheStaticOnly": "Caches only static files (js, css, images, fonts). API responses and HTML are not cached, ensuring dynamic content stays fresh.",
+      "cacheTTL": "How long cached files are stored. Use shorter durations for frequently updated sites, longer for static sites.",
       "compression": "Compresses responses to reduce data usage and improve speed.",
       "websocket": "Enables WebSocket support (Upgrade header) for real-time communication."
     },

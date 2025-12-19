@@ -11,6 +11,8 @@ export interface ProxyHost {
   certificate_id?: string
   allow_websocket_upgrade: boolean
   cache_enabled: boolean
+  cache_static_only: boolean
+  cache_ttl: string
   block_exploits: boolean
   block_exploits_exceptions?: string
   custom_locations?: unknown[]
@@ -39,6 +41,8 @@ export interface CreateProxyHostRequest {
   access_list_id?: string
   allow_websocket_upgrade?: boolean
   cache_enabled?: boolean
+  cache_static_only?: boolean
+  cache_ttl?: string
   block_exploits?: boolean
   block_exploits_exceptions?: string
   waf_enabled?: boolean
@@ -61,6 +65,8 @@ export interface UpdateProxyHostRequest {
   certificate_id?: string
   allow_websocket_upgrade?: boolean
   cache_enabled?: boolean
+  cache_static_only?: boolean
+  cache_ttl?: string
   block_exploits?: boolean
   block_exploits_exceptions?: string
   waf_enabled?: boolean

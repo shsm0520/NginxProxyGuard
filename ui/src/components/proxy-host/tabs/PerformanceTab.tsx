@@ -46,13 +46,61 @@ export function PerformanceTabContent({ formData, setFormData }: PerformanceTabP
           </div>
         </div>
         {formData.cache_enabled && (
-          <div className="mt-3 text-xs text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 p-3 rounded border border-slate-200 dark:border-slate-700">
-            <p className="font-medium mb-1">Cache settings:</p>
-            <ul className="list-disc list-inside space-y-0.5 text-slate-500 dark:text-slate-400">
-              <li>200, 301, 302 responses cached for 1 hour</li>
-              <li>404 responses cached for 1 minute</li>
-              <li>X-Cache-Status header shows HIT/MISS</li>
-            </ul>
+          <div className="mt-4 space-y-4 bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+            {/* Static Only Toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  {t('form.performance.cache.staticOnly', 'Static Assets Only')}
+                  <HelpTip contentKey="help.performance.cacheStaticOnly" />
+                </label>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {t('form.performance.cache.staticOnlyDesc', 'Only cache static files (js, css, images, fonts). API paths are always excluded.')}
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={formData.cache_static_only ?? true}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, cache_static_only: e.target.checked }))
+                }
+                className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+              />
+            </div>
+
+            {/* Cache TTL */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2">
+                {t('form.performance.cache.ttl', 'Cache Duration')}
+                <HelpTip contentKey="help.performance.cacheTTL" />
+              </label>
+              <select
+                value={formData.cache_ttl || '7d'}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, cache_ttl: e.target.value }))
+                }
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="30m">{t('form.performance.cache.ttl30m', '30 minutes')}</option>
+                <option value="1h">{t('form.performance.cache.ttl1h', '1 hour')}</option>
+                <option value="6h">{t('form.performance.cache.ttl6h', '6 hours')}</option>
+                <option value="1d">{t('form.performance.cache.ttl1d', '1 day')}</option>
+                <option value="7d">{t('form.performance.cache.ttl7d', '7 days')}</option>
+                <option value="30d">{t('form.performance.cache.ttl30d', '30 days')}</option>
+              </select>
+            </div>
+
+            {/* Cache Info */}
+            <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 p-3 rounded border border-slate-200 dark:border-slate-700">
+              <p className="font-medium text-slate-600 dark:text-slate-300 mb-1">{t('form.performance.cache.info', 'Cache behavior:')}</p>
+              <ul className="list-disc list-inside space-y-0.5">
+                <li>{formData.cache_static_only
+                  ? t('form.performance.cache.infoStaticOnly', 'Only static assets (js, css, images, fonts) will be cached')
+                  : t('form.performance.cache.infoAll', 'All responses except /api/* paths will be cached')}</li>
+                <li>{t('form.performance.cache.infoTTL', 'Cache duration:')} {formData.cache_ttl || '7d'}</li>
+                <li>{t('form.performance.cache.infoHeader', 'X-Cache-Status header shows HIT/MISS')}</li>
+              </ul>
+            </div>
           </div>
         )}
       </div>

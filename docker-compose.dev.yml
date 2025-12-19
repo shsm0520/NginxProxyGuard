@@ -1,10 +1,15 @@
 # Development docker-compose - builds locally
+# Usage:
+#   First time setup: docker compose -f docker-compose.dev.yml --profile infra up -d
+#   Development: docker compose -f docker-compose.dev.yml up -d --build
+#   Rebuild specific service: docker compose -f docker-compose.dev.yml up -d --build api
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database (only starts with --profile infra)
   db:
     image: postgres:17-alpine
     container_name: npg-db
     restart: unless-stopped
+    profiles: ["infra"]
     environment:
       TZ: ${TZ:-UTC}
       POSTGRES_USER: ${DB_USER:-postgres}
@@ -19,11 +24,12 @@ services:
       retries: 10
       start_period: 30s
 
-  # Valkey (Redis-compatible) for caching
+  # Valkey (Redis-compatible) for caching (only starts with --profile infra)
   valkey:
     image: valkey/valkey:8-alpine
     container_name: npg-valkey
     restart: unless-stopped
+    profiles: ["infra"]
     environment:
       TZ: ${TZ:-UTC}
     command: >
@@ -51,13 +57,13 @@ services:
     environment:
       TZ: ${TZ:-UTC}
       PORT: "8080"
-      DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-nginx_proxy_guard}?sslmode=disable
-      REDIS_URL: redis://valkey:6379/0
+      DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-your-secure-password-here}@npg-db:5432/${DB_NAME:-nginx_guard}?sslmode=disable
+      REDIS_URL: redis://npg-valkey:6379/0
       JWT_SECRET: ${JWT_SECRET:-change-this-in-production-use-openssl-rand-hex-32}
       ENVIRONMENT: ${ENVIRONMENT:-production}
       NGINX_CONTAINER: npg-proxy
       NGINX_SKIP_TEST: "false"
-      NGINX_STATUS_URL: "http://nginx:8080/nginx_status"
+      NGINX_STATUS_URL: "http://npg-proxy:8080/nginx_status"
       NGINX_ACCESS_LOG: "/var/log/nginx/access.log"
       BACKUP_PATH: ${BACKUP_PATH:-/app/data/backups}
       ACME_EMAIL: ${ACME_EMAIL:-}
@@ -68,11 +74,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /etc/os-release:/host/etc/os-release:ro
       - /etc/hostname:/host/etc/hostname:ro
-    depends_on:
-      db:
-        condition: service_healthy
-      valkey:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
       interval: 30s
@@ -93,8 +94,6 @@ services:
       - "81:443"
     volumes:
       - ui_data:/app/ssl:rw
-    depends_on:
-      - api
 
   # Nginx Reverse Proxy (Local Build)
   nginx:
@@ -119,8 +118,6 @@ services:
         hard: 65535
     volumes:
       - nginx_data:/etc/nginx:rw
-    depends_on:
-      - api
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 60s
@@ -130,15 +127,21 @@ services:
 volumes:
   postgres_data:
     name: npg_postgres_data
+    external: true
   valkey_data:
     name: npg_valkey_data
+    external: true
   nginx_data:
     name: npg_nginx_data
+    external: true
   api_data:
     name: npg_api_data
+    external: true
   ui_data:
     name: npg_ui_data
+    external: true
 
 networks:
   default:
     name: npg-network
+    external: true

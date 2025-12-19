@@ -123,7 +123,9 @@ type ProxyHost struct {
 	AllowWebsocketUpgrade bool `json:"allow_websocket_upgrade"`
 
 	// Cache configuration
-	CacheEnabled bool `json:"cache_enabled"`
+	CacheEnabled    bool   `json:"cache_enabled"`
+	CacheStaticOnly bool   `json:"cache_static_only"` // Only cache static assets (js, css, images, fonts)
+	CacheTTL        string `json:"cache_ttl"`         // Cache duration (e.g., "1h", "7d", "30m")
 
 	// Security
 	BlockExploits           bool   `json:"block_exploits"`
@@ -161,17 +163,19 @@ type CreateProxyHostRequest struct {
 	SSLHTTP2              bool     `json:"ssl_http2"`
 	SSLHTTP3              bool     `json:"ssl_http3"`
 	CertificateID         *string  `json:"certificate_id,omitempty"`
-	AllowWebsocketUpgrade bool     `json:"allow_websocket_upgrade"`
-	CacheEnabled              bool     `json:"cache_enabled"`
-	BlockExploits             bool     `json:"block_exploits"`
-	BlockExploitsExceptions   string   `json:"block_exploits_exceptions,omitempty"`
-	WAFEnabled                bool     `json:"waf_enabled"`
-	WAFMode               string   `json:"waf_mode"`
-	WAFParanoiaLevel      int      `json:"waf_paranoia_level"`
-	WAFAnomalyThreshold   int      `json:"waf_anomaly_threshold"`
-	AccessListID          *string  `json:"access_list_id,omitempty"`
-	AdvancedConfig        string   `json:"advanced_config,omitempty"`
-	Enabled               bool     `json:"enabled"`
+	AllowWebsocketUpgrade   bool     `json:"allow_websocket_upgrade"`
+	CacheEnabled            bool     `json:"cache_enabled"`
+	CacheStaticOnly         bool     `json:"cache_static_only"`
+	CacheTTL                string   `json:"cache_ttl"`
+	BlockExploits           bool     `json:"block_exploits"`
+	BlockExploitsExceptions string   `json:"block_exploits_exceptions,omitempty"`
+	WAFEnabled              bool     `json:"waf_enabled"`
+	WAFMode                 string   `json:"waf_mode"`
+	WAFParanoiaLevel        int      `json:"waf_paranoia_level"`
+	WAFAnomalyThreshold     int      `json:"waf_anomaly_threshold"`
+	AccessListID            *string  `json:"access_list_id,omitempty"`
+	AdvancedConfig          string   `json:"advanced_config,omitempty"`
+	Enabled                 bool     `json:"enabled"`
 }
 
 type UpdateProxyHostRequest struct {
@@ -184,17 +188,19 @@ type UpdateProxyHostRequest struct {
 	SSLHTTP2              *bool    `json:"ssl_http2,omitempty"`
 	SSLHTTP3              *bool    `json:"ssl_http3,omitempty"`
 	CertificateID         *string  `json:"certificate_id,omitempty"`
-	AllowWebsocketUpgrade *bool    `json:"allow_websocket_upgrade,omitempty"`
-	CacheEnabled              *bool    `json:"cache_enabled,omitempty"`
-	BlockExploits             *bool    `json:"block_exploits,omitempty"`
-	BlockExploitsExceptions   *string  `json:"block_exploits_exceptions,omitempty"`
-	WAFEnabled                *bool    `json:"waf_enabled,omitempty"`
-	WAFMode               *string  `json:"waf_mode,omitempty"`
-	WAFParanoiaLevel      *int     `json:"waf_paranoia_level,omitempty"`
-	WAFAnomalyThreshold   *int     `json:"waf_anomaly_threshold,omitempty"`
-	AccessListID          *string  `json:"access_list_id,omitempty"`
-	AdvancedConfig        *string  `json:"advanced_config,omitempty"`
-	Enabled               *bool    `json:"enabled,omitempty"`
+	AllowWebsocketUpgrade   *bool   `json:"allow_websocket_upgrade,omitempty"`
+	CacheEnabled            *bool   `json:"cache_enabled,omitempty"`
+	CacheStaticOnly         *bool   `json:"cache_static_only,omitempty"`
+	CacheTTL                *string `json:"cache_ttl,omitempty"`
+	BlockExploits           *bool   `json:"block_exploits,omitempty"`
+	BlockExploitsExceptions *string `json:"block_exploits_exceptions,omitempty"`
+	WAFEnabled              *bool   `json:"waf_enabled,omitempty"`
+	WAFMode                 *string `json:"waf_mode,omitempty"`
+	WAFParanoiaLevel        *int    `json:"waf_paranoia_level,omitempty"`
+	WAFAnomalyThreshold     *int    `json:"waf_anomaly_threshold,omitempty"`
+	AccessListID            *string `json:"access_list_id,omitempty"`
+	AdvancedConfig          *string `json:"advanced_config,omitempty"`
+	Enabled                 *bool   `json:"enabled,omitempty"`
 }
 
 type ProxyHostListResponse struct {

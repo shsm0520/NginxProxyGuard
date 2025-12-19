@@ -642,12 +642,27 @@ server {
         {{end}}
         {{if .Host.CacheEnabled}}
         # Caching
+        {{if .Host.CacheStaticOnly}}
+        # Static assets only - bypass cache for API and dynamic content
+        set $cache_bypass 1;
+        if ($request_uri ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webp|avif|mp4|webm|pdf)$) {
+            set $cache_bypass 0;
+        }
+        proxy_no_cache $cache_bypass;
+        proxy_cache_bypass $cache_bypass $http_pragma $http_authorization;
+        {{else}}
+        # All content except API paths
+        set $cache_bypass 0;
+        if ($request_uri ~* ^/api/) {
+            set $cache_bypass 1;
+        }
+        proxy_no_cache $cache_bypass;
+        proxy_cache_bypass $cache_bypass $http_pragma $http_authorization;
+        {{end}}
         proxy_cache proxy_cache;
         proxy_cache_key $scheme$host$request_uri;
-        proxy_cache_valid 200 301 302 1h;
-        proxy_cache_valid 404 1m;
+        proxy_cache_valid 200 301 302 {{if .Host.CacheTTL}}{{.Host.CacheTTL}}{{else}}1h{{end}};
         proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
-        proxy_cache_bypass $http_pragma $http_authorization;
         add_header X-Cache-Status $upstream_cache_status always;
         {{end}}
     }
@@ -706,12 +721,27 @@ server {
         {{end}}
         {{if .Host.CacheEnabled}}
         # Caching
+        {{if .Host.CacheStaticOnly}}
+        # Static assets only - bypass cache for API and dynamic content
+        set $cache_bypass 1;
+        if ($request_uri ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webp|avif|mp4|webm|pdf)$) {
+            set $cache_bypass 0;
+        }
+        proxy_no_cache $cache_bypass;
+        proxy_cache_bypass $cache_bypass $http_pragma $http_authorization;
+        {{else}}
+        # All content except API paths
+        set $cache_bypass 0;
+        if ($request_uri ~* ^/api/) {
+            set $cache_bypass 1;
+        }
+        proxy_no_cache $cache_bypass;
+        proxy_cache_bypass $cache_bypass $http_pragma $http_authorization;
+        {{end}}
         proxy_cache proxy_cache;
         proxy_cache_key $scheme$host$request_uri;
-        proxy_cache_valid 200 301 302 1h;
-        proxy_cache_valid 404 1m;
+        proxy_cache_valid 200 301 302 {{if .Host.CacheTTL}}{{.Host.CacheTTL}}{{else}}1h{{end}};
         proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
-        proxy_cache_bypass $http_pragma $http_authorization;
         add_header X-Cache-Status $upstream_cache_status always;
         {{end}}
     }
@@ -1345,12 +1375,27 @@ server {
         {{end}}
         {{if .Host.CacheEnabled}}
         # Caching
+        {{if .Host.CacheStaticOnly}}
+        # Static assets only - bypass cache for API and dynamic content
+        set $cache_bypass 1;
+        if ($request_uri ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webp|avif|mp4|webm|pdf)$) {
+            set $cache_bypass 0;
+        }
+        proxy_no_cache $cache_bypass;
+        proxy_cache_bypass $cache_bypass $http_pragma $http_authorization;
+        {{else}}
+        # All content except API paths
+        set $cache_bypass 0;
+        if ($request_uri ~* ^/api/) {
+            set $cache_bypass 1;
+        }
+        proxy_no_cache $cache_bypass;
+        proxy_cache_bypass $cache_bypass $http_pragma $http_authorization;
+        {{end}}
         proxy_cache proxy_cache;
         proxy_cache_key $scheme$host$request_uri;
-        proxy_cache_valid 200 301 302 1h;
-        proxy_cache_valid 404 1m;
+        proxy_cache_valid 200 301 302 {{if .Host.CacheTTL}}{{.Host.CacheTTL}}{{else}}1h{{end}};
         proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
-        proxy_cache_bypass $http_pragma $http_authorization;
         add_header X-Cache-Status $upstream_cache_status always;
         {{end}}
         {{if .SecurityHeaders}}{{if .SecurityHeaders.Enabled}}

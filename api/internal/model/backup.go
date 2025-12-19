@@ -239,6 +239,8 @@ type ProxyHostData struct {
 	CertificateID         string                 `json:"certificate_id,omitempty"`
 	AllowWebsocketUpgrade bool                   `json:"allow_websocket_upgrade"`
 	CacheEnabled          bool                   `json:"cache_enabled"`
+	CacheStaticOnly       bool                   `json:"cache_static_only"`
+	CacheTTL              string                 `json:"cache_ttl"`
 	BlockExploits         bool                   `json:"block_exploits"`
 	CustomLocations       []interface{}          `json:"custom_locations,omitempty"`
 	AdvancedConfig        string                 `json:"advanced_config,omitempty"`

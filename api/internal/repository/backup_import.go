@@ -356,13 +356,20 @@ func (r *BackupRepository) importProxyHost(ctx context.Context, tx *sql.Tx, ph *
 	customLocations, _ := json.Marshal(ph.ProxyHost.CustomLocations)
 	meta, _ := json.Marshal(ph.ProxyHost.Meta)
 
+	// Set default values for new cache fields if not set
+	cacheStaticOnly := ph.ProxyHost.CacheStaticOnly
+	cacheTTL := ph.ProxyHost.CacheTTL
+	if cacheTTL == "" {
+		cacheTTL = "7d"
+	}
+
 	query := `
 		INSERT INTO proxy_hosts (domain_names, forward_scheme, forward_host, forward_port,
 		                         ssl_enabled, ssl_force_https, ssl_http2, certificate_id,
-		                         allow_websocket_upgrade, cache_enabled, block_exploits,
+		                         allow_websocket_upgrade, cache_enabled, cache_static_only, cache_ttl, block_exploits,
 		                         custom_locations, advanced_config, waf_enabled, waf_mode,
 		                         access_list_id, enabled, meta)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
 		RETURNING id
 	`
 
@@ -378,7 +385,7 @@ func (r *BackupRepository) importProxyHost(ctx context.Context, tx *sql.Tx, ph *
 	err := tx.QueryRowContext(ctx, query,
 		pq.Array(ph.ProxyHost.DomainNames), ph.ProxyHost.ForwardScheme, ph.ProxyHost.ForwardHost, ph.ProxyHost.ForwardPort,
 		ph.ProxyHost.SSLEnabled, ph.ProxyHost.SSLForceHTTPS, ph.ProxyHost.SSLHTTP2, certID,
-		ph.ProxyHost.AllowWebsocketUpgrade, ph.ProxyHost.CacheEnabled, ph.ProxyHost.BlockExploits,
+		ph.ProxyHost.AllowWebsocketUpgrade, ph.ProxyHost.CacheEnabled, cacheStaticOnly, cacheTTL, ph.ProxyHost.BlockExploits,
 		customLocations, ph.ProxyHost.AdvancedConfig, ph.ProxyHost.WAFEnabled, ph.ProxyHost.WAFMode,
 		accessListID, ph.ProxyHost.Enabled, meta,
 	).Scan(&newID)

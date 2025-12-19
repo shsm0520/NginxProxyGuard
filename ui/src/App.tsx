@@ -36,6 +36,7 @@ import { Login } from './components/Login'
 import { InitialSetup } from './components/InitialSetup'
 import AccountSettings from './components/AccountSettings'
 import { getAuthStatus, logout, getToken, User } from './api/auth'
+import { apiPost } from './api/client'
 import type { ProxyHost } from './types/proxy-host'
 import { useDarkMode } from './hooks/useDarkMode'
 
@@ -84,8 +85,22 @@ function AppContent({ user, onLogout }: AppContentProps) {
   const [editingHost, setEditingHost] = useState<ProxyHost | null>(null)
   const [initialFormTab, setInitialFormTab] = useState<'basic' | 'ssl' | 'security' | 'performance' | 'advanced' | 'protection'>('basic')
   const [showAccountSettings, setShowAccountSettings] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
 
   const health = useQuery({ queryKey: ['health'], queryFn: fetchHealth, refetchInterval: 10000 })
+
+  const handleSyncAll = async () => {
+    if (isSyncing) return
+    setIsSyncing(true)
+    try {
+      await apiPost('/api/v1/proxy-hosts/sync')
+      await apiPost('/api/v1/redirect-hosts/sync')
+    } catch (error) {
+      console.error('Sync failed:', error)
+    } finally {
+      setIsSyncing(false)
+    }
+  }
 
   const handleEdit = (host: ProxyHost, tab?: 'basic' | 'ssl' | 'security' | 'performance' | 'advanced' | 'protection') => {
     setEditingHost(host)
@@ -160,6 +175,19 @@ function AppContent({ user, onLogout }: AppContentProps) {
           </div>
           <div className="flex items-center gap-2 lg:gap-4">
             <div className="flex items-center gap-2">
+              {/* Sync All Button */}
+              <button
+                onClick={handleSyncAll}
+                disabled={isSyncing}
+                className={`p-1.5 rounded-lg transition-colors ${isSyncing
+                  ? 'text-primary-500 bg-primary-50 dark:bg-primary-900/30'
+                  : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'}`}
+                title={t('common:actions.syncAll', 'Sync All Configs')}
+              >
+                <svg className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
               {/* Dark Mode Toggle */}
               <button
                 onClick={toggle}

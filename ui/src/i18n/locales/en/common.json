@@ -190,5 +190,8 @@
     "description": "An unexpected error occurred in the application",
     "tryAgain": "Try Again",
     "reload": "Reload Page"
+  },
+  "actions": {
+    "syncAll": "Sync All Configs"
   }
 }

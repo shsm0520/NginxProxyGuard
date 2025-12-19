@@ -191,7 +191,10 @@ func (r *BackupRepository) exportProxyHosts(ctx context.Context) ([]model.ProxyH
 	query := `
 		SELECT id, domain_names, forward_scheme, forward_host, forward_port,
 		       ssl_enabled, ssl_force_https, ssl_http2, certificate_id,
-		       allow_websocket_upgrade, cache_enabled, block_exploits,
+		       allow_websocket_upgrade, cache_enabled,
+		       COALESCE(cache_static_only, true) as cache_static_only,
+		       COALESCE(cache_ttl, '7d') as cache_ttl,
+		       block_exploits,
 		       custom_locations, advanced_config, waf_enabled, waf_mode,
 		       access_list_id, enabled, meta
 		FROM proxy_hosts ORDER BY created_at
@@ -213,7 +216,7 @@ func (r *BackupRepository) exportProxyHosts(ctx context.Context) ([]model.ProxyH
 		err := rows.Scan(
 			&ph.ID, pq.Array(&ph.DomainNames), &ph.ForwardScheme, &ph.ForwardHost, &ph.ForwardPort,
 			&ph.SSLEnabled, &ph.SSLForceHTTPS, &ph.SSLHTTP2, &certID,
-			&ph.AllowWebsocketUpgrade, &ph.CacheEnabled, &ph.BlockExploits,
+			&ph.AllowWebsocketUpgrade, &ph.CacheEnabled, &ph.CacheStaticOnly, &ph.CacheTTL, &ph.BlockExploits,
 			&customLocations, &advancedConfig, &ph.WAFEnabled, &ph.WAFMode,
 			&accessListID, &ph.Enabled, &meta,
 		)

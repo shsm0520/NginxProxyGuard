@@ -51,13 +51,15 @@ func (r *ProxyHostRepository) Create(ctx context.Context, req *model.CreateProxy
 		INSERT INTO proxy_hosts (
 			domain_names, forward_scheme, forward_host, forward_port,
 			ssl_enabled, ssl_force_https, ssl_http2, ssl_http3, certificate_id,
-			allow_websocket_upgrade, cache_enabled, block_exploits, block_exploits_exceptions,
+			allow_websocket_upgrade, cache_enabled, cache_static_only, cache_ttl,
+			block_exploits, block_exploits_exceptions,
 			waf_enabled, waf_mode, waf_paranoia_level, waf_anomaly_threshold,
 			advanced_config, enabled
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
 		RETURNING id, domain_names, forward_scheme, forward_host, forward_port,
 			ssl_enabled, ssl_force_https, ssl_http2, ssl_http3, certificate_id,
-			allow_websocket_upgrade, cache_enabled, block_exploits, block_exploits_exceptions,
+			allow_websocket_upgrade, cache_enabled, cache_static_only, cache_ttl,
+			block_exploits, block_exploits_exceptions,
 			custom_locations, advanced_config, waf_enabled, waf_mode,
 			waf_paranoia_level, waf_anomaly_threshold,
 			access_list_id, enabled, meta, created_at, updated_at
@@ -95,6 +97,12 @@ func (r *ProxyHostRepository) Create(ctx context.Context, req *model.CreateProxy
 		blockExploitsExceptions = "^/wp-json/\n^/api/v1/challenge/"
 	}
 
+	// Set default cache TTL if not provided
+	cacheTTL := req.CacheTTL
+	if cacheTTL == "" {
+		cacheTTL = "7d"
+	}
+
 	err := r.db.QueryRowContext(ctx, query,
 		pq.Array(req.DomainNames),
 		req.ForwardScheme,
@@ -107,6 +115,8 @@ func (r *ProxyHostRepository) Create(ctx context.Context, req *model.CreateProxy
 		certIDParam,
 		req.AllowWebsocketUpgrade,
 		req.CacheEnabled,
+		req.CacheStaticOnly,
+		cacheTTL,
 		req.BlockExploits,
 		blockExploitsExceptions,
 		req.WAFEnabled,
@@ -128,6 +138,8 @@ func (r *ProxyHostRepository) Create(ctx context.Context, req *model.CreateProxy
 		&certificateID,
 		&host.AllowWebsocketUpgrade,
 		&host.CacheEnabled,
+		&host.CacheStaticOnly,
+		&host.CacheTTL,
 		&host.BlockExploits,
 		&host.BlockExploitsExceptions,
 		&customLocations,
@@ -177,7 +189,10 @@ func (r *ProxyHostRepository) GetByID(ctx context.Context, id string) (*model.Pr
 	query := `
 		SELECT id, domain_names, forward_scheme, forward_host, forward_port,
 			ssl_enabled, ssl_force_https, ssl_http2, ssl_http3, certificate_id,
-			allow_websocket_upgrade, cache_enabled, block_exploits,
+			allow_websocket_upgrade, cache_enabled,
+			COALESCE(cache_static_only, true) as cache_static_only,
+			COALESCE(cache_ttl, '7d') as cache_ttl,
+			block_exploits,
 			COALESCE(block_exploits_exceptions, '') as block_exploits_exceptions,
 			custom_locations, advanced_config, waf_enabled, waf_mode,
 			waf_paranoia_level, waf_anomaly_threshold,
@@ -202,6 +217,8 @@ func (r *ProxyHostRepository) GetByID(ctx context.Context, id string) (*model.Pr
 		&certificateID,
 		&host.AllowWebsocketUpgrade,
 		&host.CacheEnabled,
+		&host.CacheStaticOnly,
+		&host.CacheTTL,
 		&host.BlockExploits,
 		&host.BlockExploitsExceptions,
 		&customLocations,
@@ -263,7 +280,10 @@ func (r *ProxyHostRepository) List(ctx context.Context, page, perPage int) ([]mo
 	query := `
 		SELECT id, domain_names, forward_scheme, forward_host, forward_port,
 			ssl_enabled, ssl_force_https, ssl_http2, ssl_http3, certificate_id,
-			allow_websocket_upgrade, cache_enabled, block_exploits,
+			allow_websocket_upgrade, cache_enabled,
+			COALESCE(cache_static_only, true) as cache_static_only,
+			COALESCE(cache_ttl, '7d') as cache_ttl,
+			block_exploits,
 			COALESCE(block_exploits_exceptions, '') as block_exploits_exceptions,
 			custom_locations, advanced_config, waf_enabled, waf_mode,
 			waf_paranoia_level, waf_anomaly_threshold,
@@ -298,6 +318,8 @@ func (r *ProxyHostRepository) List(ctx context.Context, page, perPage int) ([]mo
 			&certificateID,
 			&host.AllowWebsocketUpgrade,
 			&host.CacheEnabled,
+			&host.CacheStaticOnly,
+			&host.CacheTTL,
 			&host.BlockExploits,
 			&host.BlockExploitsExceptions,
 			&customLocations,
@@ -379,6 +401,12 @@ func (r *ProxyHostRepository) Update(ctx context.Context, id string, req *model.
 	if req.CacheEnabled != nil {
 		existing.CacheEnabled = *req.CacheEnabled
 	}
+	if req.CacheStaticOnly != nil {
+		existing.CacheStaticOnly = *req.CacheStaticOnly
+	}
+	if req.CacheTTL != nil {
+		existing.CacheTTL = *req.CacheTTL
+	}
 	if req.BlockExploits != nil {
 		existing.BlockExploits = *req.BlockExploits
 	}
@@ -417,15 +445,17 @@ func (r *ProxyHostRepository) Update(ctx context.Context, id string, req *model.
 			certificate_id = $9,
 			allow_websocket_upgrade = $10,
 			cache_enabled = $11,
-			block_exploits = $12,
-			block_exploits_exceptions = $13,
-			waf_enabled = $14,
-			waf_mode = $15,
-			waf_paranoia_level = $16,
-			waf_anomaly_threshold = $17,
-			advanced_config = $18,
-			enabled = $19
-		WHERE id = $20
+			cache_static_only = $12,
+			cache_ttl = $13,
+			block_exploits = $14,
+			block_exploits_exceptions = $15,
+			waf_enabled = $16,
+			waf_mode = $17,
+			waf_paranoia_level = $18,
+			waf_anomaly_threshold = $19,
+			advanced_config = $20,
+			enabled = $21
+		WHERE id = $22
 		RETURNING updated_at
 	`
 
@@ -447,6 +477,8 @@ func (r *ProxyHostRepository) Update(ctx context.Context, id string, req *model.
 		certIDParam,
 		existing.AllowWebsocketUpgrade,
 		existing.CacheEnabled,
+		existing.CacheStaticOnly,
+		existing.CacheTTL,
 		existing.BlockExploits,
 		existing.BlockExploitsExceptions,
 		existing.WAFEnabled,
@@ -530,7 +562,10 @@ func (r *ProxyHostRepository) GetByDomain(ctx context.Context, domain string) (*
 	query := `
 		SELECT id, domain_names, forward_scheme, forward_host, forward_port,
 			ssl_enabled, ssl_force_https, ssl_http2, ssl_http3, certificate_id,
-			allow_websocket_upgrade, cache_enabled, block_exploits,
+			allow_websocket_upgrade, cache_enabled,
+			COALESCE(cache_static_only, true) as cache_static_only,
+			COALESCE(cache_ttl, '7d') as cache_ttl,
+			block_exploits,
 			COALESCE(block_exploits_exceptions, '') as block_exploits_exceptions,
 			custom_locations, advanced_config, waf_enabled, waf_mode,
 			waf_paranoia_level, waf_anomaly_threshold,
@@ -556,6 +591,8 @@ func (r *ProxyHostRepository) GetByDomain(ctx context.Context, domain string) (*
 		&certificateID,
 		&host.AllowWebsocketUpgrade,
 		&host.CacheEnabled,
+		&host.CacheStaticOnly,
+		&host.CacheTTL,
 		&host.BlockExploits,
 		&host.BlockExploitsExceptions,
 		&customLocations,
@@ -594,7 +631,10 @@ func (r *ProxyHostRepository) GetAllEnabled(ctx context.Context) ([]model.ProxyH
 	query := `
 		SELECT id, domain_names, forward_scheme, forward_host, forward_port,
 			ssl_enabled, ssl_force_https, ssl_http2, ssl_http3, certificate_id,
-			allow_websocket_upgrade, cache_enabled, block_exploits,
+			allow_websocket_upgrade, cache_enabled,
+			COALESCE(cache_static_only, true) as cache_static_only,
+			COALESCE(cache_ttl, '7d') as cache_ttl,
+			block_exploits,
 			COALESCE(block_exploits_exceptions, '') as block_exploits_exceptions,
 			custom_locations, advanced_config, waf_enabled, waf_mode,
 			waf_paranoia_level, waf_anomaly_threshold,
@@ -629,6 +669,8 @@ func (r *ProxyHostRepository) GetAllEnabled(ctx context.Context) ([]model.ProxyH
 			&certificateID,
 			&host.AllowWebsocketUpgrade,
 			&host.CacheEnabled,
+			&host.CacheStaticOnly,
+			&host.CacheTTL,
 			&host.BlockExploits,
 			&host.BlockExploitsExceptions,
 			&customLocations,
