@@ -10,14 +10,13 @@ env:
   IMAGE_PREFIX: svrforum/nginxproxyguard
 
 jobs:
-  # Detect which components have changes since the last tag
-  detect-changes:
+  # Build images and run E2E tests before pushing
+  build-and-test:
+    name: Build, Test, and Release
     runs-on: ubuntu-latest
     outputs:
-      api: ${{ steps.changes.outputs.api }}
-      ui: ${{ steps.changes.outputs.ui }}
-      nginx: ${{ steps.changes.outputs.nginx }}
       version: ${{ steps.version.outputs.version }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,167 +28,128 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Get previous tag
-        id: prev_tag
-        run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
-          echo "Previous tag: $PREV_TAG"
-
-      - name: Detect changed components
-        id: changes
-        run: |
-          PREV_TAG="${{ steps.prev_tag.outputs.prev_tag }}"
-
-          if [ -z "$PREV_TAG" ]; then
-            # First release - build all
-            echo "api=true" >> $GITHUB_OUTPUT
-            echo "ui=true" >> $GITHUB_OUTPUT
-            echo "nginx=true" >> $GITHUB_OUTPUT
-            echo "First release - building all components"
-          else
-            # Check each component for changes
-            if git diff --name-only $PREV_TAG HEAD | grep -q "^api/"; then
-              echo "api=true" >> $GITHUB_OUTPUT
-              echo "API has changes"
-            else
-              echo "api=false" >> $GITHUB_OUTPUT
-              echo "API unchanged"
-            fi
-
-            if git diff --name-only $PREV_TAG HEAD | grep -q "^ui/"; then
-              echo "ui=true" >> $GITHUB_OUTPUT
-              echo "UI has changes"
-            else
-              echo "ui=false" >> $GITHUB_OUTPUT
-              echo "UI unchanged"
-            fi
-
-            if git diff --name-only $PREV_TAG HEAD | grep -q "^nginx/"; then
-              echo "nginx=true" >> $GITHUB_OUTPUT
-              echo "Nginx has changes"
-            else
-              echo "nginx=false" >> $GITHUB_OUTPUT
-              echo "Nginx unchanged"
-            fi
-          fi
-
-  # Build API (only if changed)
-  build-api:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.api == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+          echo "Building version: $VERSION"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Build images locally (not pushed yet)
+      - name: Build API image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          load: true
+          tags: ${{ env.IMAGE_PREFIX }}-api:${{ steps.version.outputs.version }}
+          cache-from: type=gha,scope=api
+
+      - name: Build UI image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./ui
+          load: true
+          tags: ${{ env.IMAGE_PREFIX }}-ui:${{ steps.version.outputs.version }}
+          cache-from: type=gha,scope=ui
+
+      - name: Build Nginx image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./nginx
+          load: true
+          tags: ${{ env.IMAGE_PREFIX }}-nginx:${{ steps.version.outputs.version }}
+          cache-from: type=gha,scope=nginx
+
+      # Run E2E tests with built images
+      - name: Start test environment
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          export VERSION
+          docker compose -f docker-compose.release-test.yml up -d db valkey api nginx whoami httpbin
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for API..."
+          timeout 120s bash -c '
+            until docker compose -f docker-compose.release-test.yml ps 2>/dev/null | grep -E "release-test-api.*healthy"; do
+              sleep 5
+            done
+          '
+          echo "Waiting for Nginx..."
+          timeout 60s bash -c '
+            until docker compose -f docker-compose.release-test.yml ps 2>/dev/null | grep -E "release-test-nginx.*healthy"; do
+              sleep 5
+            done
+          '
+          docker compose -f docker-compose.release-test.yml ps
+
+      - name: Run E2E integration tests
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          export VERSION
+          docker compose -f docker-compose.release-test.yml run --rm test-runner
+
+      - name: Get container logs (on failure)
+        if: failure()
+        run: |
+          echo "=== API Logs ==="
+          docker compose -f docker-compose.release-test.yml logs api
+          echo ""
+          echo "=== Nginx Logs ==="
+          docker compose -f docker-compose.release-test.yml logs nginx
+
+      - name: Teardown test environment
+        if: always()
+        run: |
+          docker compose -f docker-compose.release-test.yml down -v
+
+      # Push images to Docker Hub (only if tests passed)
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push API
+      - name: Set up QEMU (for multi-platform)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Push API image (multi-platform)
         uses: docker/build-push-action@v6
         with:
           context: ./api
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ env.IMAGE_PREFIX }}-api:${{ needs.detect-changes.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}-api:${{ steps.version.outputs.version }}
             ${{ env.IMAGE_PREFIX }}-api:latest
-          cache-from: |
-            type=gha,scope=api
-            type=registry,ref=${{ env.IMAGE_PREFIX }}-api:buildcache
-          cache-to: |
-            type=gha,mode=max,scope=api
-            type=registry,ref=${{ env.IMAGE_PREFIX }}-api:buildcache,mode=max
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
 
-  # Build UI (only if changed)
-  build-ui:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.ui == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and push UI
+      - name: Push UI image (multi-platform)
         uses: docker/build-push-action@v6
         with:
           context: ./ui
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ env.IMAGE_PREFIX }}-ui:${{ needs.detect-changes.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}-ui:${{ steps.version.outputs.version }}
             ${{ env.IMAGE_PREFIX }}-ui:latest
-          cache-from: |
-            type=gha,scope=ui
-            type=registry,ref=${{ env.IMAGE_PREFIX }}-ui:buildcache
-          cache-to: |
-            type=gha,mode=max,scope=ui
-            type=registry,ref=${{ env.IMAGE_PREFIX }}-ui:buildcache,mode=max
+          cache-from: type=gha,scope=ui
+          cache-to: type=gha,mode=max,scope=ui
 
-  # Build Nginx (only if changed)
-  build-nginx:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.nginx == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and push Nginx
+      - name: Push Nginx image (multi-platform)
         uses: docker/build-push-action@v6
         with:
           context: ./nginx
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ env.IMAGE_PREFIX }}-nginx:${{ needs.detect-changes.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}-nginx:${{ steps.version.outputs.version }}
             ${{ env.IMAGE_PREFIX }}-nginx:latest
-          cache-from: |
-            type=gha,scope=nginx
-            type=registry,ref=${{ env.IMAGE_PREFIX }}-nginx:buildcache
-          cache-to: |
-            type=gha,mode=max,scope=nginx
-            type=registry,ref=${{ env.IMAGE_PREFIX }}-nginx:buildcache,mode=max
+          cache-from: type=gha,scope=nginx
+          cache-to: type=gha,mode=max,scope=nginx
 
-  # Create GitHub Release (always runs)
+  # Create GitHub Release (only after successful build and test)
   create-release:
-    needs: [detect-changes, build-api, build-ui, build-nginx]
-    if: always() && needs.detect-changes.result == 'success'
+    needs: build-and-test
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -209,55 +169,27 @@ jobs:
           else
             CHANGELOG=$(git log --pretty=format:"- %s" -20)
           fi
-
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Generate build summary
-        id: summary
-        run: |
-          SUMMARY=""
-          if [ "${{ needs.detect-changes.outputs.api }}" == "true" ]; then
-            SUMMARY="${SUMMARY}- ✅ API rebuilt\n"
-          else
-            SUMMARY="${SUMMARY}- ⏭️ API skipped (no changes)\n"
-          fi
-          if [ "${{ needs.detect-changes.outputs.ui }}" == "true" ]; then
-            SUMMARY="${SUMMARY}- ✅ UI rebuilt\n"
-          else
-            SUMMARY="${SUMMARY}- ⏭️ UI skipped (no changes)\n"
-          fi
-          if [ "${{ needs.detect-changes.outputs.nginx }}" == "true" ]; then
-            SUMMARY="${SUMMARY}- ✅ Nginx rebuilt\n"
-          else
-            SUMMARY="${SUMMARY}- ⏭️ Nginx skipped (no changes)\n"
-          fi
-
-          echo "summary<<EOF" >> $GITHUB_OUTPUT
-          echo -e "$SUMMARY" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: v${{ needs.detect-changes.outputs.version }}
+          name: v${{ needs.build-and-test.outputs.version }}
           body: |
             ## Docker Images
 
             ```bash
-            docker pull svrforum/nginxproxyguard-api:${{ needs.detect-changes.outputs.version }}
-            docker pull svrforum/nginxproxyguard-ui:${{ needs.detect-changes.outputs.version }}
-            docker pull svrforum/nginxproxyguard-nginx:${{ needs.detect-changes.outputs.version }}
+            docker pull svrforum/nginxproxyguard-api:${{ needs.build-and-test.outputs.version }}
+            docker pull svrforum/nginxproxyguard-ui:${{ needs.build-and-test.outputs.version }}
+            docker pull svrforum/nginxproxyguard-nginx:${{ needs.build-and-test.outputs.version }}
             ```
 
-            ## Build Summary
-
-            ${{ steps.summary.outputs.summary }}
+            ## E2E Test
+            ✅ All integration tests passed before release
 
             ## Changes
-
             ${{ steps.changelog.outputs.changelog }}
           draft: false
           prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') || contains(github.ref, '-alpha') }}
-          generate_release_notes: true
