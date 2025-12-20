@@ -759,10 +759,10 @@ export function ProxyHostList({ onEdit, onAdd }: ProxyHostListProps) {
           comparison = a.domain_names[0].localeCompare(b.domain_names[0])
           break
         case 'updated':
-          comparison = new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+          comparison = new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
           break
         case 'created':
-          comparison = new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
           break
       }
       return sortOrder === 'asc' ? comparison : -comparison

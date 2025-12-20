@@ -12,6 +12,7 @@ export default function SystemLogSettings() {
     const queryClient = useQueryClient();
     const { t } = useTranslation('settings');
     const [editedLogConfig, setEditedLogConfig] = useState<Partial<SystemLogConfig>>({});
+    const [excludePatternsText, setExcludePatternsText] = useState<string | null>(null);
 
     const { data: systemLogConfig, isLoading } = useQuery({
         queryKey: ['systemLogConfig'],
@@ -171,11 +172,18 @@ export default function SystemLogSettings() {
                     {t('system.systemlogs.exclude.detailDescription', 'Log messages matching these patterns (regex) will be ignored. One pattern per line.')}
                 </p>
                 <textarea
-                    value={(editedLogConfig.exclude_patterns !== undefined
-                        ? editedLogConfig.exclude_patterns
-                        : systemLogConfig?.exclude_patterns || []
-                    ).join('\n')}
-                    onChange={(e) => setEditedLogConfig(prev => ({ ...prev, exclude_patterns: e.target.value.split('\n').filter(s => s.trim()) }))}
+                    value={excludePatternsText !== null
+                        ? excludePatternsText
+                        : (editedLogConfig.exclude_patterns !== undefined
+                            ? editedLogConfig.exclude_patterns
+                            : systemLogConfig?.exclude_patterns || []
+                        ).join('\n')}
+                    onChange={(e) => setExcludePatternsText(e.target.value)}
+                    onBlur={(e) => {
+                        const patterns = e.target.value.split('\n').filter(s => s.trim())
+                        setEditedLogConfig(prev => ({ ...prev, exclude_patterns: patterns }))
+                        setExcludePatternsText(null)
+                    }}
                     className={`${inputClass} font-mono text-xs`}
                     rows={6}
                     placeholder={t('system.systemlogs.exclude.placeholder', '^/health\nHEAD /')}
