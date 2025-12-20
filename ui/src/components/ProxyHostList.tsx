@@ -738,37 +738,7 @@ export function ProxyHostList({ onEdit, onAdd }: ProxyHostListProps) {
     return `${sslEnabled ? 'https' : 'http'}://${domain}`
   }
 
-  const getHealthDot = (hostId: string) => {
-    const status = healthStatus[hostId]
-    if (status === 'checking') {
-      return <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" title="Checking..." />
-    }
-    if (status === 'online') {
-      return <span className="w-2 h-2 rounded-full bg-green-500" title="Online" />
-    }
-    if (status === 'offline') {
-      return <span className="w-2 h-2 rounded-full bg-red-500" title="Offline" />
-    }
-    return <span className="w-2 h-2 rounded-full bg-slate-300" title="Unknown" />
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-        Error loading proxy hosts: {(error as Error).message}
-      </div>
-    )
-  }
-
-  // Filter and sort hosts
+  // Filter and sort hosts (must be before any early returns to follow hooks rules)
   const hosts = useMemo(() => {
     let filtered = data?.data || []
 
@@ -800,6 +770,36 @@ export function ProxyHostList({ onEdit, onAdd }: ProxyHostListProps) {
 
     return filtered
   }, [data?.data, searchQuery, sortBy, sortOrder])
+
+  const getHealthDot = (hostId: string) => {
+    const status = healthStatus[hostId]
+    if (status === 'checking') {
+      return <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" title="Checking..." />
+    }
+    if (status === 'online') {
+      return <span className="w-2 h-2 rounded-full bg-green-500" title="Online" />
+    }
+    if (status === 'offline') {
+      return <span className="w-2 h-2 rounded-full bg-red-500" title="Offline" />
+    }
+    return <span className="w-2 h-2 rounded-full bg-slate-300" title="Unknown" />
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+        Error loading proxy hosts: {(error as Error).message}
+      </div>
+    )
+  }
 
   return (
     <div>
