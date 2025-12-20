@@ -105,8 +105,12 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}-api:${{ needs.detect-changes.outputs.version }}
             ${{ env.IMAGE_PREFIX }}-api:latest
-          cache-from: type=gha,scope=api
-          cache-to: type=gha,mode=max,scope=api
+          cache-from: |
+            type=gha,scope=api
+            type=registry,ref=${{ env.IMAGE_PREFIX }}-api:buildcache
+          cache-to: |
+            type=gha,mode=max,scope=api
+            type=registry,ref=${{ env.IMAGE_PREFIX }}-api:buildcache,mode=max
 
   # Build UI (only if changed)
   build-ui:
@@ -138,8 +142,12 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}-ui:${{ needs.detect-changes.outputs.version }}
             ${{ env.IMAGE_PREFIX }}-ui:latest
-          cache-from: type=gha,scope=ui
-          cache-to: type=gha,mode=max,scope=ui
+          cache-from: |
+            type=gha,scope=ui
+            type=registry,ref=${{ env.IMAGE_PREFIX }}-ui:buildcache
+          cache-to: |
+            type=gha,mode=max,scope=ui
+            type=registry,ref=${{ env.IMAGE_PREFIX }}-ui:buildcache,mode=max
 
   # Build Nginx (only if changed)
   build-nginx:
@@ -171,8 +179,12 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}-nginx:${{ needs.detect-changes.outputs.version }}
             ${{ env.IMAGE_PREFIX }}-nginx:latest
-          cache-from: type=gha,scope=nginx
-          cache-to: type=gha,mode=max,scope=nginx
+          cache-from: |
+            type=gha,scope=nginx
+            type=registry,ref=${{ env.IMAGE_PREFIX }}-nginx:buildcache
+          cache-to: |
+            type=gha,mode=max,scope=nginx
+            type=registry,ref=${{ env.IMAGE_PREFIX }}-nginx:buildcache,mode=max
 
   # Create GitHub Release (always runs)
   create-release:
