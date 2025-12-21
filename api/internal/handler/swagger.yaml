@@ -22,7 +22,7 @@ info:
   version: 1.0.0
   contact:
     name: Nginx Proxy Guard Support
-    url: https://github.com/dalso0418/nginx_guard
+    url: https://github.com/svrforum/nginxproxyguard
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT

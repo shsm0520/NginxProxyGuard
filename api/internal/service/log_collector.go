@@ -742,7 +742,7 @@ func (c *LogCollector) parseModSecLog(line string) (*model.CreateLogRequest, err
 	if host == "" {
 		for k, v := range tx.Response.Headers {
 			if strings.ToLower(k) == "link" && v != "" {
-				// Link header format: <https://blog.dalso.org/wp-json/>; rel="..."
+				// Link header format: <https://example.com/wp-json/>; rel="..."
 				if strings.Contains(v, "://") {
 					start := strings.Index(v, "://") + 3
 					end := strings.Index(v[start:], "/")
