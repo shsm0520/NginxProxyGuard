@@ -77,6 +77,7 @@ func (s *PartitionScheduler) Stop() {
 func (s *PartitionScheduler) run() {
 	s.createPartitions()
 	s.enforceRetention()
+	s.cleanupLogsTable()
 }
 
 func (s *PartitionScheduler) createPartitions() {
@@ -187,5 +188,69 @@ func (s *PartitionScheduler) enforceRetention() {
 		log.Printf("[PartitionScheduler] Failed to drop old stats partitions: %v", err)
 	} else if droppedStats > 0 {
 		log.Printf("[PartitionScheduler] Dropped %d old stats partitions (retention: %d months)", droppedStats, statsRetentionMonths)
+	}
+}
+
+// cleanupLogsTable deletes old records from the legacy non-partitioned logs table
+// This is only needed for upgrades from older versions that had the logs table
+func (s *PartitionScheduler) cleanupLogsTable() {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	// Check if legacy logs table exists
+	var exists bool
+	err := s.db.QueryRowContext(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM information_schema.tables
+			WHERE table_schema = 'public' AND table_name = 'logs'
+		)
+	`).Scan(&exists)
+	if err != nil || !exists {
+		return // No legacy logs table, nothing to clean up
+	}
+
+	settings, err := s.systemSettingsRepo.Get(ctx)
+	if err != nil {
+		log.Printf("[PartitionScheduler] Failed to get system settings for logs cleanup: %v", err)
+		return
+	}
+
+	retentionDays := settings.AccessLogRetentionDays
+	if retentionDays <= 0 {
+		retentionDays = 1825 // Default 5 years
+	}
+
+	// Delete old logs in batches to avoid long-running transactions
+	batchSize := 10000
+	totalDeleted := int64(0)
+
+	for {
+		result, err := s.db.ExecContext(ctx, `
+			DELETE FROM logs
+			WHERE id IN (
+				SELECT id FROM logs
+				WHERE timestamp < NOW() - ($1 || ' days')::INTERVAL
+				LIMIT $2
+			)
+		`, retentionDays, batchSize)
+
+		if err != nil {
+			log.Printf("[PartitionScheduler] Failed to cleanup logs table: %v", err)
+			return
+		}
+
+		deleted, _ := result.RowsAffected()
+		totalDeleted += deleted
+
+		if deleted < int64(batchSize) {
+			break // No more rows to delete
+		}
+
+		// Small delay to reduce database load
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	if totalDeleted > 0 {
+		log.Printf("[PartitionScheduler] Cleaned up %d old logs from legacy logs table (retention: %d days)", totalDeleted, retentionDays)
 	}
 }

@@ -22,7 +22,7 @@ func NewLogRepository(db *database.DB) *LogRepository {
 
 func (r *LogRepository) Create(ctx context.Context, req *model.CreateLogRequest) (*model.Log, error) {
 	query := `
-		INSERT INTO logs (
+		INSERT INTO logs_partitioned (
 			log_type, timestamp, host, client_ip,
 			geo_country, geo_country_code, geo_city, geo_asn, geo_org,
 			request_method, request_uri, request_protocol, status_code,
@@ -193,7 +193,7 @@ func (r *LogRepository) CreateBatch(ctx context.Context, logs []model.CreateLogR
 	defer tx.Rollback()
 
 	stmt, err := tx.PrepareContext(ctx, `
-		INSERT INTO logs (
+		INSERT INTO logs_partitioned (
 			log_type, timestamp, host, client_ip,
 			geo_country, geo_country_code, geo_city, geo_asn, geo_org,
 			request_method, request_uri, request_protocol, status_code,
@@ -496,7 +496,7 @@ func (r *LogRepository) List(ctx context.Context, filter *model.LogFilter, page,
 	}
 
 	// Get total count
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM logs %s", whereClause)
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM logs_partitioned %s", whereClause)
 	var total int
 	if err := r.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("failed to count logs: %w", err)
@@ -533,7 +533,7 @@ func (r *LogRepository) List(ctx context.Context, filter *model.LogFilter, page,
 			rule_id, rule_message, rule_severity, rule_data, attack_type, action_taken,
 			block_reason, bot_category, exploit_rule,
 			proxy_host_id, raw_log, created_at
-		FROM logs
+		FROM logs_partitioned
 		%s
 		ORDER BY %s
 		LIMIT $%d OFFSET $%d
@@ -883,7 +883,7 @@ func (r *LogRepository) GetStatsWithFilter(ctx context.Context, filter *model.Lo
 			COUNT(*) FILTER (WHERE log_type = 'access') as access_logs,
 			COUNT(*) FILTER (WHERE log_type = 'error') as error_logs,
 			COUNT(*) FILTER (WHERE log_type = 'modsec') as modsec_logs
-		FROM logs
+		FROM logs_partitioned
 		WHERE %s
 	`, whereClause)
 
@@ -897,7 +897,7 @@ func (r *LogRepository) GetStatsWithFilter(ctx context.Context, filter *model.Lo
 	// Top status codes
 	statusQuery := fmt.Sprintf(`
 		SELECT status_code, COUNT(*) as count
-		FROM logs
+		FROM logs_partitioned
 		WHERE status_code IS NOT NULL AND %s
 		GROUP BY status_code
 		ORDER BY count DESC
@@ -921,7 +921,7 @@ func (r *LogRepository) GetStatsWithFilter(ctx context.Context, filter *model.Lo
 	// Top client IPs
 	ipQuery := fmt.Sprintf(`
 		SELECT client_ip::text, COUNT(*) as count
-		FROM logs
+		FROM logs_partitioned
 		WHERE client_ip IS NOT NULL AND %s
 		GROUP BY client_ip
 		ORDER BY count DESC
@@ -945,7 +945,7 @@ func (r *LogRepository) GetStatsWithFilter(ctx context.Context, filter *model.Lo
 	// Top user agents
 	uaQuery := fmt.Sprintf(`
 		SELECT http_user_agent, COUNT(*) as count
-		FROM logs
+		FROM logs_partitioned
 		WHERE http_user_agent IS NOT NULL AND http_user_agent != '' AND %s
 		GROUP BY http_user_agent
 		ORDER BY count DESC
@@ -973,7 +973,7 @@ func (r *LogRepository) GetStatsWithFilter(ctx context.Context, filter *model.Lo
 	}
 	uriQuery := fmt.Sprintf(`
 		SELECT request_uri, COUNT(*) as count
-		FROM logs
+		FROM logs_partitioned
 		WHERE log_type = '%s' AND request_uri IS NOT NULL AND %s
 		GROUP BY request_uri
 		ORDER BY count DESC
@@ -997,7 +997,7 @@ func (r *LogRepository) GetStatsWithFilter(ctx context.Context, filter *model.Lo
 	// Top rule IDs
 	ruleQuery := fmt.Sprintf(`
 		SELECT rule_id, COALESCE(rule_message, 'Unknown'), COUNT(*) as count
-		FROM logs
+		FROM logs_partitioned
 		WHERE log_type = 'modsec' AND rule_id IS NOT NULL AND %s
 		GROUP BY rule_id, rule_message
 		ORDER BY count DESC
@@ -1022,7 +1022,7 @@ func (r *LogRepository) GetStatsWithFilter(ctx context.Context, filter *model.Lo
 }
 
 func (r *LogRepository) DeleteOld(ctx context.Context, retentionDays int) (int64, error) {
-	query := `DELETE FROM logs WHERE created_at < NOW() - ($1 || ' days')::INTERVAL`
+	query := `DELETE FROM logs_partitioned WHERE created_at < NOW() - ($1 || ' days')::INTERVAL`
 	result, err := r.db.ExecContext(ctx, query, retentionDays)
 	if err != nil {
 		return 0, fmt.Errorf("failed to delete old logs: %w", err)
@@ -1093,7 +1093,7 @@ func (r *LogRepository) GetDistinctHosts(ctx context.Context, search string, lim
 
 	query := `
 		SELECT DISTINCT host
-		FROM logs
+		FROM logs_partitioned
 		WHERE host IS NOT NULL AND host != ''
 	`
 	args := []interface{}{}
@@ -1134,7 +1134,7 @@ func (r *LogRepository) GetDistinctIPs(ctx context.Context, search string, limit
 	// Use host() function to get IP without /32 suffix
 	query := `
 		SELECT DISTINCT host(client_ip) as ip
-		FROM logs
+		FROM logs_partitioned
 		WHERE client_ip IS NOT NULL
 	`
 	args := []interface{}{}
@@ -1174,7 +1174,7 @@ func (r *LogRepository) GetDistinctUserAgents(ctx context.Context, search string
 
 	query := `
 		SELECT DISTINCT http_user_agent
-		FROM logs
+		FROM logs_partitioned
 		WHERE http_user_agent IS NOT NULL AND http_user_agent != ''
 	`
 	args := []interface{}{}
@@ -1210,7 +1210,7 @@ func (r *LogRepository) GetDistinctUserAgents(ctx context.Context, search string
 func (r *LogRepository) GetDistinctCountries(ctx context.Context) ([]model.CountryStat, error) {
 	query := `
 		SELECT geo_country_code, geo_country, COUNT(*) as count
-		FROM logs
+		FROM logs_partitioned
 		WHERE geo_country_code IS NOT NULL AND geo_country_code != ''
 		GROUP BY geo_country_code, geo_country
 		ORDER BY count DESC
@@ -1246,7 +1246,7 @@ func (r *LogRepository) GetDistinctURIs(ctx context.Context, search string, limi
 
 	query := `
 		SELECT DISTINCT request_uri
-		FROM logs
+		FROM logs_partitioned
 		WHERE request_uri IS NOT NULL AND request_uri != ''
 			AND request_uri NOT IN ('/health', '/nginx_status')
 			AND request_uri NOT LIKE '/.well-known/%'
@@ -1284,7 +1284,7 @@ func (r *LogRepository) GetDistinctURIs(ctx context.Context, search string, limi
 func (r *LogRepository) GetDistinctMethods(ctx context.Context) ([]string, error) {
 	query := `
 		SELECT DISTINCT request_method
-		FROM logs
+		FROM logs_partitioned
 		WHERE request_method IS NOT NULL AND request_method != ''
 		ORDER BY request_method
 	`
