@@ -10,15 +10,14 @@ env:
   IMAGE_PREFIX: svrforum/nginxproxyguard
 
 jobs:
-  # Detect changes and build only what's needed
   build-and-test:
     name: Build, Test, and Release
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
-      api_changed: ${{ steps.changes.outputs.api }}
-      ui_changed: ${{ steps.changes.outputs.ui }}
-      nginx_changed: ${{ steps.changes.outputs.nginx }}
+      api_changed: ${{ steps.check-api.outputs.changed }}
+      ui_changed: ${{ steps.check-ui.outputs.changed }}
+      nginx_changed: ${{ steps.check-nginx.outputs.changed }}
 
     steps:
       - name: Checkout
@@ -33,52 +32,78 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Building version: $VERSION"
 
-      - name: Detect changes since last tag
-        id: changes
-        run: |
-          # Get previous tag
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-
-          if [ -z "$PREV_TAG" ]; then
-            echo "No previous tag found, building all images"
-            echo "api=true" >> $GITHUB_OUTPUT
-            echo "ui=true" >> $GITHUB_OUTPUT
-            echo "nginx=true" >> $GITHUB_OUTPUT
-          else
-            echo "Comparing with previous tag: $PREV_TAG"
-
-            # Check each directory for changes
-            if git diff --name-only $PREV_TAG HEAD | grep -q "^api/"; then
-              echo "api=true" >> $GITHUB_OUTPUT
-              echo "API: changes detected"
-            else
-              echo "api=false" >> $GITHUB_OUTPUT
-              echo "API: no changes"
-            fi
-
-            if git diff --name-only $PREV_TAG HEAD | grep -q "^ui/"; then
-              echo "ui=true" >> $GITHUB_OUTPUT
-              echo "UI: changes detected"
-            else
-              echo "ui=false" >> $GITHUB_OUTPUT
-              echo "UI: no changes"
-            fi
-
-            if git diff --name-only $PREV_TAG HEAD | grep -q "^nginx/"; then
-              echo "nginx=true" >> $GITHUB_OUTPUT
-              echo "Nginx: changes detected"
-            else
-              echo "nginx=false" >> $GITHUB_OUTPUT
-              echo "Nginx: no changes"
-            fi
-          fi
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Build images locally (only changed ones, but all needed for testing)
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Calculate source hash and compare with Docker Hub image
+      - name: Check API changes
+        id: check-api
+        run: |
+          # Calculate hash of source directory
+          SOURCE_HASH=$(find ./api -type f -exec sha256sum {} \; | sort | sha256sum | cut -d' ' -f1)
+          echo "Source hash: $SOURCE_HASH"
+
+          # Get hash from Docker Hub image label
+          REMOTE_HASH=$(docker manifest inspect ${{ env.IMAGE_PREFIX }}-api:latest 2>/dev/null | \
+            jq -r '.annotations["org.opencontainers.image.revision"]' 2>/dev/null || echo "none")
+          echo "Remote hash: $REMOTE_HASH"
+
+          if [ "$SOURCE_HASH" = "$REMOTE_HASH" ]; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "API: No changes detected"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "hash=$SOURCE_HASH" >> $GITHUB_OUTPUT
+            echo "API: Changes detected"
+          fi
+
+      - name: Check UI changes
+        id: check-ui
+        run: |
+          SOURCE_HASH=$(find ./ui -type f -exec sha256sum {} \; | sort | sha256sum | cut -d' ' -f1)
+          echo "Source hash: $SOURCE_HASH"
+
+          REMOTE_HASH=$(docker manifest inspect ${{ env.IMAGE_PREFIX }}-ui:latest 2>/dev/null | \
+            jq -r '.annotations["org.opencontainers.image.revision"]' 2>/dev/null || echo "none")
+          echo "Remote hash: $REMOTE_HASH"
+
+          if [ "$SOURCE_HASH" = "$REMOTE_HASH" ]; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "UI: No changes detected"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "hash=$SOURCE_HASH" >> $GITHUB_OUTPUT
+            echo "UI: Changes detected"
+          fi
+
+      - name: Check Nginx changes
+        id: check-nginx
+        run: |
+          SOURCE_HASH=$(find ./nginx -type f -exec sha256sum {} \; | sort | sha256sum | cut -d' ' -f1)
+          echo "Source hash: $SOURCE_HASH"
+
+          REMOTE_HASH=$(docker manifest inspect ${{ env.IMAGE_PREFIX }}-nginx:latest 2>/dev/null | \
+            jq -r '.annotations["org.opencontainers.image.revision"]' 2>/dev/null || echo "none")
+          echo "Remote hash: $REMOTE_HASH"
+
+          if [ "$SOURCE_HASH" = "$REMOTE_HASH" ]; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "Nginx: No changes detected"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "hash=$SOURCE_HASH" >> $GITHUB_OUTPUT
+            echo "Nginx: Changes detected"
+          fi
+
+      # Build only changed images
       - name: Build API image
-        if: steps.changes.outputs.api == 'true'
+        if: steps.check-api.outputs.changed == 'true'
         uses: docker/build-push-action@v6
         with:
           context: ./api
@@ -86,14 +111,14 @@ jobs:
           tags: ${{ env.IMAGE_PREFIX }}-api:${{ steps.version.outputs.version }}
           cache-from: type=gha,scope=api
 
-      - name: Pull existing API image (if not changed)
-        if: steps.changes.outputs.api == 'false'
+      - name: Pull existing API image
+        if: steps.check-api.outputs.changed == 'false'
         run: |
-          docker pull ${{ env.IMAGE_PREFIX }}-api:latest || true
-          docker tag ${{ env.IMAGE_PREFIX }}-api:latest ${{ env.IMAGE_PREFIX }}-api:${{ steps.version.outputs.version }} || true
+          docker pull ${{ env.IMAGE_PREFIX }}-api:latest
+          docker tag ${{ env.IMAGE_PREFIX }}-api:latest ${{ env.IMAGE_PREFIX }}-api:${{ steps.version.outputs.version }}
 
       - name: Build UI image
-        if: steps.changes.outputs.ui == 'true'
+        if: steps.check-ui.outputs.changed == 'true'
         uses: docker/build-push-action@v6
         with:
           context: ./ui
@@ -101,14 +126,14 @@ jobs:
           tags: ${{ env.IMAGE_PREFIX }}-ui:${{ steps.version.outputs.version }}
           cache-from: type=gha,scope=ui
 
-      - name: Pull existing UI image (if not changed)
-        if: steps.changes.outputs.ui == 'false'
+      - name: Pull existing UI image
+        if: steps.check-ui.outputs.changed == 'false'
         run: |
-          docker pull ${{ env.IMAGE_PREFIX }}-ui:latest || true
-          docker tag ${{ env.IMAGE_PREFIX }}-ui:latest ${{ env.IMAGE_PREFIX }}-ui:${{ steps.version.outputs.version }} || true
+          docker pull ${{ env.IMAGE_PREFIX }}-ui:latest
+          docker tag ${{ env.IMAGE_PREFIX }}-ui:latest ${{ env.IMAGE_PREFIX }}-ui:${{ steps.version.outputs.version }}
 
       - name: Build Nginx image
-        if: steps.changes.outputs.nginx == 'true'
+        if: steps.check-nginx.outputs.changed == 'true'
         uses: docker/build-push-action@v6
         with:
           context: ./nginx
@@ -116,13 +141,13 @@ jobs:
           tags: ${{ env.IMAGE_PREFIX }}-nginx:${{ steps.version.outputs.version }}
           cache-from: type=gha,scope=nginx
 
-      - name: Pull existing Nginx image (if not changed)
-        if: steps.changes.outputs.nginx == 'false'
+      - name: Pull existing Nginx image
+        if: steps.check-nginx.outputs.changed == 'false'
         run: |
-          docker pull ${{ env.IMAGE_PREFIX }}-nginx:latest || true
-          docker tag ${{ env.IMAGE_PREFIX }}-nginx:latest ${{ env.IMAGE_PREFIX }}-nginx:${{ steps.version.outputs.version }} || true
+          docker pull ${{ env.IMAGE_PREFIX }}-nginx:latest
+          docker tag ${{ env.IMAGE_PREFIX }}-nginx:latest ${{ env.IMAGE_PREFIX }}-nginx:${{ steps.version.outputs.version }}
 
-      # Run E2E tests with built images
+      # Run E2E tests
       - name: Start test environment
         run: |
           VERSION=${{ steps.version.outputs.version }}
@@ -165,15 +190,9 @@ jobs:
         run: |
           docker compose -f docker-compose.release-test.yml down -v
 
-      # Push images to Docker Hub (only changed ones, only if tests passed)
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
+      # Push only changed images with source hash label
       - name: Push API image
-        if: steps.changes.outputs.api == 'true'
+        if: steps.check-api.outputs.changed == 'true'
         uses: docker/build-push-action@v6
         with:
           context: ./api
@@ -182,11 +201,15 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}-api:${{ steps.version.outputs.version }}
             ${{ env.IMAGE_PREFIX }}-api:latest
+          labels: |
+            org.opencontainers.image.revision=${{ steps.check-api.outputs.hash }}
+          annotations: |
+            org.opencontainers.image.revision=${{ steps.check-api.outputs.hash }}
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
       - name: Push UI image
-        if: steps.changes.outputs.ui == 'true'
+        if: steps.check-ui.outputs.changed == 'true'
         uses: docker/build-push-action@v6
         with:
           context: ./ui
@@ -195,11 +218,15 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}-ui:${{ steps.version.outputs.version }}
             ${{ env.IMAGE_PREFIX }}-ui:latest
+          labels: |
+            org.opencontainers.image.revision=${{ steps.check-ui.outputs.hash }}
+          annotations: |
+            org.opencontainers.image.revision=${{ steps.check-ui.outputs.hash }}
           cache-from: type=gha,scope=ui
           cache-to: type=gha,mode=max,scope=ui
 
       - name: Push Nginx image
-        if: steps.changes.outputs.nginx == 'true'
+        if: steps.check-nginx.outputs.changed == 'true'
         uses: docker/build-push-action@v6
         with:
           context: ./nginx
@@ -208,10 +235,14 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}-nginx:${{ steps.version.outputs.version }}
             ${{ env.IMAGE_PREFIX }}-nginx:latest
+          labels: |
+            org.opencontainers.image.revision=${{ steps.check-nginx.outputs.hash }}
+          annotations: |
+            org.opencontainers.image.revision=${{ steps.check-nginx.outputs.hash }}
           cache-from: type=gha,scope=nginx
           cache-to: type=gha,mode=max,scope=nginx
 
-  # Create GitHub Release (only after successful build and test)
+  # Create GitHub Release
   create-release:
     needs: build-and-test
     runs-on: ubuntu-latest
