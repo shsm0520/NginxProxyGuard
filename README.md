@@ -117,7 +117,7 @@ docker compose up -d
 ## 📖 More Information
 
 - **Website**: [nginxproxyguard.com](https://nginxproxyguard.com)
-- **Documentation**: [nginxproxyguard.com/docs](https://nginxproxyguard.com/docs)
+- **Documentation**: [nginxproxyguard.com/docs](https://nginxproxyguard.com/en/docs)
 
 ---
 
