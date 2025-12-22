@@ -117,7 +117,7 @@ docker compose up -d
 ## 📖 추가 정보
 
 - **웹사이트**: [nginxproxyguard.com](https://nginxproxyguard.com)
-- **문서**: [nginxproxyguard.com/docs](https://nginxproxyguard.com/docs)
+- **문서**: [nginxproxyguard.com/docs](https://nginxproxyguard.com/ko/docs)
 
 ---
 
