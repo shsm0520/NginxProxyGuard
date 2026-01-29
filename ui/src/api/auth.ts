@@ -126,6 +126,24 @@ export function getAuthHeaders(): HeadersInit {
   }
 }
 
+// Helper function to safely parse JSON response
+async function safeJsonParse(res: Response): Promise<{ data?: unknown; error?: string }> {
+  const contentType = res.headers.get('content-type')
+  if (!contentType || !contentType.includes('application/json')) {
+    // Non-JSON response (e.g., nginx HTML error page when API is down)
+    if (res.status === 502 || res.status === 503 || res.status === 504) {
+      return { error: 'Server is not available. Please try again later.' }
+    }
+    return { error: `Unexpected response (${res.status})` }
+  }
+  try {
+    const data = await res.json()
+    return { data }
+  } catch {
+    return { error: 'Invalid response from server' }
+  }
+}
+
 // API functions
 export async function login(request: LoginRequest): Promise<LoginResponse> {
   const res = await fetch(`${API_BASE}/auth/login`, {
@@ -135,16 +153,24 @@ export async function login(request: LoginRequest): Promise<LoginResponse> {
   })
 
   if (!res.ok) {
-    const error = await res.json()
-    throw new Error(error.error || 'Login failed')
+    const { data, error } = await safeJsonParse(res)
+    if (error) {
+      throw new Error(error)
+    }
+    const errorData = data as { error?: string }
+    throw new Error(errorData?.error || 'Login failed')
   }
 
-  const data = await res.json()
-  // Only set token if login completed (not requiring 2FA)
-  if (data.token) {
-    setToken(data.token)
+  const { data, error } = await safeJsonParse(res)
+  if (error) {
+    throw new Error(error)
   }
-  return data
+  const loginData = data as LoginResponse
+  // Only set token if login completed (not requiring 2FA)
+  if (loginData.token) {
+    setToken(loginData.token)
+  }
+  return loginData
 }
 
 export async function logout(): Promise<void> {
@@ -168,10 +194,15 @@ export async function getAuthStatus(): Promise<AuthStatus> {
   })
 
   if (!res.ok) {
-    throw new Error('Failed to get auth status')
+    const { error } = await safeJsonParse(res)
+    throw new Error(error || 'Failed to get auth status')
   }
 
-  return res.json()
+  const { data, error } = await safeJsonParse(res)
+  if (error) {
+    throw new Error(error)
+  }
+  return data as AuthStatus
 }
 
 export async function getCurrentUser(): Promise<User> {
@@ -242,15 +273,23 @@ export async function verify2FA(request: Verify2FARequest): Promise<LoginRespons
   })
 
   if (!res.ok) {
-    const error = await res.json()
-    throw new Error(error.error || '2FA verification failed')
+    const { data, error } = await safeJsonParse(res)
+    if (error) {
+      throw new Error(error)
+    }
+    const errorData = data as { error?: string }
+    throw new Error(errorData?.error || '2FA verification failed')
   }
 
-  const data = await res.json()
-  if (data.token) {
-    setToken(data.token)
+  const { data, error } = await safeJsonParse(res)
+  if (error) {
+    throw new Error(error)
   }
-  return data
+  const loginData = data as LoginResponse
+  if (loginData.token) {
+    setToken(loginData.token)
+  }
+  return loginData
 }
 
 export async function getAccountInfo(): Promise<AccountInfo> {
