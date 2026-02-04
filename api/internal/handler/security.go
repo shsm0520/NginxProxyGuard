@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -359,11 +358,22 @@ func (h *SecurityHandler) BanIP(c echo.Context) error {
 func (h *SecurityHandler) UnbanIP(c echo.Context) error {
 	id := c.Param("id")
 
-	// Get banned IP info before deleting (for history)
+	// Get banned IP info before deleting (for history and cache removal)
 	bannedIP, _ := h.rateLimitRepo.GetBannedIPByID(c.Request().Context(), id)
 
 	if err := h.rateLimitRepo.UnbanIP(c.Request().Context(), id); err != nil {
 		return databaseError(c, "unban IP", err)
+	}
+
+	// Remove from Redis cache
+	if h.redisCache != nil && bannedIP != nil {
+		hostID := ""
+		if bannedIP.ProxyHostID != nil {
+			hostID = *bannedIP.ProxyHostID
+		}
+		if err := h.redisCache.RemoveBannedIP(c.Request().Context(), bannedIP.IPAddress, hostID); err != nil {
+			c.Logger().Errorf("Failed to remove banned IP from cache: %v", err)
+		}
 	}
 
 	// Record unban history
@@ -393,7 +403,7 @@ func (h *SecurityHandler) UnbanIP(c echo.Context) error {
 	}
 
 	// Regenerate all enabled host configs in background for speed
-	// FIXED: Use debounced reload instead of parallel goroutines per host
+	// Pass nil to UpdateWithoutReload to regenerate config without DB update
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), config.ContextTimeout)
 		defer cancel()
@@ -401,11 +411,11 @@ func (h *SecurityHandler) UnbanIP(c echo.Context) error {
 		if h.proxyHostService != nil && h.proxyHostRepo != nil {
 			hosts, _, err := h.proxyHostRepo.List(ctx, 1, config.MaxWAFRulesLimit, "", "", "")
 			if err == nil && hosts != nil {
-				// Update all host configs sequentially WITHOUT reload
+				// Regenerate all host configs sequentially WITHOUT reload
 				for _, host := range hosts {
 					if host.Enabled {
-						if _, err := h.proxyHostService.UpdateWithoutReload(ctx, host.ID, &model.UpdateProxyHostRequest{}); err != nil {
-							c.Logger().Errorf("Failed to update config for host %s: %v", host.ID, err)
+						if _, err := h.proxyHostService.UpdateWithoutReload(ctx, host.ID, nil); err != nil {
+							c.Logger().Errorf("Failed to regenerate config for host %s: %v", host.ID, err)
 						}
 					}
 				}
@@ -459,7 +469,24 @@ func (h *SecurityHandler) UnbanIPByAddress(c echo.Context) error {
 		return databaseError(c, "unban IP by address", err)
 	}
 
-	// Regenerate all enabled host configs in background for speed
+	// Remove from Redis cache (both global and all host-specific)
+	if h.redisCache != nil {
+		// Remove from global ban list
+		if err := h.redisCache.RemoveBannedIP(c.Request().Context(), ip, ""); err != nil {
+			c.Logger().Errorf("Failed to remove banned IP from global cache: %v", err)
+		}
+		// Also try to remove from all host-specific caches
+		if h.proxyHostRepo != nil {
+			hosts, _, err := h.proxyHostRepo.List(c.Request().Context(), 1, config.MaxWAFRulesLimit, "", "", "")
+			if err == nil && hosts != nil {
+				for _, host := range hosts {
+					h.redisCache.RemoveBannedIP(c.Request().Context(), ip, host.ID)
+				}
+			}
+		}
+	}
+
+	// Regenerate all enabled host configs in background with debounced reload
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), config.ContextTimeout)
 		defer cancel()
@@ -467,17 +494,18 @@ func (h *SecurityHandler) UnbanIPByAddress(c echo.Context) error {
 		if h.proxyHostService != nil && h.proxyHostRepo != nil {
 			hosts, _, err := h.proxyHostRepo.List(ctx, 1, config.MaxWAFRulesLimit, "", "", "")
 			if err == nil && hosts != nil {
-				var wg sync.WaitGroup
+				// Regenerate all host configs sequentially WITHOUT reload
 				for _, host := range hosts {
 					if host.Enabled {
-						wg.Add(1)
-						go func(hostID string) {
-							defer wg.Done()
-							h.proxyHostService.Update(ctx, hostID, &model.UpdateProxyHostRequest{})
-						}(host.ID)
+						if _, err := h.proxyHostService.UpdateWithoutReload(ctx, host.ID, nil); err != nil {
+							c.Logger().Errorf("Failed to regenerate config for host %s: %v", host.ID, err)
+						}
 					}
 				}
-				wg.Wait()
+				// Request single debounced reload after all configs are updated
+				if h.nginxReloader != nil {
+					h.nginxReloader.RequestReload(ctx)
+				}
 			}
 		}
 	}()
