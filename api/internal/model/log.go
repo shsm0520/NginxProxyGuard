@@ -120,6 +120,9 @@ type Log struct {
 	RawLog      *string `json:"raw_log,omitempty"`
 
 	CreatedAt time.Time `json:"created_at"`
+
+	// Runtime computed field (not stored in DB)
+	IsBanned bool `json:"is_banned"`
 }
 
 type CreateLogRequest struct {

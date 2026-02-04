@@ -1,6 +1,9 @@
 {
   "title": "로그",
   "subtitle": "접근 및 보안 로그",
+  "badges": {
+    "banned": "차단됨"
+  },
   "viewer": {
     "title": "로그 뷰어",
     "refresh": "새로고침",

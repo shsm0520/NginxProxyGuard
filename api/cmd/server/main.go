@@ -182,7 +182,7 @@ func main() {
 	proxyHostHandler := handler.NewProxyHostHandler(proxyHostService, auditService)
 	dnsProviderHandler := handler.NewDNSProviderHandler(dnsProviderService)
 	certificateHandler := handler.NewCertificateHandler(certificateService, auditService)
-	logHandler := handler.NewLogHandler(logRepo)
+	logHandler := handler.NewLogHandler(logRepo, redisCache)
 	wafTestHandler := handler.NewWAFTestHandler()
 	wafHandler := handler.NewWAFHandler(wafRepo, proxyHostRepo, geoRepo, nginxManager)
 	exploitBlockRuleHandler := handler.NewExploitBlockRuleHandler(exploitBlockRuleRepo, proxyHostRepo, proxyHostService)

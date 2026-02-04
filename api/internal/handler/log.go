@@ -8,17 +8,19 @@ import (
 
 	"nginx-proxy-guard/internal/model"
 	"nginx-proxy-guard/internal/repository"
+	"nginx-proxy-guard/pkg/cache"
 )
 
 // Maximum number of items allowed in filter arrays to prevent DoS
 const maxFilterArraySize = 100
 
 type LogHandler struct {
-	logRepo *repository.LogRepository
+	logRepo    *repository.LogRepository
+	redisCache *cache.RedisClient
 }
 
-func NewLogHandler(logRepo *repository.LogRepository) *LogHandler {
-	return &LogHandler{logRepo: logRepo}
+func NewLogHandler(logRepo *repository.LogRepository, redisCache *cache.RedisClient) *LogHandler {
+	return &LogHandler{logRepo: logRepo, redisCache: redisCache}
 }
 
 // limitArray limits the size of a string slice to prevent DoS
@@ -176,6 +178,16 @@ func (h *LogHandler) List(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	// Enrich logs with ban status (Redis O(1) lookup per IP)
+	if h.redisCache != nil {
+		for i := range logs {
+			if logs[i].ClientIP != nil {
+				isBanned, _ := h.redisCache.IsBannedIP(ctx, logs[i].ClientIP.String())
+				logs[i].IsBanned = isBanned
+			}
+		}
 	}
 
 	totalPages := (total + perPage - 1) / perPage

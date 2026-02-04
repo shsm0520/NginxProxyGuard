@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Log } from '../../types/log';
 import { formatBytes } from './utils';
-import { StatusCodeBadge, BlockReasonBadge, MethodBadge, GeoIPBadge } from './badges';
+import { StatusCodeBadge, BlockReasonBadge, MethodBadge, GeoIPBadge, BannedIPBadge } from './badges';
 
 interface LogRowTypedProps {
   log: Log;
@@ -24,8 +24,8 @@ export const LogRowTyped = memo(function LogRowTyped({ log, logType, onClick }: 
         <td className="px-4 py-3 text-sm text-primary-600 dark:text-primary-400 font-medium truncate" title={log.host}>
           {log.host || '-'}
         </td>
-        <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300 font-mono whitespace-nowrap">
-          {log.client_ip || '-'}
+        <td className="px-4 py-3 whitespace-nowrap">
+          <BannedIPBadge ip={log.client_ip} isBanned={log.is_banned} />
         </td>
         <td className="px-4 py-3 whitespace-nowrap">
           <GeoIPBadge log={log} />
@@ -61,8 +61,8 @@ export const LogRowTyped = memo(function LogRowTyped({ log, logType, onClick }: 
         <td className="px-4 py-3 text-sm text-orange-600 dark:text-orange-400 font-medium whitespace-nowrap">
           {log.host || '-'}
         </td>
-        <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300 font-mono whitespace-nowrap">
-          {log.client_ip || '-'}
+        <td className="px-4 py-3 whitespace-nowrap">
+          <BannedIPBadge ip={log.client_ip} isBanned={log.is_banned} />
         </td>
         <td className="px-4 py-3 whitespace-nowrap">
           <GeoIPBadge log={log} />
@@ -113,8 +113,8 @@ export const LogRowTyped = memo(function LogRowTyped({ log, logType, onClick }: 
             {log.severity || 'error'}
           </span>
         </td>
-        <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300 font-mono whitespace-nowrap">
-          {log.client_ip || '-'}
+        <td className="px-4 py-3 whitespace-nowrap">
+          <BannedIPBadge ip={log.client_ip} isBanned={log.is_banned} />
         </td>
         <td className="px-4 py-3 text-sm text-red-700 dark:text-red-400 max-w-2xl truncate" title={log.error_message}>
           {log.error_message || '-'}

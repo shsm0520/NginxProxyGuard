@@ -1,6 +1,9 @@
 {
   "title": "Logs",
   "subtitle": "Access and Security Logs",
+  "badges": {
+    "banned": "Banned"
+  },
   "viewer": {
     "title": "Log Viewer",
     "refresh": "Refresh",

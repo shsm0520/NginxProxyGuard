@@ -73,6 +73,9 @@ export interface Log {
   exploit_rule?: string;
 
   created_at: string;
+
+  // Ban status (runtime computed by backend)
+  is_banned?: boolean;
 }
 
 export interface LogFilter {
