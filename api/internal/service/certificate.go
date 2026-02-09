@@ -186,6 +186,14 @@ func (s *CertificateService) obtainLetsEncryptCert(certID string, domains []stri
 
 	s.addCertLog(certID, "success", "Certificate obtained successfully from Let's Encrypt", "acme")
 
+	// Validate certificate before saving
+	s.addCertLog(certID, "info", "Validating certificate...", "validate")
+	if err := acme.ValidateRenewedCertificate(result.CertificatePEM, result.PrivateKeyPEM, domains); err != nil {
+		s.updateCertError(ctx, certID, fmt.Sprintf("certificate validation failed: %v", err))
+		return
+	}
+	s.addCertLog(certID, "success", "Certificate validation passed", "validate")
+
 	// Save certificate files
 	s.addCertLog(certID, "info", "Saving certificate files...", "save")
 	certPath, keyPath, err := acmeService.SaveCertificateFiles(certID, result.CertificatePEM, result.PrivateKeyPEM, result.IssuerCertificatePEM)
@@ -530,10 +538,36 @@ func (s *CertificateService) renewLetsEncrypt(ctx context.Context, cert *model.C
 
 	s.addCertLog(cert.ID, "success", "Certificate obtained successfully", "acme")
 
+	// Validate renewed certificate before saving
+	s.addCertLog(cert.ID, "info", "Validating renewed certificate...", "validate")
+	if err := acme.ValidateRenewedCertificate(result.CertificatePEM, result.PrivateKeyPEM, []string(cert.DomainNames)); err != nil {
+		s.updateCertError(ctx, cert.ID, fmt.Sprintf("renewed certificate validation failed: %v", err))
+		return
+	}
+	s.addCertLog(cert.ID, "success", "Certificate validation passed", "validate")
+
+	// Backup existing certificate files before overwriting
+	s.addCertLog(cert.ID, "info", "Backing up existing certificate files...", "backup")
+	restore, cleanup, err := acmeService.BackupCertificateFiles(cert.ID)
+	if err != nil {
+		s.addCertLog(cert.ID, "warn", fmt.Sprintf("Failed to backup certificate files: %v (continuing anyway)", err), "backup")
+		// Set no-op functions so the rest of the code works
+		restore = func() error { return nil }
+		cleanup = func() {}
+	} else {
+		defer cleanup()
+	}
+
 	// Save new certificate files
 	s.addCertLog(cert.ID, "info", "Saving certificate files...", "save")
 	certPath, keyPath, err := acmeService.SaveCertificateFiles(cert.ID, result.CertificatePEM, result.PrivateKeyPEM, result.IssuerCertificatePEM)
 	if err != nil {
+		s.addCertLog(cert.ID, "warn", "Save failed, attempting rollback...", "save")
+		if restoreErr := restore(); restoreErr != nil {
+			s.addCertLog(cert.ID, "error", fmt.Sprintf("Rollback also failed: %v", restoreErr), "save")
+		} else {
+			s.addCertLog(cert.ID, "info", "Rollback successful, previous certificate restored", "save")
+		}
 		s.updateCertError(ctx, cert.ID, fmt.Sprintf("failed to save renewed certificate files: %v", err))
 		return
 	}

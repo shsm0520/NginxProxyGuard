@@ -6,11 +6,14 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -342,8 +345,23 @@ func (s *Service) RenewCertificate(certPEM, keyPEM string, provider *model.DNSPr
 		return nil, fmt.Errorf("failed to set DNS provider: %w", err)
 	}
 
-	// Renew certificate
+	// Register user if not already registered
+	if user.Registration == nil {
+		reg, err := client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true})
+		if err != nil {
+			return nil, fmt.Errorf("failed to register ACME account for renewal: %w", err)
+		}
+		user.Registration = reg
+	}
+
+	// Build certificate resource with domain info for lego
+	domains, _, _ := ValidateCertificate(certPEM)
+	domain := ""
+	if len(domains) > 0 {
+		domain = domains[0]
+	}
 	certResource := certificate.Resource{
+		Domain:      domain,
 		Certificate: []byte(certPEM),
 		PrivateKey:  []byte(keyPEM),
 	}
@@ -391,8 +409,23 @@ func (s *Service) RenewCertificateHTTP(certPEM, keyPEM string, user *ACMEUser) (
 		return nil, fmt.Errorf("failed to set HTTP provider: %w", err)
 	}
 
-	// Renew certificate
+	// Register user if not already registered
+	if user.Registration == nil {
+		reg, err := client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true})
+		if err != nil {
+			return nil, fmt.Errorf("failed to register ACME account for renewal: %w", err)
+		}
+		user.Registration = reg
+	}
+
+	// Build certificate resource with domain info for lego
+	domains, _, _ := ValidateCertificate(certPEM)
+	domain := ""
+	if len(domains) > 0 {
+		domain = domains[0]
+	}
 	certResource := certificate.Resource{
+		Domain:      domain,
 		Certificate: []byte(certPEM),
 		PrivateKey:  []byte(keyPEM),
 	}
@@ -498,11 +531,8 @@ func (s *Service) SaveCertificateFiles(certID string, certPEM, keyPEM, issuerPEM
 	certPath = fmt.Sprintf("%s/fullchain.pem", certDir)
 	keyPath = fmt.Sprintf("%s/privkey.pem", certDir)
 
-	// Write fullchain (cert + issuer)
-	fullchain := certPEM
-	if issuerPEM != "" && issuerPEM != certPEM {
-		fullchain = certPEM + "\n" + issuerPEM
-	}
+	// Write fullchain (cert + issuer) with deduplication
+	fullchain := BuildFullchain(certPEM, issuerPEM)
 
 	if err := os.WriteFile(certPath, []byte(fullchain), 0644); err != nil {
 		return "", "", fmt.Errorf("failed to write certificate file: %w", err)
@@ -646,4 +676,214 @@ func ValidateCertificate(certPEM string) ([]string, time.Time, error) {
 	}
 
 	return domains, cert.NotAfter, nil
+}
+
+// BuildFullchain constructs a fullchain PEM by combining certPEM and issuerPEM,
+// deduplicating any PEM blocks that appear in both using SHA256 fingerprints.
+// This prevents the duplicate intermediate certificate issue that causes
+// Cloudflare SSL 526 errors.
+func BuildFullchain(certPEM, issuerPEM string) string {
+	seen := make(map[[sha256.Size]byte]bool)
+	var blocks []*pem.Block
+
+	// Parse all blocks from certPEM first (preserves leaf + any bundled intermediates)
+	rest := []byte(certPEM)
+	for {
+		var block *pem.Block
+		block, rest = pem.Decode(rest)
+		if block == nil {
+			break
+		}
+		fp := sha256.Sum256(block.Bytes)
+		if !seen[fp] {
+			seen[fp] = true
+			blocks = append(blocks, block)
+		}
+	}
+
+	// Parse issuerPEM and add only non-duplicate blocks
+	if issuerPEM != "" {
+		rest = []byte(issuerPEM)
+		for {
+			var block *pem.Block
+			block, rest = pem.Decode(rest)
+			if block == nil {
+				break
+			}
+			fp := sha256.Sum256(block.Bytes)
+			if !seen[fp] {
+				seen[fp] = true
+				blocks = append(blocks, block)
+			}
+		}
+	}
+
+	// Encode all unique blocks with proper newline handling
+	var buf strings.Builder
+	for i, block := range blocks {
+		if i > 0 {
+			buf.WriteByte('\n')
+		}
+		pem.Encode(&buf, block)
+	}
+
+	return buf.String()
+}
+
+// ValidateRenewedCertificate validates that a renewed certificate is valid:
+// - cert and key match (can form a TLS keypair)
+// - certificate is not expired
+// - expected domains are covered by the certificate SANs
+func ValidateRenewedCertificate(certPEM, keyPEM string, expectedDomains []string) error {
+	// Verify cert-key pair matches
+	_, err := tls.X509KeyPair([]byte(certPEM), []byte(keyPEM))
+	if err != nil {
+		return fmt.Errorf("certificate and key do not match: %w", err)
+	}
+
+	// Parse certificate for further validation
+	block, _ := pem.Decode([]byte(certPEM))
+	if block == nil {
+		return fmt.Errorf("failed to decode certificate PEM")
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return fmt.Errorf("failed to parse certificate: %w", err)
+	}
+
+	// Check expiry
+	if time.Now().After(cert.NotAfter) {
+		return fmt.Errorf("certificate is already expired (notAfter: %s)", cert.NotAfter.Format(time.RFC3339))
+	}
+
+	// Check domain coverage
+	if len(expectedDomains) > 0 {
+		certDomains := make(map[string]bool)
+		for _, d := range cert.DNSNames {
+			certDomains[strings.ToLower(d)] = true
+		}
+		if cert.Subject.CommonName != "" {
+			certDomains[strings.ToLower(cert.Subject.CommonName)] = true
+		}
+
+		for _, expected := range expectedDomains {
+			lower := strings.ToLower(expected)
+			if !certDomains[lower] {
+				// Check for wildcard match
+				matched := false
+				for certDomain := range certDomains {
+					if strings.HasPrefix(certDomain, "*.") {
+						// *.example.com matches sub.example.com
+						wildcardBase := certDomain[2:]
+						if strings.HasSuffix(lower, wildcardBase) {
+							parts := strings.SplitN(lower, ".", 2)
+							if len(parts) == 2 && parts[1] == wildcardBase {
+								matched = true
+								break
+							}
+						}
+					}
+				}
+				if !matched {
+					return fmt.Errorf("certificate does not cover domain %q", expected)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// BackupCertificateFiles creates backup copies of existing certificate files.
+// Returns a restore function to rollback on failure, and a cleanup function
+// to remove backups on success.
+func (s *Service) BackupCertificateFiles(certID string) (restore func() error, cleanup func(), err error) {
+	if err := validateCertID(certID); err != nil {
+		return nil, nil, fmt.Errorf("invalid certificate ID: %w", err)
+	}
+
+	certDir := filepath.Join(s.certsDir, certID)
+	certPath := filepath.Join(certDir, "fullchain.pem")
+	keyPath := filepath.Join(certDir, "privkey.pem")
+	certBak := certPath + ".bak"
+	keyBak := keyPath + ".bak"
+
+	// Check if original files exist; if not, no backup needed
+	certExists := fileExists(certPath)
+	keyExists := fileExists(keyPath)
+
+	if !certExists && !keyExists {
+		// No files to backup
+		return func() error { return nil }, func() {}, nil
+	}
+
+	// Copy existing files to .bak
+	if certExists {
+		if err := copyFile(certPath, certBak); err != nil {
+			return nil, nil, fmt.Errorf("failed to backup fullchain.pem: %w", err)
+		}
+	}
+	if keyExists {
+		if err := copyFile(keyPath, keyBak); err != nil {
+			// Clean up cert backup if key backup fails
+			os.Remove(certBak)
+			return nil, nil, fmt.Errorf("failed to backup privkey.pem: %w", err)
+		}
+	}
+
+	restore = func() error {
+		var errs []string
+		if certExists {
+			if err := copyFile(certBak, certPath); err != nil {
+				errs = append(errs, fmt.Sprintf("restore fullchain.pem: %v", err))
+			}
+		}
+		if keyExists {
+			if err := copyFile(keyBak, keyPath); err != nil {
+				errs = append(errs, fmt.Sprintf("restore privkey.pem: %v", err))
+			}
+		}
+		// Remove backups after restore
+		os.Remove(certBak)
+		os.Remove(keyBak)
+		if len(errs) > 0 {
+			return fmt.Errorf("rollback errors: %s", strings.Join(errs, "; "))
+		}
+		return nil
+	}
+
+	cleanup = func() {
+		os.Remove(certBak)
+		os.Remove(keyBak)
+	}
+
+	return restore, cleanup, nil
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	info, err := in.Stat()
+	if err != nil {
+		return err
+	}
+
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, info.Mode())
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	return err
 }

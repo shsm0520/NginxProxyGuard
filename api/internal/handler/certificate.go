@@ -12,6 +12,7 @@ import (
 	"nginx-proxy-guard/internal/model"
 	"nginx-proxy-guard/internal/service"
 	"nginx-proxy-guard/internal/util"
+	"nginx-proxy-guard/pkg/acme"
 )
 
 type CertificateHandler struct {
@@ -270,10 +271,7 @@ func (h *CertificateHandler) Download(c echo.Context) error {
 		return c.Blob(http.StatusOK, "application/x-pem-file", []byte(cert.IssuerCertificatePEM))
 
 	case "fullchain":
-		fullchain := cert.CertificatePEM
-		if cert.IssuerCertificatePEM != "" {
-			fullchain += "\n" + cert.IssuerCertificatePEM
-		}
+		fullchain := acme.BuildFullchain(cert.CertificatePEM, cert.IssuerCertificatePEM)
 		c.Response().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s_fullchain.crt\"", filenameBase))
 		return c.Blob(http.StatusOK, "application/x-pem-file", []byte(fullchain))
 
@@ -309,7 +307,7 @@ func (h *CertificateHandler) Download(c echo.Context) error {
 			if err != nil {
 				return internalError(c, "create zip", err)
 			}
-			fullchainFile.Write([]byte(cert.CertificatePEM + "\n" + cert.IssuerCertificatePEM))
+			fullchainFile.Write([]byte(acme.BuildFullchain(cert.CertificatePEM, cert.IssuerCertificatePEM)))
 		}
 
 		zipWriter.Close()
