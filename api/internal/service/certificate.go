@@ -344,6 +344,63 @@ func (s *CertificateService) UploadCustom(ctx context.Context, req *model.Upload
 	return cert, nil
 }
 
+// UpdateCustom replaces an existing custom certificate's PEM data in-place
+func (s *CertificateService) UpdateCustom(ctx context.Context, certID string, req *model.UploadCertificateRequest) (*model.Certificate, error) {
+	// Get existing certificate
+	cert, err := s.repo.GetByID(ctx, certID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get certificate: %w", err)
+	}
+	if cert == nil {
+		return nil, model.ErrNotFound
+	}
+
+	// Only custom certificates can be updated this way
+	if cert.Provider != model.CertProviderCustom {
+		return nil, fmt.Errorf("only custom certificates can be updated")
+	}
+
+	// Validate new certificate
+	domains, expiresAt, err := acme.ValidateCertificate(req.CertificatePEM)
+	if err != nil {
+		return nil, fmt.Errorf("invalid certificate: %w", err)
+	}
+
+	// Use provided domains or extracted domains
+	if len(req.DomainNames) == 0 {
+		req.DomainNames = domains
+	}
+
+	// Save files (overwrite existing paths)
+	acmeService, _ := s.getACMEService(ctx)
+	certPath, keyPath, err := acmeService.SaveCertificateFiles(certID, req.CertificatePEM, req.PrivateKeyPEM, req.IssuerPEM)
+	if err != nil {
+		return nil, fmt.Errorf("failed to save certificate files: %w", err)
+	}
+
+	// Update certificate record
+	now := time.Now()
+	cert.DomainNames = req.DomainNames
+	cert.CertificatePEM = req.CertificatePEM
+	cert.PrivateKeyPEM = req.PrivateKeyPEM
+	cert.IssuerCertificatePEM = req.IssuerPEM
+	cert.ExpiresAt = &expiresAt
+	cert.IssuedAt = &now
+	cert.CertificatePath = &certPath
+	cert.PrivateKeyPath = &keyPath
+	cert.Status = model.CertStatusIssued
+	cert.ErrorMessage = nil
+
+	if err := s.repo.Update(ctx, cert); err != nil {
+		return nil, fmt.Errorf("failed to update certificate: %w", err)
+	}
+
+	// Notify that certificate is ready - regenerate nginx configs
+	s.notifyCertificateReady(certID)
+
+	return cert, nil
+}
+
 // GetByID retrieves a certificate by ID
 func (s *CertificateService) GetByID(ctx context.Context, id string) (*model.Certificate, error) {
 	return s.repo.GetByID(ctx, id)

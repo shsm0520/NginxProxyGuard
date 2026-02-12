@@ -503,6 +503,7 @@ func main() {
 			certificates.GET("/history", certificateHandler.ListHistory)
 			certificates.GET("/:id", certificateHandler.Get)
 			certificates.DELETE("/:id", certificateHandler.Delete)
+			certificates.PUT("/:id/upload", certificateHandler.UpdateUpload)
 			certificates.POST("/:id/renew", certificateHandler.Renew)
 			certificates.GET("/:id/logs", certificateHandler.GetLogs)
 			certificates.GET("/:id/download", certificateHandler.Download)

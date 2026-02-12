@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { listCertificates, deleteCertificate, renewCertificate, downloadCertificate } from '../api/certificates';
 import type { Certificate } from '../types/certificate';
 import CertificateForm from './CertificateForm';
+import CertificateUpdateForm from './CertificateUpdateForm';
 import { CertificateDetail } from './CertificateDetail';
 import { CertificateLogModal } from './CertificateLogModal';
 
@@ -48,6 +49,7 @@ export default function CertificateList() {
   const [renewingCertId, setRenewingCertId] = useState<string | null>(null);
   const [showRenewLogModal, setShowRenewLogModal] = useState(false);
   const [downloadingCertId, setDownloadingCertId] = useState<string | null>(null);
+  const [updatingCertId, setUpdatingCertId] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['certificates'],
@@ -233,6 +235,14 @@ export default function CertificateList() {
                     >
                       {t('list.view')}
                     </button>
+                    {cert.status === 'issued' && cert.provider === 'custom' && (
+                      <button
+                        onClick={() => setUpdatingCertId(cert.id)}
+                        className="text-amber-600 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300 text-sm font-medium"
+                      >
+                        {t('list.update')}
+                      </button>
+                    )}
                     {cert.status === 'issued' && cert.provider !== 'custom' && (
                       <button
                         onClick={() => handleRenew(cert)}
@@ -271,6 +281,18 @@ export default function CertificateList() {
         <CertificateDetail
           certificateId={selectedCertId}
           onClose={() => setSelectedCertId(null)}
+        />
+      )}
+
+      {/* Certificate Update Modal */}
+      {updatingCertId && (
+        <CertificateUpdateForm
+          certificateId={updatingCertId}
+          onClose={() => setUpdatingCertId(null)}
+          onSuccess={() => {
+            setUpdatingCertId(null);
+            queryClient.invalidateQueries({ queryKey: ['certificates'] });
+          }}
         />
       )}
 

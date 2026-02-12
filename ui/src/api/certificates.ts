@@ -50,6 +50,15 @@ export async function uploadCertificate(data: UploadCertificateRequest): Promise
   return handleResponse<Certificate>(response);
 }
 
+export async function updateCertificate(id: string, data: UploadCertificateRequest): Promise<Certificate> {
+  const response = await fetch(`${API_BASE}/certificates/${id}/upload`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse<Certificate>(response);
+}
+
 export async function deleteCertificate(id: string): Promise<void> {
   const response = await fetch(`${API_BASE}/certificates/${id}`, {
     method: 'DELETE',

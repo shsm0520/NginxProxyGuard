@@ -28,6 +28,7 @@
     "days": "{{count}} days",
     "view": "View",
     "renew": "Renew",
+    "update": "Update",
     "download": "Download",
     "downloading": "Downloading...",
     "delete": "Delete"
@@ -64,6 +65,7 @@
     "daysOption": "{{count}} days",
     "yearOption": "{{count}} year",
     "yearsOption": "{{count}} years",
+    "updateTitle": "Update Certificate",
     "uploadTitle": "Upload Certificates",
     "certPem": "Certificate (PEM)",
     "privateKey": "Private Key (PEM)",
@@ -74,6 +76,8 @@
     "errors": {
       "create": "Failed to create certificate",
       "upload": "Failed to upload certificate",
+      "update": "Failed to update certificate",
+      "customOnly": "Only custom certificates can be updated",
       "domainRequired": "At least one domain is required",
       "certKeyRequired": "Certificate and private key are required"
     }
@@ -102,7 +106,9 @@
     "renewFailed": "Failed to renew certificate",
     "deleteSuccess": "Certificate deleted",
     "deleteFailed": "Failed to delete certificate",
-    "downloadError": "Failed to download certificate"
+    "downloadError": "Failed to download certificate",
+    "updateSuccess": "Certificate updated successfully",
+    "updateFailed": "Failed to update certificate"
   },
   "dnsProviders": {
     "title": "DNS Providers",

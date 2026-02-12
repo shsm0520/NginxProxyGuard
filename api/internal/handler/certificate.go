@@ -106,6 +106,43 @@ func (h *CertificateHandler) Upload(c echo.Context) error {
 	return c.JSON(http.StatusCreated, cert)
 }
 
+// UpdateUpload handles PUT /api/v1/certificates/:id/upload
+func (h *CertificateHandler) UpdateUpload(c echo.Context) error {
+	id := c.Param("id")
+
+	var req model.UploadCertificateRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "invalid request body",
+		})
+	}
+
+	if req.CertificatePEM == "" || req.PrivateKeyPEM == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "certificate_pem and private_key_pem are required",
+		})
+	}
+
+	cert, err := h.service.UpdateCustom(c.Request().Context(), id, &req)
+	if err != nil {
+		if err.Error() == "only custom certificates can be updated" {
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": err.Error(),
+			})
+		}
+		if strings.Contains(err.Error(), "invalid certificate") {
+			return badRequestError(c, err.Error())
+		}
+		return internalError(c, "update certificate", err)
+	}
+
+	// Audit log
+	auditCtx := service.ContextWithAudit(c.Request().Context(), c)
+	h.audit.LogCertificateCreate(auditCtx, cert.DomainNames, "custom_update")
+
+	return c.JSON(http.StatusOK, cert)
+}
+
 // Delete handles DELETE /api/v1/certificates/:id
 func (h *CertificateHandler) Delete(c echo.Context) error {
 	id := c.Param("id")
