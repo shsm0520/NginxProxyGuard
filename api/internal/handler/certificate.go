@@ -3,6 +3,7 @@ package handler
 import (
 	"archive/zip"
 	"bytes"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -125,7 +126,7 @@ func (h *CertificateHandler) UpdateUpload(c echo.Context) error {
 
 	cert, err := h.service.UpdateCustom(c.Request().Context(), id, &req)
 	if err != nil {
-		if err.Error() == "only custom certificates can be updated" {
+		if errors.Is(err, model.ErrCustomCertOnly) {
 			return c.JSON(http.StatusBadRequest, map[string]string{
 				"error": err.Error(),
 			})
@@ -138,7 +139,7 @@ func (h *CertificateHandler) UpdateUpload(c echo.Context) error {
 
 	// Audit log
 	auditCtx := service.ContextWithAudit(c.Request().Context(), c)
-	h.audit.LogCertificateCreate(auditCtx, cert.DomainNames, "custom_update")
+	h.audit.LogCertificateUpdate(auditCtx, cert.DomainNames, "custom")
 
 	return c.JSON(http.StatusOK, cert)
 }

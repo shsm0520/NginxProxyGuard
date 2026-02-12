@@ -212,6 +212,18 @@ func (s *AuditService) LogCertificateCreate(ctx context.Context, domains []strin
 	})
 }
 
+// LogCertificateUpdate logs certificate update (e.g. custom cert replacement)
+func (s *AuditService) LogCertificateUpdate(ctx context.Context, domains []string, certType string) error {
+	domainStr := ""
+	if len(domains) > 0 {
+		domainStr = domains[0]
+	}
+	return s.logEntry(ctx, "certificate_updated", "certificate", "", domainStr, map[string]interface{}{
+		"domain_names": domains,
+		"type":         certType,
+	})
+}
+
 // LogCertificateDelete logs certificate deletion
 func (s *AuditService) LogCertificateDelete(ctx context.Context, domains []string) error {
 	domainStr := ""

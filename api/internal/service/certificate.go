@@ -357,7 +357,7 @@ func (s *CertificateService) UpdateCustom(ctx context.Context, certID string, re
 
 	// Only custom certificates can be updated this way
 	if cert.Provider != model.CertProviderCustom {
-		return nil, fmt.Errorf("only custom certificates can be updated")
+		return nil, model.ErrCustomCertOnly
 	}
 
 	// Validate new certificate
@@ -371,10 +371,22 @@ func (s *CertificateService) UpdateCustom(ctx context.Context, certID string, re
 		req.DomainNames = domains
 	}
 
-	// Save files (overwrite existing paths)
+	// Save files (overwrite existing paths) - with backup
 	acmeService, _ := s.getACMEService(ctx)
+	restore, cleanup, backupErr := acmeService.BackupCertificateFiles(certID)
+	if backupErr != nil {
+		log.Printf("[CertificateService] Warning: backup failed for %s: %v", certID, backupErr)
+		restore = func() error { return nil }
+		cleanup = func() {}
+	} else {
+		defer cleanup()
+	}
+
 	certPath, keyPath, err := acmeService.SaveCertificateFiles(certID, req.CertificatePEM, req.PrivateKeyPEM, req.IssuerPEM)
 	if err != nil {
+		if restoreErr := restore(); restoreErr != nil {
+			log.Printf("[CertificateService] Warning: restore failed for %s: %v", certID, restoreErr)
+		}
 		return nil, fmt.Errorf("failed to save certificate files: %w", err)
 	}
 

@@ -11,4 +11,5 @@ var (
 	ErrCertificateExpired = errors.New("certificate expired")
 	ErrDNSChallengeFailed = errors.New("DNS challenge failed")
 	ErrACMEError          = errors.New("ACME error")
+	ErrCustomCertOnly     = errors.New("only custom certificates can be updated")
 )
