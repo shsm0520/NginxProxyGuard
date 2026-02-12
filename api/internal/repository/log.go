@@ -219,6 +219,9 @@ func (r *LogRepository) CreateBatch(ctx context.Context, logs []model.CreateLogR
 	if failCount > 0 {
 		log.Printf("[LogRepository] Individual insert fallback: %d/%d logs failed", failCount, len(logs))
 	}
+	if failCount == len(logs) {
+		return fmt.Errorf("all %d individual log inserts failed after batch failure", failCount)
+	}
 	return nil
 }
 
