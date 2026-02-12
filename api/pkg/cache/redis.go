@@ -492,9 +492,14 @@ type LogEntry struct {
 	GeoCity        string            `json:"geo_city,omitempty"`
 	GeoASN         string            `json:"geo_asn,omitempty"`
 	GeoOrg         string            `json:"geo_org,omitempty"`
-	RequestTime    float64           `json:"request_time,omitempty"`
-	RawLog         string            `json:"raw_log,omitempty"`
-	Extra          map[string]string `json:"extra,omitempty"`
+	RequestTime          float64           `json:"request_time,omitempty"`
+	XForwardedFor        string            `json:"x_forwarded_for,omitempty"`
+	UpstreamResponseTime float64           `json:"upstream_response_time,omitempty"`
+	Severity             string            `json:"severity,omitempty"`
+	ErrorMessage         string            `json:"error_message,omitempty"`
+	ProxyHostID          string            `json:"proxy_host_id,omitempty"`
+	RawLog               string            `json:"raw_log,omitempty"`
+	Extra                map[string]string `json:"extra,omitempty"`
 }
 
 // AddLogEntry adds a log entry to the buffer stream

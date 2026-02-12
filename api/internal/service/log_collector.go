@@ -65,12 +65,20 @@ type BotMatcher struct {
 	mu                     sync.RWMutex
 }
 
+func lowercaseSlice(src []string) []string {
+	dst := make([]string, len(src))
+	for i, s := range src {
+		dst[i] = strings.ToLower(s)
+	}
+	return dst
+}
+
 func NewBotMatcher() *BotMatcher {
 	return &BotMatcher{
-		badBotPatterns:       model.KnownBadBots,
-		aiBotPatterns:        model.AIBots,
-		suspiciousPatterns:   model.SuspiciousClients,
-		searchEnginePatterns: model.SearchEngineBots,
+		badBotPatterns:       lowercaseSlice(model.KnownBadBots),
+		aiBotPatterns:        lowercaseSlice(model.AIBots),
+		suspiciousPatterns:   lowercaseSlice(model.SuspiciousClients),
+		searchEnginePatterns: lowercaseSlice(model.SearchEngineBots),
 	}
 }
 
@@ -85,28 +93,28 @@ func (m *BotMatcher) MatchBot(userAgent string) (string, bool) {
 
 	// Check bad bots first
 	for _, pattern := range m.badBotPatterns {
-		if strings.Contains(ua, strings.ToLower(pattern)) {
+		if strings.Contains(ua, pattern) {
 			return "bad_bot", true
 		}
 	}
 
 	// Check AI bots
 	for _, pattern := range m.aiBotPatterns {
-		if strings.Contains(ua, strings.ToLower(pattern)) {
+		if strings.Contains(ua, pattern) {
 			return "ai_bot", true
 		}
 	}
 
 	// Check suspicious clients
 	for _, pattern := range m.suspiciousPatterns {
-		if strings.Contains(ua, strings.ToLower(pattern)) {
+		if strings.Contains(ua, pattern) {
 			return "suspicious", true
 		}
 	}
 
 	// Check search engines (usually allowed, but log for reference)
 	for _, pattern := range m.searchEnginePatterns {
-		if strings.Contains(ua, strings.ToLower(pattern)) {
+		if strings.Contains(ua, pattern) {
 			return "search_engine", true
 		}
 	}
@@ -127,6 +135,7 @@ type LogCollector struct {
 	flushInterval  time.Duration
 	buffer         []model.CreateLogRequest
 	bufferMu       sync.Mutex
+	flushMu        sync.Mutex // 동시 flush 방지
 	stopCh         chan struct{}
 	lastAccessPos  int64 // Track position in access log
 	lastErrorPos   int64 // Track position in error log
@@ -230,7 +239,9 @@ func (c *LogCollector) Start(ctx context.Context) {
 
 func (c *LogCollector) Stop() {
 	close(c.stopCh)
-	c.flush(context.Background()) // Final flush
+	c.flushMu.Lock()
+	c.flushInner(context.Background())
+	c.flushMu.Unlock()
 	log.Println("Log collector stopped")
 }
 
@@ -251,6 +262,14 @@ func (c *LogCollector) flushLoop(ctx context.Context) {
 }
 
 func (c *LogCollector) flush(ctx context.Context) {
+	if !c.flushMu.TryLock() {
+		return // 다른 flush 진행 중
+	}
+	defer c.flushMu.Unlock()
+	c.flushInner(ctx)
+}
+
+func (c *LogCollector) flushInner(ctx context.Context) {
 	var logs []model.CreateLogRequest
 
 	// Check Redis buffer first
@@ -275,90 +294,77 @@ func (c *LogCollector) flush(ctx context.Context) {
 		return
 	}
 
-	// Retry logic with exponential backoff
-	maxRetries := 3
-	for attempt := 0; attempt < maxRetries; attempt++ {
-		if err := c.logRepo.CreateBatch(ctx, logs); err != nil {
-			log.Printf("[LogCollector] Failed to batch insert logs (attempt %d/%d): %v", attempt+1, maxRetries, err)
-			if attempt < maxRetries-1 {
-				// Exponential backoff: 100ms, 200ms, 400ms
-				backoff := time.Duration(100*(1<<attempt)) * time.Millisecond
-				time.Sleep(backoff)
-				continue
-			}
-			// Final failure - put logs back to buffer to avoid data loss
-			c.bufferMu.Lock()
-			// Prepend failed logs to buffer (oldest first)
-			c.buffer = append(logs, c.buffer...)
-			// Cap buffer size to prevent memory exhaustion (keep newest)
-			maxBufferSize := c.batchSize * 10
-			if len(c.buffer) > maxBufferSize {
-				droppedCount := len(c.buffer) - maxBufferSize
-				c.buffer = c.buffer[droppedCount:]
-				log.Printf("[LogCollector] WARNING: Buffer overflow, dropped %d oldest logs", droppedCount)
-			}
-			c.bufferMu.Unlock()
-		} else {
-			if len(logs) > 0 {
-				log.Printf("[LogCollector] Flushed %d logs to database", len(logs))
-			}
-			break
-		}
+	if err := c.logRepo.CreateBatch(ctx, logs); err != nil {
+		log.Printf("[LogCollector] Failed to batch insert %d logs: %v", len(logs), err)
+	} else {
+		log.Printf("[LogCollector] Flushed %d logs to database", len(logs))
 	}
 }
 
-// flushRedisBuffer reads logs from Redis buffer and converts them to CreateLogRequest
+// flushRedisBuffer reads logs from Redis buffer and converts them to CreateLogRequest.
+// Loops up to 5 times (max 2500 entries) to drain backlog.
 func (c *LogCollector) flushRedisBuffer(ctx context.Context) ([]model.CreateLogRequest, error) {
-	entries, err := c.redisCache.ReadLogEntries(ctx, int64(c.batchSize))
-	if err != nil {
-		return nil, err
-	}
+	var allLogs []model.CreateLogRequest
+	const maxIterations = 5
 
-	if len(entries) == 0 {
-		return nil, nil
-	}
-
-	logs := make([]model.CreateLogRequest, 0, len(entries))
-	for _, entry := range entries {
-		logReq := model.CreateLogRequest{
-			LogType:         model.LogType(entry.LogType),
-			Timestamp:       entry.Timestamp,
-			Host:            entry.Host,
-			ClientIP:        entry.ClientIP,
-			RequestMethod:   entry.Method,
-			RequestURI:      entry.URI,
-			RequestProtocol: entry.Protocol,
-			StatusCode:      entry.StatusCode,
-			BodyBytesSent:   entry.BodyBytes,
-			HTTPUserAgent:   entry.UserAgent,
-			HTTPReferer:     entry.Referer,
-			BlockReason:     model.ParseBlockReason(entry.BlockReason),
-			BotCategory:     entry.BotCategory,
-			ExploitRule:     entry.ExploitRule,
-			GeoCountry:      entry.GeoCountry,
-			GeoCountryCode:  entry.GeoCountryCode,
-			GeoCity:         entry.GeoCity,
-			GeoASN:          entry.GeoASN,
-			GeoOrg:          entry.GeoOrg,
-			RequestTime:     entry.RequestTime,
-			RawLog:          entry.RawLog,
+	for i := 0; i < maxIterations; i++ {
+		entries, err := c.redisCache.ReadLogEntries(ctx, int64(c.batchSize))
+		if err != nil {
+			return allLogs, err // 읽은 만큼은 반환
+		}
+		if len(entries) == 0 {
+			break
 		}
 
-		// Parse extra fields for WAF logs
-		if entry.Extra != nil {
-			if ruleID, ok := entry.Extra["rule_id"]; ok {
-				logReq.RuleID, _ = strconv.ParseInt(ruleID, 10, 64)
+		for _, entry := range entries {
+			logReq := model.CreateLogRequest{
+				LogType:              model.LogType(entry.LogType),
+				Timestamp:            entry.Timestamp,
+				Host:                 entry.Host,
+				ClientIP:             entry.ClientIP,
+				RequestMethod:        entry.Method,
+				RequestURI:           entry.URI,
+				RequestProtocol:      entry.Protocol,
+				StatusCode:           entry.StatusCode,
+				BodyBytesSent:        entry.BodyBytes,
+				HTTPUserAgent:        entry.UserAgent,
+				HTTPReferer:          entry.Referer,
+				BlockReason:          model.ParseBlockReason(entry.BlockReason),
+				BotCategory:          entry.BotCategory,
+				ExploitRule:          entry.ExploitRule,
+				GeoCountry:           entry.GeoCountry,
+				GeoCountryCode:       entry.GeoCountryCode,
+				GeoCity:              entry.GeoCity,
+				GeoASN:               entry.GeoASN,
+				GeoOrg:               entry.GeoOrg,
+				RequestTime:          entry.RequestTime,
+				HTTPXForwardedFor:    entry.XForwardedFor,
+				UpstreamResponseTime: entry.UpstreamResponseTime,
+				Severity:             model.LogSeverity(entry.Severity),
+				ErrorMessage:         entry.ErrorMessage,
+				ProxyHostID:          entry.ProxyHostID,
+				RawLog:               entry.RawLog,
 			}
-			logReq.RuleMessage = entry.Extra["rule_message"]
-			logReq.RuleSeverity = entry.Extra["rule_severity"]
-			logReq.AttackType = entry.Extra["attack_type"]
-			logReq.ActionTaken = entry.Extra["action_taken"]
+
+			// Parse extra fields for WAF logs
+			if entry.Extra != nil {
+				if ruleID, ok := entry.Extra["rule_id"]; ok {
+					logReq.RuleID, _ = strconv.ParseInt(ruleID, 10, 64)
+				}
+				logReq.RuleMessage = entry.Extra["rule_message"]
+				logReq.RuleSeverity = entry.Extra["rule_severity"]
+				logReq.AttackType = entry.Extra["attack_type"]
+				logReq.ActionTaken = entry.Extra["action_taken"]
+			}
+
+			allLogs = append(allLogs, logReq)
 		}
 
-		logs = append(logs, logReq)
+		if len(entries) < c.batchSize {
+			break // 버퍼 완전 소진
+		}
 	}
-
-	return logs, nil
+	return allLogs, nil
 }
 
 // sanitizeString removes null bytes (0x00) from strings to prevent PostgreSQL UTF8 encoding errors
@@ -366,15 +372,19 @@ func sanitizeString(s string) string {
 	return strings.ReplaceAll(s, "\x00", "")
 }
 
-// truncateString truncates a string to the specified max length to prevent DB overflow
-// Also removes null bytes to prevent PostgreSQL UTF8 encoding errors
+// truncateString truncates a string to the specified max rune length to prevent DB overflow.
+// Uses rune-based truncation to avoid splitting multi-byte UTF-8 characters.
+// Also removes null bytes to prevent PostgreSQL UTF8 encoding errors.
 func truncateString(s string, maxLen int) string {
-	// Remove null bytes first
 	s = sanitizeString(s)
 	if len(s) <= maxLen {
+		return s // 빠른 경로: 바이트 길이가 한도 이내면 rune도 반드시 한도 내
+	}
+	runes := []rune(s)
+	if len(runes) <= maxLen {
 		return s
 	}
-	return s[:maxLen]
+	return string(runes[:maxLen])
 }
 
 func (c *LogCollector) addLog(logReq model.CreateLogRequest) {
@@ -412,27 +422,32 @@ func (c *LogCollector) addLog(logReq model.CreateLogRequest) {
 	// Try Redis buffer first (if available)
 	if c.useRedisBuffer && c.redisCache != nil && c.redisCache.IsReady() {
 		entry := &cache.LogEntry{
-			LogType:        string(logReq.LogType),
-			Timestamp:      logReq.Timestamp,
-			Host:           logReq.Host,
-			ClientIP:       logReq.ClientIP,
-			Method:         logReq.RequestMethod,
-			URI:            logReq.RequestURI,
-			Protocol:       logReq.RequestProtocol,
-			StatusCode:     logReq.StatusCode,
-			BodyBytes:      logReq.BodyBytesSent,
-			UserAgent:      logReq.HTTPUserAgent,
-			Referer:        logReq.HTTPReferer,
-			BlockReason:    string(logReq.BlockReason),
-			BotCategory:    logReq.BotCategory,
-			ExploitRule:    logReq.ExploitRule,
-			GeoCountry:     logReq.GeoCountry,
-			GeoCountryCode: logReq.GeoCountryCode,
-			GeoCity:        logReq.GeoCity,
-			GeoASN:         logReq.GeoASN,
-			GeoOrg:         logReq.GeoOrg,
-			RequestTime:    logReq.RequestTime,
-			RawLog:         logReq.RawLog,
+			LogType:              string(logReq.LogType),
+			Timestamp:            logReq.Timestamp,
+			Host:                 logReq.Host,
+			ClientIP:             logReq.ClientIP,
+			Method:               logReq.RequestMethod,
+			URI:                  logReq.RequestURI,
+			Protocol:             logReq.RequestProtocol,
+			StatusCode:           logReq.StatusCode,
+			BodyBytes:            logReq.BodyBytesSent,
+			UserAgent:            logReq.HTTPUserAgent,
+			Referer:              logReq.HTTPReferer,
+			BlockReason:          string(logReq.BlockReason),
+			BotCategory:          logReq.BotCategory,
+			ExploitRule:          logReq.ExploitRule,
+			GeoCountry:           logReq.GeoCountry,
+			GeoCountryCode:       logReq.GeoCountryCode,
+			GeoCity:              logReq.GeoCity,
+			GeoASN:               logReq.GeoASN,
+			GeoOrg:               logReq.GeoOrg,
+			RequestTime:          logReq.RequestTime,
+			XForwardedFor:        logReq.HTTPXForwardedFor,
+			UpstreamResponseTime: logReq.UpstreamResponseTime,
+			Severity:             string(logReq.Severity),
+			ErrorMessage:         logReq.ErrorMessage,
+			ProxyHostID:          logReq.ProxyHostID,
+			RawLog:               logReq.RawLog,
 		}
 
 		// Add extra fields for WAF logs
@@ -477,11 +492,13 @@ var accessLogRegex = regexp.MustCompile(
 
 // Regex patterns for parsing additional log fields
 var (
-	blockReasonRegex = regexp.MustCompile(`block="([^"]*)"`)
-	botCategoryRegex = regexp.MustCompile(`bot="([^"]*)"`)
-	exploitRuleRegex = regexp.MustCompile(`exploit_rule="([^"]*)"`)
-	requestTimeRegex = regexp.MustCompile(`rt=([0-9.]+)`)
-	geoCountryRegex  = regexp.MustCompile(`geo="([^"]*)"`)
+	blockReasonRegex          = regexp.MustCompile(`block="([^"]*)"`)
+	botCategoryRegex          = regexp.MustCompile(`bot="([^"]*)"`)
+	exploitRuleRegex          = regexp.MustCompile(`exploit_rule="([^"]*)"`)
+	requestTimeRegex          = regexp.MustCompile(`rt=([0-9.]+)`)
+	geoCountryRegex           = regexp.MustCompile(`geo="([^"]*)"`)
+	upstreamResponseTimeRegex = regexp.MustCompile(`urt="([^"]*)"`)
+	errorLogClientIPRegex     = regexp.MustCompile(`client:\s+([0-9a-fA-F:.]+)`)
 )
 
 // Old access log format (without host) - fallback
@@ -550,25 +567,41 @@ func (c *LogCollector) parseAccessLog(line string) (*model.CreateLogRequest, err
 			}
 		}
 
+		// Extract upstream_response_time from log line (urt="0.001", urt="-", urt="0.001, 0.002")
+		var upstreamResponseTime float64
+		if urtMatches := upstreamResponseTimeRegex.FindStringSubmatch(line); urtMatches != nil {
+			urtValue := urtMatches[1]
+			if urtValue != "-" && urtValue != "" {
+				parts := strings.Split(urtValue, ",")
+				rawValue := strings.TrimSpace(parts[len(parts)-1])
+				if rawValue != "-" {
+					if parsed, err := strconv.ParseFloat(rawValue, 64); err == nil {
+						upstreamResponseTime = validateRequestTime(parsed, rawValue)
+					}
+				}
+			}
+		}
+
 		return &model.CreateLogRequest{
-			LogType:           model.LogTypeAccess,
-			Timestamp:         timestamp,
-			Host:              host,
-			ClientIP:          matches[1],
-			RequestMethod:     matches[5],
-			RequestURI:        matches[6],
-			RequestProtocol:   matches[7],
-			StatusCode:        statusCode,
-			BodyBytesSent:     bodyBytes,
-			HTTPReferer:       referer,
-			HTTPUserAgent:     matches[11],
-			HTTPXForwardedFor: xForwardedFor,
-			BlockReason:       blockReason,
-			BotCategory:       botCategory,
-			ExploitRule:       exploitRule,
-			GeoCountryCode:    geoCountryCode,
-			RequestTime:       requestTime,
-			RawLog:            line,
+			LogType:              model.LogTypeAccess,
+			Timestamp:            timestamp,
+			Host:                 host,
+			ClientIP:             matches[1],
+			RequestMethod:        matches[5],
+			RequestURI:           matches[6],
+			RequestProtocol:      matches[7],
+			StatusCode:           statusCode,
+			BodyBytesSent:        bodyBytes,
+			HTTPReferer:          referer,
+			HTTPUserAgent:        matches[11],
+			HTTPXForwardedFor:    xForwardedFor,
+			BlockReason:          blockReason,
+			BotCategory:          botCategory,
+			ExploitRule:          exploitRule,
+			GeoCountryCode:       geoCountryCode,
+			RequestTime:          requestTime,
+			UpstreamResponseTime: upstreamResponseTime,
+			RawLog:               line,
 		}, nil
 	}
 
@@ -634,10 +667,9 @@ func (c *LogCollector) parseErrorLog(line string) (*model.CreateLogRequest, erro
 
 	severity := model.LogSeverity(matches[2])
 
-	// Try to extract client IP from message
+	// Try to extract client IP from message (supports IPv4, IPv6, IPv4-mapped IPv6)
 	clientIP := ""
-	clientIPRegex := regexp.MustCompile(`client:\s+(\d+\.\d+\.\d+\.\d+)`)
-	if ipMatches := clientIPRegex.FindStringSubmatch(matches[3]); ipMatches != nil {
+	if ipMatches := errorLogClientIPRegex.FindStringSubmatch(matches[3]); ipMatches != nil {
 		clientIP = ipMatches[1]
 	}
 
@@ -894,12 +926,17 @@ func (c *LogCollector) streamAccessLogs(ctx context.Context) {
 				}
 			}
 
-			// Notify Fail2ban service for error responses (4xx, 5xx)
-			if c.fail2ban != nil && logReq.ClientIP != "" && logReq.StatusCode >= 400 {
+			// 모든 access 로그에 ProxyHostID 할당 (캐시된 맵 조회, 성능 영향 미미)
+			if logReq.Host != "" {
 				hostID := c.getHostIDByDomain(ctx, logReq.Host)
 				if hostID != "" {
-					c.fail2ban.RecordFailedRequest(ctx, hostID, logReq.ClientIP, logReq.StatusCode, logReq.RequestURI)
+					logReq.ProxyHostID = hostID
 				}
+			}
+
+			// Notify Fail2ban service for error responses (4xx, 5xx)
+			if c.fail2ban != nil && logReq.ClientIP != "" && logReq.StatusCode >= 400 && logReq.ProxyHostID != "" {
+				c.fail2ban.RecordFailedRequest(ctx, logReq.ProxyHostID, logReq.ClientIP, logReq.StatusCode, logReq.RequestURI)
 			}
 
 			c.addLog(*logReq)
