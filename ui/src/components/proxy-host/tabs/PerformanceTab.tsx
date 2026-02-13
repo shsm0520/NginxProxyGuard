@@ -231,6 +231,28 @@ export function PerformanceTabContent({ formData, setFormData }: PerformanceTabP
             </p>
           </div>
 
+          {/* Proxy Request Buffering */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2">
+              {t('form.performance.proxySettings.proxyRequestBuffering', 'Proxy Request Buffering')}
+              <HelpTip contentKey="help.performance.proxyRequestBuffering" />
+            </label>
+            <select
+              value={formData.proxy_request_buffering || ''}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, proxy_request_buffering: e.target.value }))
+              }
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+            >
+              <option value="">{t('form.performance.proxySettings.useGlobal', 'Use global setting')}</option>
+              <option value="on">{t('form.performance.proxySettings.requestBufferingOn', 'On (buffer entire request)')}</option>
+              <option value="off">{t('form.performance.proxySettings.requestBufferingOff', 'Off (stream to upstream)')}</option>
+            </select>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              {t('form.performance.proxySettings.proxyRequestBufferingDesc', 'Disable request buffering to prevent high memory usage during large file uploads (10GB+).')}
+            </p>
+          </div>
+
           {/* Info box */}
           <div className="text-xs text-slate-500 dark:text-slate-400 bg-amber-50 dark:bg-amber-900/20 p-3 rounded border border-amber-200 dark:border-amber-800">
             <p className="font-medium text-amber-700 dark:text-amber-300 mb-1">
@@ -240,6 +262,7 @@ export function PerformanceTabContent({ formData, setFormData }: PerformanceTabP
               <li>{t('form.performance.proxySettings.infoUpload', 'For large uploads: increase client_max_body_size (e.g., 10g or 0 for unlimited)')}</li>
               <li>{t('form.performance.proxySettings.infoDownload', 'For large downloads: set proxy_max_temp_file_size to 0')}</li>
               <li>{t('form.performance.proxySettings.infoStreaming', 'For streaming: set proxy_buffering to off')}</li>
+              <li>{t('form.performance.proxySettings.infoRequestBuffering', 'For large uploads (10GB+): set proxy_request_buffering to off and client_max_body_size to 0')}</li>
             </ul>
           </div>
         </div>

@@ -180,8 +180,9 @@ type ProxyHost struct {
 	ProxyConnectTimeout  int    `json:"proxy_connect_timeout,omitempty"`   // seconds, 0 = use global
 	ProxySendTimeout     int    `json:"proxy_send_timeout,omitempty"`      // seconds, 0 = use global
 	ProxyReadTimeout     int    `json:"proxy_read_timeout,omitempty"`      // seconds, 0 = use global
-	ProxyBuffering       string `json:"proxy_buffering,omitempty"`         // "on", "off", "" = use global
-	ClientMaxBodySize    string `json:"client_max_body_size,omitempty"`    // e.g. "100m", "" = use global
+	ProxyBuffering        string `json:"proxy_buffering,omitempty"`          // "on", "off", "" = use global
+	ProxyRequestBuffering string `json:"proxy_request_buffering,omitempty"` // "on", "off", "" = use global
+	ClientMaxBodySize     string `json:"client_max_body_size,omitempty"`    // e.g. "100m", "" = use global
 	ProxyMaxTempFileSize string `json:"proxy_max_temp_file_size,omitempty"` // e.g. "0", "1024m", "" = use global
 
 	// WAF configuration
@@ -228,6 +229,7 @@ type CreateProxyHostRequest struct {
 	ProxySendTimeout        int      `json:"proxy_send_timeout,omitempty"`
 	ProxyReadTimeout        int      `json:"proxy_read_timeout,omitempty"`
 	ProxyBuffering          string   `json:"proxy_buffering,omitempty"`
+	ProxyRequestBuffering   string   `json:"proxy_request_buffering,omitempty"`
 	ClientMaxBodySize       string   `json:"client_max_body_size,omitempty"`
 	ProxyMaxTempFileSize    string   `json:"proxy_max_temp_file_size,omitempty"`
 	Enabled                 bool     `json:"enabled"`
@@ -259,6 +261,7 @@ type UpdateProxyHostRequest struct {
 	ProxySendTimeout        *int    `json:"proxy_send_timeout,omitempty"`
 	ProxyReadTimeout        *int    `json:"proxy_read_timeout,omitempty"`
 	ProxyBuffering          *string `json:"proxy_buffering,omitempty"`
+	ProxyRequestBuffering   *string `json:"proxy_request_buffering,omitempty"`
 	ClientMaxBodySize       *string `json:"client_max_body_size,omitempty"`
 	ProxyMaxTempFileSize    *string `json:"proxy_max_temp_file_size,omitempty"`
 	Enabled                 *bool   `json:"enabled,omitempty"`

@@ -1397,6 +1397,7 @@ func (s *ProxyHostService) Clone(ctx context.Context, sourceID string, req *mode
 		ProxySendTimeout:        source.ProxySendTimeout,
 		ProxyReadTimeout:        source.ProxyReadTimeout,
 		ProxyBuffering:          source.ProxyBuffering,
+		ProxyRequestBuffering:   source.ProxyRequestBuffering,
 		ClientMaxBodySize:       source.ClientMaxBodySize,
 		ProxyMaxTempFileSize:    source.ProxyMaxTempFileSize,
 		Enabled:                 source.Enabled,

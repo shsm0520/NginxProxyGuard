@@ -22,6 +22,7 @@ export interface ProxyHost {
   proxy_send_timeout?: number
   proxy_read_timeout?: number
   proxy_buffering?: string
+  proxy_request_buffering?: string
   client_max_body_size?: string
   proxy_max_temp_file_size?: string
   waf_enabled: boolean
@@ -57,6 +58,7 @@ export interface CreateProxyHostRequest {
   proxy_send_timeout?: number
   proxy_read_timeout?: number
   proxy_buffering?: string
+  proxy_request_buffering?: string
   client_max_body_size?: string
   proxy_max_temp_file_size?: string
   waf_enabled?: boolean
@@ -88,6 +90,7 @@ export interface UpdateProxyHostRequest {
   proxy_send_timeout?: number
   proxy_read_timeout?: number
   proxy_buffering?: string
+  proxy_request_buffering?: string
   client_max_body_size?: string
   proxy_max_temp_file_size?: string
   waf_enabled?: boolean

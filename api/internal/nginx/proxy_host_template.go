@@ -689,6 +689,7 @@ server {
         {{if gt .GlobalSettings.SendTimeout 0}}send_timeout {{.GlobalSettings.SendTimeout}}s;{{end}}
         {{if .Host.ClientMaxBodySize}}client_max_body_size {{.Host.ClientMaxBodySize}};{{else if .GlobalSettings.ClientMaxBodySize}}client_max_body_size {{.GlobalSettings.ClientMaxBodySize}};{{end}}
         {{if .Host.ProxyBuffering}}proxy_buffering {{.Host.ProxyBuffering}};{{end}}
+        {{if .Host.ProxyRequestBuffering}}proxy_request_buffering {{.Host.ProxyRequestBuffering}};{{end}}
         # Proxy buffer settings (from Global Settings)
         {{if .GlobalSettings.ProxyBufferSize}}proxy_buffer_size {{.GlobalSettings.ProxyBufferSize}};{{end}}
         {{if .GlobalSettings.ProxyBuffers}}proxy_buffers {{.GlobalSettings.ProxyBuffers}};{{end}}
@@ -777,6 +778,7 @@ server {
         {{if gt .GlobalSettings.SendTimeout 0}}send_timeout {{.GlobalSettings.SendTimeout}}s;{{end}}
         {{if .Host.ClientMaxBodySize}}client_max_body_size {{.Host.ClientMaxBodySize}};{{else if .GlobalSettings.ClientMaxBodySize}}client_max_body_size {{.GlobalSettings.ClientMaxBodySize}};{{end}}
         {{if .Host.ProxyBuffering}}proxy_buffering {{.Host.ProxyBuffering}};{{end}}
+        {{if .Host.ProxyRequestBuffering}}proxy_request_buffering {{.Host.ProxyRequestBuffering}};{{end}}
         # Proxy buffer settings (from Global Settings)
         {{if .GlobalSettings.ProxyBufferSize}}proxy_buffer_size {{.GlobalSettings.ProxyBufferSize}};{{end}}
         {{if .GlobalSettings.ProxyBuffers}}proxy_buffers {{.GlobalSettings.ProxyBuffers}};{{end}}
@@ -1485,6 +1487,7 @@ server {
         {{if gt .GlobalSettings.SendTimeout 0}}send_timeout {{.GlobalSettings.SendTimeout}}s;{{end}}
         {{if .Host.ClientMaxBodySize}}client_max_body_size {{.Host.ClientMaxBodySize}};{{else if .GlobalSettings.ClientMaxBodySize}}client_max_body_size {{.GlobalSettings.ClientMaxBodySize}};{{end}}
         {{if .Host.ProxyBuffering}}proxy_buffering {{.Host.ProxyBuffering}};{{end}}
+        {{if .Host.ProxyRequestBuffering}}proxy_request_buffering {{.Host.ProxyRequestBuffering}};{{end}}
         # Proxy buffer settings (from Global Settings)
         {{if .GlobalSettings.ProxyBufferSize}}proxy_buffer_size {{.GlobalSettings.ProxyBufferSize}};{{end}}
         {{if .GlobalSettings.ProxyBuffers}}proxy_buffers {{.GlobalSettings.ProxyBuffers}};{{end}}

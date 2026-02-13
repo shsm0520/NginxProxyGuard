@@ -79,6 +79,7 @@ func (db *DB) RunMigrations() error {
 		ALTER TABLE public.proxy_hosts ADD COLUMN IF NOT EXISTS proxy_send_timeout integer DEFAULT 0;
 		ALTER TABLE public.proxy_hosts ADD COLUMN IF NOT EXISTS proxy_read_timeout integer DEFAULT 0;
 		ALTER TABLE public.proxy_hosts ADD COLUMN IF NOT EXISTS proxy_buffering character varying(10) DEFAULT '';
+		ALTER TABLE public.proxy_hosts ADD COLUMN IF NOT EXISTS proxy_request_buffering character varying(10) DEFAULT '';
 		ALTER TABLE public.proxy_hosts ADD COLUMN IF NOT EXISTS client_max_body_size character varying(20) DEFAULT '';
 		ALTER TABLE public.proxy_hosts ADD COLUMN IF NOT EXISTS proxy_max_temp_file_size character varying(20) DEFAULT '';
 
