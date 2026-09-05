@@ -29,8 +29,9 @@ type WAFRuleExclusion struct {
 const (
 	// WAFScopeHost switches the rule off everywhere on this host.
 	WAFScopeHost = "host"
-	// WAFScopeURI switches it off only for requests whose path starts with
-	// ScopeValue. The rule keeps protecting every other path.
+	// WAFScopeURI switches it off for the ScopeValue path and everything under
+	// it. The match stops at a path boundary, so a sibling that merely shares
+	// the prefix (/api-admin for a /api scope) keeps the rule. (#286)
 	WAFScopeURI = "uri"
 	// WAFScopeParam keeps the rule but stops it inspecting one argument.
 	WAFScopeParam = "param"
@@ -93,6 +94,26 @@ func (e *WAFRuleExclusion) ValidateScope() error {
 	}
 	e.ScopeValue = v
 	return nil
+}
+
+// NormalizeStoredScope folds a scope read back from the database into the shape
+// the current writer would have produced.
+//
+// It exists for one row shape: uri with a value of "/". ValidateScope folds that
+// to the host scope on write, but only since #286 — rows written by v2.37.0
+// through v2.53.0 still carry it, and the log viewer prefilled exactly that
+// value whenever an operator disabled a rule from a request blocked on the site
+// root. Under the old raw-prefix rendering such a row was a host-wide disable in
+// disguise; rendering it as a boundary-anchored pattern would suddenly narrow it
+// to the site root alone. Folding on read keeps those exclusions doing what they
+// have always done, without a data migration.
+//
+// Anything else is returned untouched: this is a compatibility fold, not a
+// validator, and read paths must not drop rows they cannot parse.
+func NormalizeStoredScope(e *WAFRuleExclusion) {
+	if e.ScopeType == WAFScopeURI && strings.TrimSpace(e.ScopeValue) == "/" {
+		e.ScopeType, e.ScopeValue = WAFScopeHost, ""
+	}
 }
 
 // paramNamePattern is what a request argument may be named. Deliberately

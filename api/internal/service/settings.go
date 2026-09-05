@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -199,6 +200,15 @@ func (s *SettingsService) UpdateGlobalSettings(ctx context.Context, req *model.U
 	// why nothing changed). The DB retains the saved value; the operator can
 	// reopen the form and fix it.
 	if err := s.nginxManager.GenerateMainNginxConfig(ctx, settings, s.loadGlobalTrustedIPs(ctx), s.loadGlobalTrustedIPsBypassWAF(ctx), s.loadTrustedProxies(ctx)); err != nil {
+		// Separate "your value is wrong" from "we could not apply it right now".
+		// A cancelled context means the nginx lock was contended or the request
+		// went away — the config was never tested, let alone rejected. Reporting
+		// that as a rejection sends an operator hunting for a fault in a value
+		// nginx never saw.
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			log.Printf("[SettingsService] nginx.conf regeneration did not run: %v", err)
+			return settings, fmt.Errorf("settings saved but not applied yet — nginx was busy; they take effect on the next reload: %w", err)
+		}
 		log.Printf("[SettingsService] nginx.conf regeneration rejected: %v", err)
 		return settings, fmt.Errorf("settings saved but nginx rejected the new config: %w", err)
 	}

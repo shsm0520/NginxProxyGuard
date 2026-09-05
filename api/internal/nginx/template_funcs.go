@@ -2,6 +2,7 @@ package nginx
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -283,6 +284,30 @@ func GetSimpleTemplateFuncMap() template.FuncMap {
 		// so the index only has to be unique within one host. (#231)
 		"scopedRuleID": func(i int) int {
 			return 1000000 + i
+		},
+		// uriScopePattern turns a uri scope into an anchored pattern that stops at
+		// a path boundary.
+		//
+		// "@beginsWith /api" was a raw byte prefix, so an exemption scoped to /api
+		// also switched the rule off for /api-admin, /apikeys and /apiv2 — paths
+		// the operator never named, with no signal anywhere in the UI. (#286)
+		//
+		// Three details are load-bearing:
+		//   - REQUEST_URI carries the query string, so "?" is a boundary as well
+		//     as "/". Without it, scoping /api would stop exempting GET /api?q=1.
+		//   - A trailing slash is trimmed. An operator who typed "/api/" means the
+		//     same subtree, and "^/api/([/?]|$)" would match nothing they use.
+		//   - The value is regex-quoted. ValidateScope permits . + * ( ) [ ] ^ ,
+		//     and an unbalanced "(" compiles to a rule that never fires while
+		//     `nginx -t` still reports success — libmodsecurity swallows the PCRE
+		//     compile error, so the exemption would die silently.
+		"uriScopePattern": func(v string) string {
+			trimmed := strings.TrimRight(v, "/")
+			if trimmed == "" {
+				// An all-slashes value stays literal rather than widening to ^/.
+				trimmed = v
+			}
+			return "^" + regexp.QuoteMeta(trimmed) + "([/?]|$)"
 		},
 	}
 }

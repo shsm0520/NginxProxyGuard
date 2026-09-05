@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { execSync } from 'child_process';
+import * as net from 'net';
 import { APIHelper } from '../../utils/api-helper';
 import { TestDataFactory } from '../../utils/test-data-factory';
 
@@ -72,6 +73,27 @@ test.describe('Scoped WAF rule exclusions (#286)', () => {
     });
   }
 
+  /** Send a plain GET through the proxy and return the status (0 = no reply). */
+  function rawGet(host: string, path: string): Promise<number> {
+    return new Promise((resolve) => {
+      const socket = net.createConnection({ host: '127.0.0.1', port: Number(process.env.E2E_PROXY_HTTP_PORT || 18080) });
+      socket.setTimeout(8000);
+      let buf = '';
+      const done = (v: number) => { socket.destroy(); resolve(v); };
+      socket.on('connect', () => {
+        socket.write(`GET ${path} HTTP/1.1\r\nHost: ${host}\r\nConnection: close\r\n\r\n`);
+      });
+      socket.on('data', (c) => {
+        buf += c.toString('utf8');
+        const m = buf.match(/^HTTP\/1\.[01] (\d{3})/);
+        if (m) done(Number(m[1]));
+      });
+      socket.on('close', () => done(0));
+      socket.on('error', () => done(0));
+      socket.on('timeout', () => done(0));
+    });
+  }
+
   /** The rule as the policy screen sees it. */
   async function readRule(
     request: import('@playwright/test').APIRequestContext,
@@ -113,8 +135,10 @@ test.describe('Scoped WAF rule exclusions (#286)', () => {
       `docker compose -f ../../docker-compose.e2e-test.yml exec -T nginx cat /etc/nginx/modsec/host_${hostId}.conf`,
       { encoding: 'utf8' }
     );
-    expect(conf).toContain('@beginsWith /api/a');
-    expect(conf).toContain('@beginsWith /api/b');
+    // Anchored and terminated at a path boundary. A raw prefix test also
+    // exempted /api/a-admin and /api/apikeys — paths nobody named. (#286)
+    expect(conf).toContain('@rx ^/api/a([/?]|$)');
+    expect(conf).toContain('@rx ^/api/b([/?]|$)');
     // Each scoped exclusion is its own SecRule and needs its own id.
     const ids = [...conf.matchAll(/id:(\d{7})/g)].map((m) => m[1]);
     expect(new Set(ids).size, 'generated rule ids must be unique').toBe(ids.length);
@@ -169,6 +193,54 @@ test.describe('Scoped WAF rule exclusions (#286)', () => {
     const rule = await readRule(request, RULE);
     expect(rule.enabled).toBe(true);
     expect(rule.scopes).toEqual([]);
+  });
+
+  test('a path scope stops at a path boundary, so prefix siblings keep the rule', async ({ request }) => {
+    // A string assertion on the directive cannot tell a correct boundary class
+    // from a wrong one. This sends real requests: with the rule exempted under
+    // /api/a, a sibling that merely shares those bytes must still be blocked.
+    // Before #286 the directive was a raw prefix test and /api/a-x was exempt.
+    const host = TestDataFactory.generateDomain('waf-boundary');
+    const created = await request.post(`${API}/api/v1/proxy-hosts`, {
+      headers: auth(),
+      data: {
+        domain_names: [host],
+        forward_host: '127.0.0.1',
+        forward_port: 19080,
+        forward_scheme: 'http',
+        waf_enabled: true,
+        waf_mode: 'blocking',
+        waf_paranoia_level: 1,
+        waf_anomaly_threshold: 5,
+        enabled: true,
+      },
+    });
+    expect(created.ok(), `host creation failed: ${created.status()}`).toBeTruthy();
+    const boundaryHostId = (await created.json()).id;
+
+    try {
+      const res = await request.post(
+        `${API}/api/v1/waf/hosts/${boundaryHostId}/rules/942100/disable`,
+        { headers: auth(), data: { scope_type: 'uri', scope_value: '/api/a' } }
+      );
+      expect(res.status()).toBe(201);
+
+      // ModSecurity does not re-parse its rules on `nginx -s reload`, so the
+      // exclusion only goes live after the proxy restarts.
+      execSync('docker restart npg-test-proxy', { stdio: 'ignore' });
+      await new Promise((r) => setTimeout(r, 8000));
+
+      const payload = "?id=1%27%20or%20%271%27%3D%271";
+      const probe = (path: string) => rawGet(host, `${path}${payload}`);
+
+      expect(await probe('/api/a/x'), '/api/a/x is inside the scope').not.toBe(403);
+      expect(await probe('/api/a'), 'the scope root itself').not.toBe(403);
+      expect(await probe('/api/a-x'), '/api/a-x only shares the prefix').toBe(403);
+      expect(await probe('/api/abc'), '/api/abc only shares the prefix').toBe(403);
+      expect(await probe('/other'), 'unrelated path').toBe(403);
+    } finally {
+      await request.delete(`${API}/api/v1/proxy-hosts/${boundaryHostId}`, { headers: auth() });
+    }
   });
 
   test('rejects a scope value that could break out of the directive', async ({ request }) => {

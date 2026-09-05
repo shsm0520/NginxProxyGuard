@@ -60,8 +60,9 @@ SecRule REMOTE_ADDR "@ipMatch {{joinComma .AllowedIPs}}" "id:900900,phase:1,pass
 # Rule {{$e.RuleID}}: {{$e.RuleDescription}} ({{$e.RuleCategory}})
 # Reason: {{$e.Reason}}
 {{- if eq $e.ScopeType "uri"}}
-# Scoped to {{$e.ScopeValue}} — the rule keeps protecting every other path.
-SecRule REQUEST_URI "@beginsWith {{$e.ScopeValue}}" "id:{{scopedRuleID $i}},phase:1,pass,nolog,ctl:ruleRemoveById={{$e.RuleID}}"
+# Scoped to {{$e.ScopeValue}} — matched at a path boundary, so a sibling path that
+# only shares the prefix ({{$e.ScopeValue}}-admin) keeps the rule.
+SecRule REQUEST_URI "@rx {{uriScopePattern $e.ScopeValue}}" "id:{{scopedRuleID $i}},phase:1,pass,nolog,ctl:ruleRemoveById={{$e.RuleID}}"
 {{- else if eq $e.ScopeType "param"}}
 # Scoped to the {{$e.ScopeValue}} argument — the rule still inspects everything else.
 SecRuleUpdateTargetById {{$e.RuleID}} "!ARGS:{{$e.ScopeValue}}"

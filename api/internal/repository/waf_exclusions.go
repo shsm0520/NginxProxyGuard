@@ -150,6 +150,9 @@ func (r *WAFRepository) GetExclusionsByProxyHost(ctx context.Context, proxyHostI
 			exclusion.DisabledBy = disabledBy.String
 		}
 
+		// Fold legacy scope shapes so every reader — config generation, the
+		// rules list, the merges — sees what the current writer produces.
+		model.NormalizeStoredScope(&exclusion)
 		exclusions = append(exclusions, exclusion)
 	}
 
