@@ -62,7 +62,13 @@ export class GlobalSettingsPage extends BasePage {
 
     // Page elements
     this.pageTitle = page.locator('h1, h2').filter({ hasText: /global.*setting|general.*setting/i }).first();
-    this.saveButton = page.locator('button').filter({ hasText: /save|apply/i }).first();
+    // Must not be /save|apply/ — the screen's first button is the "Apply
+    // recommended" preset, so that pattern clicked a preset (behind a confirm
+    // Playwright auto-dismisses) and never saved anything. Match the save
+    // label itself, in both languages, including its pending text.
+    this.saveButton = page.locator('button')
+      .filter({ hasText: /save changes|변경사항 저장|saving\.\.\.|저장 중/i })
+      .first();
     this.resetButton = page.locator('button').filter({ hasText: /reset|default/i }).first();
 
     // Nginx Settings

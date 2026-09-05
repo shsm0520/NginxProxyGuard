@@ -178,80 +178,78 @@ export default function RawLogFiles() {
             </div>
           </div>
 
-          {true && (
-            <div className="ml-8 space-y-4 border-l-2 border-slate-200 dark:border-slate-700 pl-4">
-              {/* Max Size */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {t('rawFiles.settings.maxSize')}
-                </label>
-                <input
-                  type="number"
-                  min="10"
-                  max="1000"
-                  value={getValue('raw_log_max_size_mb') ?? 100}
-                  onChange={(e) => handleChange('raw_log_max_size_mb', parseInt(e.target.value))}
-                  className="w-32 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                />
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('rawFiles.settings.maxSizeDesc')}</p>
-              </div>
-
-              {/* Rotate Count */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {t('rawFiles.settings.rotateCount')}
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="30"
-                  value={getValue('raw_log_rotate_count') ?? 5}
-                  onChange={(e) => handleChange('raw_log_rotate_count', parseInt(e.target.value))}
-                  className="w-32 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                />
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('rawFiles.settings.rotateCountDesc')}</p>
-              </div>
-
-              {/* Retention Days */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  {t('rawFiles.settings.retention')}
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="365"
-                  value={getValue('raw_log_retention_days') ?? 7}
-                  onChange={(e) => handleChange('raw_log_retention_days', parseInt(e.target.value))}
-                  className="w-32 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                />
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('rawFiles.settings.retentionDesc')}</p>
-              </div>
-
-              {/* Compress */}
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={getValue('raw_log_compress_rotated') ?? true}
-                  onChange={(e) => handleChange('raw_log_compress_rotated', e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-slate-700"
-                />
-                <div>
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('rawFiles.settings.compress')}</span>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('rawFiles.settings.compressDesc')}</p>
-                </div>
+          <div className="ml-8 space-y-4 border-l-2 border-slate-200 dark:border-slate-700 pl-4">
+            {/* Max Size */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                {t('rawFiles.settings.maxSize')}
               </label>
-
-              {/* Estimated Size */}
-              <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-sm">
-                <span className="text-slate-600 dark:text-slate-400">{t('rawFiles.settings.estimatedSize')}: </span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  {((getValue('raw_log_max_size_mb') ?? 100) * (getValue('raw_log_rotate_count') ?? 5) * 2 * (getValue('raw_log_compress_rotated') ? 0.1 : 1)).toFixed(0)} MB
-                </span>
-                {getValue('raw_log_compress_rotated') && <span className="text-slate-500 dark:text-slate-400"> ({t('rawFiles.settings.compressed')})</span>}
-              </div>
+              <input
+                type="number"
+                min="10"
+                max="1000"
+                value={getValue('raw_log_max_size_mb') ?? 100}
+                onChange={(e) => handleChange('raw_log_max_size_mb', parseInt(e.target.value))}
+                className="w-32 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+              />
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('rawFiles.settings.maxSizeDesc')}</p>
             </div>
-          )}
+
+            {/* Rotate Count */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                {t('rawFiles.settings.rotateCount')}
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="30"
+                value={getValue('raw_log_rotate_count') ?? 5}
+                onChange={(e) => handleChange('raw_log_rotate_count', parseInt(e.target.value))}
+                className="w-32 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+              />
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('rawFiles.settings.rotateCountDesc')}</p>
+            </div>
+
+            {/* Retention Days */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                {t('rawFiles.settings.retention')}
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="365"
+                value={getValue('raw_log_retention_days') ?? 7}
+                onChange={(e) => handleChange('raw_log_retention_days', parseInt(e.target.value))}
+                className="w-32 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+              />
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('rawFiles.settings.retentionDesc')}</p>
+            </div>
+
+            {/* Compress */}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={getValue('raw_log_compress_rotated') ?? true}
+                onChange={(e) => handleChange('raw_log_compress_rotated', e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-slate-700"
+              />
+              <div>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('rawFiles.settings.compress')}</span>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{t('rawFiles.settings.compressDesc')}</p>
+              </div>
+            </label>
+
+            {/* Estimated Size */}
+            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-sm">
+              <span className="text-slate-600 dark:text-slate-400">{t('rawFiles.settings.estimatedSize')}: </span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                {((getValue('raw_log_max_size_mb') ?? 100) * (getValue('raw_log_rotate_count') ?? 5) * 2 * (getValue('raw_log_compress_rotated') ? 0.1 : 1)).toFixed(0)} MB
+              </span>
+              {getValue('raw_log_compress_rotated') && <span className="text-slate-500 dark:text-slate-400"> ({t('rawFiles.settings.compressed')})</span>}
+            </div>
+          </div>
         </div>
       </div>
 

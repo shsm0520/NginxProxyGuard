@@ -1,0 +1,78 @@
+name: Checks
+
+# Unit tests and lint on every push and PR.
+#
+# These ran nowhere before: release.yml only fires on a `v*` tag, and its
+# test-host job runs the E2E suite, not `go test` or eslint. The gap was not
+# theoretical — `npm run lint` sat at 3 errors for months without anyone seeing
+# it, because the Docker build runs `tsc -b && vite build` and never eslint.
+#
+# Deliberately excluded: ./tests/integration. Those need a live API on :8080 and
+# a `release-test-db` host, which only the release workflow's compose stack
+# provides. Running them here would fail on every push and train people to
+# ignore a red check.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: 🧪 API (build + test)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          # Keep in step with the builder image in api/Dockerfile.
+          go-version: '1.27'
+          cache-dependency-path: api/go.sum
+
+      - name: Build
+        working-directory: api
+        run: go build ./...
+
+      - name: Vet
+        working-directory: api
+        run: go vet $(go list ./... | grep -v tests/integration)
+
+      - name: Test
+        working-directory: api
+        run: go test $(go list ./... | grep -v tests/integration) -count=1
+
+  ui:
+    name: 🧪 UI (lint + typecheck)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          # Keep in step with the builder image in ui/Dockerfile.
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install
+        working-directory: ui
+        # ci, not install: the lockfile is the point of this check. The Docker
+        # build uses `npm install` with legacy-peer-deps, so a lockfile that has
+        # drifted from package.json would not fail there.
+        run: npm ci
+
+      - name: Lint
+        working-directory: ui
+        run: npm run lint
+
+      - name: Typecheck
+        working-directory: ui
+        run: npx tsc -b

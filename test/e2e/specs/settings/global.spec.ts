@@ -192,6 +192,10 @@ test.describe('Global Settings', () => {
     });
 
     test('should update proxy buffering to off', async () => {
+      // Seed the opposite value first. Without it this asserted a value that was
+      // already 'off', so it passed while save() was clicking the wrong button.
+      await apiHelper.updateGlobalSettings({ proxy_buffering: 'on' });
+
       await settingsPage.goto();
       await settingsPage.gotoPerformanceTab();
 

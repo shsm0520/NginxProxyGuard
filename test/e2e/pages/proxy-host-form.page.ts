@@ -353,6 +353,10 @@ export class ProxyHostFormPage {
    * In edit mode, the Save button is always visible.
    */
   async save(): Promise<void> {
+    // The form body is lazy-loaded; wait for the real footer before probing.
+    await this.saveButton.or(this.nextButton).first()
+      .waitFor({ state: 'visible', timeout: TIMEOUTS.medium });
+
     // If save/create button is not visible, we're in create mode on a non-last tab.
     // Click "Next" until we reach the last tab where "Create" appears.
     let attempts = 0;
@@ -409,10 +413,14 @@ export class ProxyHostFormPage {
    */
   async expectForm(): Promise<void> {
     await expect(this.modal).toBeVisible();
-    // Either save button or next button should be visible
-    const hasSave = await this.saveButton.isVisible();
-    const hasNext = await this.nextButton.isVisible();
-    expect(hasSave || hasNext).toBeTruthy();
+    // `this.modal` (.fixed.inset-0) also matches App.tsx's Suspense *fallback*
+    // spinner, which carries no buttons at all — so it goes visible ~250ms before
+    // the real form mounts. Bare isVisible() probes fire inside that window and
+    // are deterministically false, which is why these tests failed every run and
+    // were mistaken for a port conflict. Auto-wait for the footer instead.
+    await expect(this.saveButton.or(this.nextButton).first()).toBeVisible({
+      timeout: TIMEOUTS.medium,
+    });
   }
 
   /**

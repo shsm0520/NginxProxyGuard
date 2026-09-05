@@ -7,13 +7,20 @@ interface MethodBadgeProps {
 
 // Check if string contains control characters or non-printable bytes
 function containsControlChars(str: string): boolean {
-  // Match control characters (0x00-0x1F, 0x7F) or escape sequences like \x00
+  // Match control characters (0x00-0x1F, 0x7F) or escape sequences like \x00.
+  // no-control-regex is disabled deliberately: matching control characters is
+  // the entire point here. A logged request method can contain them when the
+  // request line was malformed, and this badge exists to make that visible
+  // instead of rendering raw bytes into the page.
+  // eslint-disable-next-line no-control-regex
   return /[\x00-\x1F\x7F]|\\x[0-9a-fA-F]{2}/.test(str);
 }
 
 // Truncate and sanitize for display
 function sanitizeMethod(str: string, maxLen = 12): string {
-  // Replace control characters with visible representation
+  // Replace control characters with visible representation. Same reason as
+  // above: this regex must match control characters to strip them.
+  // eslint-disable-next-line no-control-regex
   const sanitized = str.replace(/[\x00-\x1F\x7F]/g, '·');
   if (sanitized.length > maxLen) {
     return sanitized.slice(0, maxLen) + '…';

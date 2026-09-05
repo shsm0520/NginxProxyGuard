@@ -56,7 +56,13 @@ export class WAFPage extends BasePage {
     this.globalWafToggle = page.locator('input[type="checkbox"], button[role="switch"]').first();
     this.wafModeSelect = page.locator('select').filter({ has: page.locator('option:has-text("Detection")') }).first();
     this.paranoiaLevelSelect = page.locator('select').filter({ has: page.locator('option:has-text("1"), option:has-text("2")') }).first();
-    this.saveButton = page.locator('button').filter({ hasText: /save|apply/i }).first();
+    // Not /save|apply/: on a screen that also has an "Apply …" button that
+    // pattern picks the wrong one and the test silently saves nothing —
+    // which is exactly what happened on the global settings page.
+    this.saveButton = page.locator('button')
+      .filter({ hasText: /save|저장/i })
+      .filter({ hasNotText: /apply|적용/i })
+      .first();
 
     // Banned IPs - page uses table or space-y container
     this.bannedIpList = page.locator('main .space-y-6, main table, main [class*="list"]').first();
