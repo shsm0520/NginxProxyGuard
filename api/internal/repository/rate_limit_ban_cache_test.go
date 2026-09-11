@@ -40,6 +40,44 @@ func assertDeletedKeys(t *testing.T, got []string, want []string) {
 	}
 }
 
+func TestBanAutoIPPreservesAutoMetadataAndInvalidatesGlobalBanCache(t *testing.T) {
+	ctx := context.Background()
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	cache := &fakeActiveBanCache{}
+	repo := &RateLimitRepository{db: db, cache: cache}
+	now := time.Date(2026, 9, 11, 15, 0, 0, 0, time.UTC)
+	expires := now.Add(time.Hour)
+
+	mock.ExpectExec(`DELETE FROM banned_ips WHERE ip_address = \$1 AND proxy_host_id IS NULL`).
+		WithArgs("2001:db8::123").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectQuery(`INSERT INTO banned_ips`).
+		WithArgs(nil, "2001:db8::123", "WAF threshold exceeded", 7, sqlmock.AnyArg(), false, true).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"id", "proxy_host_id", "ip_address", "reason", "fail_count", "banned_at", "expires_at", "is_permanent", "is_auto_banned", "created_at",
+		}).AddRow("ban-1", nil, "2001:db8::123", "WAF threshold exceeded", 7, now, expires, false, true, now))
+
+	ban, err := repo.BanAutoIP(ctx, nil, "2001:db8::123", "WAF threshold exceeded", 3600, 7)
+	if err != nil {
+		t.Fatalf("BanAutoIP: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("sql expectations: %v", err)
+	}
+	if !ban.IsAutoBanned {
+		t.Fatal("BanAutoIP must mark the row as auto-banned")
+	}
+	if ban.FailCount != 7 {
+		t.Fatalf("FailCount = %d, want 7", ban.FailCount)
+	}
+	assertDeletedKeys(t, cache.deleted, []string{"banned_ips:active:global"})
+}
+
 func TestUnbanIPByAddressInvalidatesEveryAffectedHostBanCache(t *testing.T) {
 	ctx := context.Background()
 	db, mock, err := sqlmock.New()
