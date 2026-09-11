@@ -13,9 +13,15 @@ import (
 	"nginx-proxy-guard/pkg/cache"
 )
 
+type activeBanCache interface {
+	Delete(ctx context.Context, key string) error
+	Get(ctx context.Context, key string, dest interface{}) error
+	Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error
+}
+
 type RateLimitRepository struct {
 	db    *sql.DB
-	cache *cache.RedisClient
+	cache activeBanCache
 }
 
 func NewRateLimitRepository(db *sql.DB) *RateLimitRepository {
@@ -55,6 +61,19 @@ func (r *RateLimitRepository) invalidateBans(ctx context.Context, proxyHostID *s
 	_ = r.cache.Delete(ctx, r.bansCacheKeyGlobal())
 	if proxyHostID != nil {
 		_ = r.cache.Delete(ctx, r.bansCacheKeyHost(*proxyHostID))
+	}
+}
+
+func (r *RateLimitRepository) invalidateBansForHosts(ctx context.Context, hostIDs map[string]struct{}) {
+	if r.cache == nil {
+		return
+	}
+	_ = r.cache.Delete(ctx, r.bansCacheKeyGlobal())
+	for hostID := range hostIDs {
+		if hostID == "" {
+			continue
+		}
+		_ = r.cache.Delete(ctx, r.bansCacheKeyHost(hostID))
 	}
 }
 
@@ -589,6 +608,19 @@ func (r *RateLimitRepository) GetActiveGlobalBans(ctx context.Context) ([]model.
 }
 
 func (r *RateLimitRepository) BanIP(ctx context.Context, proxyHostID *string, ip, reason string, banTime int) (*model.BannedIP, error) {
+	return r.banIP(ctx, proxyHostID, ip, reason, banTime, 1, false)
+}
+
+// BanAutoIP records an automatic ban while preserving the fail count/source flag
+// and using the same active-ban cache invalidation path as manual bans.
+func (r *RateLimitRepository) BanAutoIP(ctx context.Context, proxyHostID *string, ip, reason string, banTime int, failCount int) (*model.BannedIP, error) {
+	if failCount < 1 {
+		failCount = 1
+	}
+	return r.banIP(ctx, proxyHostID, ip, reason, banTime, failCount, true)
+}
+
+func (r *RateLimitRepository) banIP(ctx context.Context, proxyHostID *string, ip, reason string, banTime int, failCount int, isAuto bool) (*model.BannedIP, error) {
 	var expiresAt *time.Time
 	isPermanent := banTime == 0
 
@@ -605,9 +637,9 @@ func (r *RateLimitRepository) BanIP(ctx context.Context, proxyHostID *string, ip
 	}
 
 	query := `
-		INSERT INTO banned_ips (proxy_host_id, ip_address, reason, fail_count, banned_at, expires_at, is_permanent)
-		VALUES ($1, $2, $3, 1, NOW(), $4, $5)
-		RETURNING id, proxy_host_id, ip_address, reason, fail_count, banned_at, expires_at, is_permanent, created_at
+		INSERT INTO banned_ips (proxy_host_id, ip_address, reason, fail_count, banned_at, expires_at, is_permanent, is_auto_banned)
+		VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7)
+		RETURNING id, proxy_host_id, ip_address, reason, fail_count, banned_at, expires_at, is_permanent, is_auto_banned, created_at
 	`
 
 	var b model.BannedIP
@@ -615,8 +647,8 @@ func (r *RateLimitRepository) BanIP(ctx context.Context, proxyHostID *string, ip
 	var reasonOut sql.NullString
 	var expiresAtOut sql.NullTime
 
-	err := r.db.QueryRowContext(ctx, query, proxyHostID, ip, reason, expiresAt, isPermanent).Scan(
-		&b.ID, &phID, &b.IPAddress, &reasonOut, &b.FailCount, &b.BannedAt, &expiresAtOut, &b.IsPermanent, &b.CreatedAt,
+	err := r.db.QueryRowContext(ctx, query, proxyHostID, ip, reason, failCount, expiresAt, isPermanent, isAuto).Scan(
+		&b.ID, &phID, &b.IPAddress, &reasonOut, &b.FailCount, &b.BannedAt, &expiresAtOut, &b.IsPermanent, &b.IsAutoBanned, &b.CreatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -767,23 +799,52 @@ func (r *RateLimitRepository) UnbanIPsByIDs(ctx context.Context, ids []string) (
 	if len(ids) == 0 {
 		return 0, nil
 	}
-	result, err := r.db.ExecContext(ctx, "DELETE FROM banned_ips WHERE id = ANY($1::uuid[])", pq.Array(ids))
+	rows, err := r.db.QueryContext(ctx, "DELETE FROM banned_ips WHERE id = ANY($1::uuid[]) RETURNING proxy_host_id", pq.Array(ids))
 	if err != nil {
 		return 0, err
 	}
-	n, _ := result.RowsAffected()
-	r.invalidateBans(ctx, nil)
+	defer rows.Close()
+
+	var n int64
+	hostIDs := make(map[string]struct{})
+	for rows.Next() {
+		var phID sql.NullString
+		if err := rows.Scan(&phID); err != nil {
+			return 0, err
+		}
+		n++
+		if phID.Valid {
+			hostIDs[phID.String] = struct{}{}
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	r.invalidateBansForHosts(ctx, hostIDs)
 	return n, nil
 }
 
 func (r *RateLimitRepository) UnbanIPByAddress(ctx context.Context, ip string) error {
-	_, err := r.db.ExecContext(ctx, "DELETE FROM banned_ips WHERE ip_address = $1", ip)
+	rows, err := r.db.QueryContext(ctx, "DELETE FROM banned_ips WHERE ip_address = $1 RETURNING proxy_host_id", ip)
 	if err != nil {
 		return err
 	}
-	// Bulk delete spans hosts; invalidate global. Per-host caches stale
-	// within activeBansTTL — acceptable for this admin-rare path.
-	r.invalidateBans(ctx, nil)
+	defer rows.Close()
+
+	hostIDs := make(map[string]struct{})
+	for rows.Next() {
+		var phID sql.NullString
+		if err := rows.Scan(&phID); err != nil {
+			return err
+		}
+		if phID.Valid {
+			hostIDs[phID.String] = struct{}{}
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	r.invalidateBansForHosts(ctx, hostIDs)
 	return nil
 }
 

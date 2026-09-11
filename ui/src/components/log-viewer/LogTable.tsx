@@ -57,7 +57,7 @@ export function LogTable({
                   </th>
                 )}
                 {visibleColumns.has('ip') && (
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase w-[160px]">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase w-[220px]">
                     {t('table.columns.ip')}
                   </th>
                 )}
@@ -142,7 +142,7 @@ export function LogTable({
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{t('table.columns.time')}</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{t('table.columns.host')}</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{t('table.columns.ip')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase w-[220px]">{t('table.columns.ip')}</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase w-[60px]">{t('table.columns.country')}</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{t('table.columns.ruleId')}</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{t('table.columns.ruleMessage')}</th>
@@ -154,7 +154,7 @@ export function LogTable({
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{t('table.columns.time')}</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{t('table.columns.severity')}</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{t('table.columns.ip')}</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase w-[220px]">{t('table.columns.ip')}</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{t('table.columns.error')}</th>
               </tr>
             )}

@@ -8,8 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
-
 	"nginx-proxy-guard/internal/model"
 	"nginx-proxy-guard/internal/repository"
 )
@@ -216,36 +214,13 @@ func (s *WAFAutoBanService) isIPBanned(ctx context.Context, ip string) bool {
 
 // banIP adds an IP to the banned list
 func (s *WAFAutoBanService) banIP(ctx context.Context, ip string, host string, reason string, failCount int, durationSeconds int) error {
-	id := uuid.New().String()
-	now := time.Now()
-
-	var expiresAt *time.Time
-	isPermanent := false
-
-	if durationSeconds > 0 {
-		exp := now.Add(time.Duration(durationSeconds) * time.Second)
-		expiresAt = &exp
-	} else {
-		isPermanent = true
+	if s.rateLimitRepo == nil {
+		return fmt.Errorf("rate limit repository is not initialized")
 	}
 
-	// WAF auto-ban creates global bans (proxy_host_id = NULL)
-	// Uses partial unique index idx_banned_ips_ip_global_unique
-	query := `
-		INSERT INTO banned_ips (id, ip_address, proxy_host_id, reason, fail_count, banned_at, expires_at, is_permanent, is_auto_banned, created_at)
-		VALUES ($1, $2, NULL, $3, $4, $5, $6, $7, true, $5)
-		ON CONFLICT (ip_address) WHERE proxy_host_id IS NULL DO UPDATE SET
-			reason = EXCLUDED.reason,
-			fail_count = EXCLUDED.fail_count,
-			banned_at = EXCLUDED.banned_at,
-			expires_at = EXCLUDED.expires_at,
-			is_permanent = EXCLUDED.is_permanent,
-			is_auto_banned = true
-	`
-
-	_, err := s.db.ExecContext(ctx, query, id, ip, reason, failCount, now, expiresAt, isPermanent)
+	bannedIP, err := s.rateLimitRepo.BanAutoIP(ctx, nil, ip, reason, durationSeconds, failCount)
 	if err != nil {
-		return fmt.Errorf("failed to insert banned IP: %w", err)
+		return fmt.Errorf("failed to ban IP: %w", err)
 	}
 
 	// Record ban history
@@ -257,8 +232,8 @@ func (s *WAFAutoBanService) banIP(ctx context.Context, ip string, host string, r
 			Reason:      reason,
 			Source:      model.BanSourceWAFAutoBan,
 			BanDuration: &durationSeconds,
-			ExpiresAt:   expiresAt,
-			IsPermanent: isPermanent,
+			ExpiresAt:   bannedIP.ExpiresAt,
+			IsPermanent: bannedIP.IsPermanent,
 			IsAuto:      true,
 			FailCount:   &failCount,
 		}
