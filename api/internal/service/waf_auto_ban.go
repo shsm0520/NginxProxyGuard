@@ -115,6 +115,17 @@ func (s *WAFAutoBanService) refreshSettings(ctx context.Context) {
 	if s.windowSeconds < 1 {
 		s.windowSeconds = 300
 	}
+	// A non-positive duration used to mean "permanent" here, because this
+	// service computed expiry itself. The repository instead reads banTime == 0
+	// as permanent, so a negative value would write is_permanent = false with
+	// expires_at already in the past: a row that renders into no nginx config
+	// and that isIPBanned never matches, so the same client is re-banned on
+	// every threshold crossing. waf_auto_ban_duration has no CHECK and is not
+	// validated on update or on backup import, so clamp it to the permanent
+	// case and stay fail-closed.
+	if s.durationSeconds < 0 {
+		s.durationSeconds = 0
+	}
 }
 
 // RecordWAFEvent records a WAF event for an IP and checks if it should be banned

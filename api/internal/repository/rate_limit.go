@@ -807,6 +807,16 @@ func (r *RateLimitRepository) UnbanIPsByIDs(ctx context.Context, ids []string) (
 
 	var n int64
 	hostIDs := make(map[string]struct{})
+	// The DELETE has already run server-side by the time the first row is read,
+	// so a Scan or rows.Err failure still leaves the rows gone. Invalidate on
+	// every exit path, or that error leaves precisely the stale cache this
+	// function exists to clear. Detached from cancellation because the handler
+	// passes the request context and "Unban all" sends 100-id batches: a client
+	// that walks away would otherwise delete the rows and skip the Delete.
+	defer func() {
+		r.invalidateBansForHosts(context.WithoutCancel(ctx), hostIDs)
+	}()
+
 	for rows.Next() {
 		var phID sql.NullString
 		if err := rows.Scan(&phID); err != nil {
@@ -820,7 +830,6 @@ func (r *RateLimitRepository) UnbanIPsByIDs(ctx context.Context, ids []string) (
 	if err := rows.Err(); err != nil {
 		return 0, err
 	}
-	r.invalidateBansForHosts(ctx, hostIDs)
 	return n, nil
 }
 
@@ -832,6 +841,12 @@ func (r *RateLimitRepository) UnbanIPByAddress(ctx context.Context, ip string) e
 	defer rows.Close()
 
 	hostIDs := make(map[string]struct{})
+	// Same reasoning as UnbanIPsByIDs: the rows are already deleted, so every
+	// exit path must invalidate, and it must survive a cancelled request.
+	defer func() {
+		r.invalidateBansForHosts(context.WithoutCancel(ctx), hostIDs)
+	}()
+
 	for rows.Next() {
 		var phID sql.NullString
 		if err := rows.Scan(&phID); err != nil {
@@ -844,7 +859,6 @@ func (r *RateLimitRepository) UnbanIPByAddress(ctx context.Context, ip string) e
 	if err := rows.Err(); err != nil {
 		return err
 	}
-	r.invalidateBansForHosts(ctx, hostIDs)
 	return nil
 }
 
