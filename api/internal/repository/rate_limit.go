@@ -629,16 +629,41 @@ func (r *RateLimitRepository) banIP(ctx context.Context, proxyHostID *string, ip
 		expiresAt = &t
 	}
 
-	// First delete any existing ban for this IP (for the same proxy host or global)
+	// Replace any existing ban for this IP in the same scope with ONE statement.
+	// The previous DELETE-then-INSERT was not atomic and left two windows open:
+	// an INSERT that never ran after the DELETE had already committed (cancelled
+	// request context — the manual ban handler passes the request's — statement
+	// timeout, pool reset) silently LIFTED an existing ban, and two writers on
+	// the same scope (manual ban, fail2ban's global jail, WAF auto-ban) could
+	// both delete before either inserted, so the loser failed with 23505 instead
+	// of refreshing. fail2ban's host-scoped path kept its upsert all along; this
+	// brings the shared helper back in line with it.
+	//
+	// Postgres infers a single arbiter index per statement and the two scopes
+	// live on two partial unique indexes, so the conflict target is per scope
+	// and the WHERE predicate is required — without it the arbiter cannot be
+	// inferred (42P10). Those predicates are the exact complements of the old
+	// DELETE predicates, so ON CONFLICT can only ever refresh the row the DELETE
+	// would have removed.
+	onConflict := "ON CONFLICT (ip_address) WHERE proxy_host_id IS NULL"
 	if proxyHostID != nil {
-		r.db.ExecContext(ctx, "DELETE FROM banned_ips WHERE ip_address = $1 AND proxy_host_id = $2", ip, *proxyHostID)
-	} else {
-		r.db.ExecContext(ctx, "DELETE FROM banned_ips WHERE ip_address = $1 AND proxy_host_id IS NULL", ip)
+		onConflict = "ON CONFLICT (ip_address, proxy_host_id) WHERE proxy_host_id IS NOT NULL"
 	}
 
+	// Every mutable column comes from EXCLUDED: is_auto_banned must not be
+	// hard-coded (a manual re-ban of an auto-banned IP has to become manual) and
+	// expires_at must stay raw (a COALESCE would stop a permanent re-ban from
+	// clearing a prior expiry).
 	query := `
 		INSERT INTO banned_ips (proxy_host_id, ip_address, reason, fail_count, banned_at, expires_at, is_permanent, is_auto_banned)
 		VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7)
+		` + onConflict + ` DO UPDATE SET
+			reason = EXCLUDED.reason,
+			fail_count = EXCLUDED.fail_count,
+			banned_at = EXCLUDED.banned_at,
+			expires_at = EXCLUDED.expires_at,
+			is_permanent = EXCLUDED.is_permanent,
+			is_auto_banned = EXCLUDED.is_auto_banned
 		RETURNING id, proxy_host_id, ip_address, reason, fail_count, banned_at, expires_at, is_permanent, is_auto_banned, created_at
 	`
 

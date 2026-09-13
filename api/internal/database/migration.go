@@ -767,6 +767,49 @@ END $$`,
 			desc: "v2.13.17: btree index banned_ips(proxy_host_id, banned_at DESC)",
 			sql:  `CREATE INDEX IF NOT EXISTS idx_banned_ips_host_banned_at ON public.banned_ips USING btree (proxy_host_id, banned_at DESC)`,
 		},
+		// -----------------------------------------------------------------------
+		// v2.56.0: banned_ips writes became an upsert, which needs its arbiter
+		// index to exist. These five statements are ORDER-DEPENDENT.
+		//
+		// Both partial unique indexes were only ever declared in 001_init.sql, so
+		// a fresh install has them and an upgraded one may not — and without the
+		// arbiter every ban fails with 42P10 (the #259 failure mode). The legacy
+		// non-partial unique index must go first: while it exists, Postgres infers
+		// it as a second arbiter for "ON CONFLICT (ip_address) WHERE proxy_host_id
+		// IS NULL" and a global ban silently DO-UPDATEs a host-scoped row instead
+		// of being created (reproduced on PG 17). That trades a loud 23505 for a
+		// silent fail-open, so it is dropped before the upsert can ever run.
+		// Duplicates are cleared before the CREATEs because a unique index cannot
+		// be built over them, and upgrades only warn on failure — a skipped index
+		// would leave the arbiter missing. The newest row per scope wins; the IP
+		// stays banned either way.
+		// -----------------------------------------------------------------------
+		{
+			desc: "v2.56.0: drop legacy non-partial unique index banned_ips(ip_address)",
+			sql:  `DROP INDEX IF EXISTS idx_banned_ips_ip_address`,
+		},
+		{
+			desc: "v2.56.0: de-duplicate global bans before the unique index",
+			sql: `DELETE FROM public.banned_ips a USING public.banned_ips b
+			      WHERE a.proxy_host_id IS NULL AND b.proxy_host_id IS NULL
+			        AND a.ip_address = b.ip_address
+			        AND (a.banned_at, a.id) < (b.banned_at, b.id)`,
+		},
+		{
+			desc: "v2.56.0: de-duplicate host-scoped bans before the unique index",
+			sql: `DELETE FROM public.banned_ips a USING public.banned_ips b
+			      WHERE a.proxy_host_id IS NOT NULL AND b.proxy_host_id IS NOT NULL
+			        AND a.ip_address = b.ip_address AND a.proxy_host_id = b.proxy_host_id
+			        AND (a.banned_at, a.id) < (b.banned_at, b.id)`,
+		},
+		{
+			desc: "v2.56.0: partial unique index banned_ips(ip_address) WHERE proxy_host_id IS NULL",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_banned_ips_ip_global_unique ON public.banned_ips USING btree (ip_address) WHERE (proxy_host_id IS NULL)`,
+		},
+		{
+			desc: "v2.56.0: partial unique index banned_ips(ip_address, proxy_host_id) WHERE proxy_host_id IS NOT NULL",
+			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_banned_ips_ip_host_unique ON public.banned_ips USING btree (ip_address, proxy_host_id) WHERE (proxy_host_id IS NOT NULL)`,
+		},
 		{
 			desc: "v2.13.17: btree index bot_filters(proxy_host_id)",
 			sql:  `CREATE INDEX IF NOT EXISTS idx_bot_filters_proxy_host ON public.bot_filters USING btree (proxy_host_id)`,

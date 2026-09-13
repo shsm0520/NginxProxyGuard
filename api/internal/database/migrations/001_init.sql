@@ -4468,3 +4468,25 @@ CREATE INDEX IF NOT EXISTS idx_log_filter_presets_log_type ON public.log_filter_
 ALTER TABLE public.cloudflare_tunnel ADD COLUMN IF NOT EXISTS api_token text DEFAULT ''::text NOT NULL;
 ALTER TABLE public.cloudflare_tunnel ADD COLUMN IF NOT EXISTS catchall_enabled boolean DEFAULT false NOT NULL;
 ALTER TABLE public.cloudflare_tunnel ADD COLUMN IF NOT EXISTS catchall_applied_service text DEFAULT ''::text NOT NULL;
+
+-- v2.56.0: banned_ips upsert arbiter indexes — DOCUMENTATION ONLY.
+-- The executable copy lives in database/migration.go `upgrades` (five
+-- order-dependent entries). banIP now writes with ON CONFLICT, which needs its
+-- arbiter index to exist; both partial unique indexes were previously declared
+-- only in the CREATE section above, so an upgraded install could be missing
+-- them and every ban would fail with 42P10. The legacy non-partial index is
+-- dropped first: while it exists Postgres infers it as a second arbiter and a
+-- global ban silently updates a host-scoped row instead of being created.
+-- Duplicates are cleared before the CREATEs because a unique index cannot be
+-- built over them; the newest row per scope survives.
+--   DROP INDEX IF EXISTS idx_banned_ips_ip_address;
+--   DELETE FROM public.banned_ips a USING public.banned_ips b
+--     WHERE a.proxy_host_id IS NULL AND b.proxy_host_id IS NULL
+--       AND a.ip_address = b.ip_address
+--       AND (a.banned_at, a.id) < (b.banned_at, b.id);
+--   DELETE FROM public.banned_ips a USING public.banned_ips b
+--     WHERE a.proxy_host_id IS NOT NULL AND b.proxy_host_id IS NOT NULL
+--       AND a.ip_address = b.ip_address AND a.proxy_host_id = b.proxy_host_id
+--       AND (a.banned_at, a.id) < (b.banned_at, b.id);
+--   CREATE UNIQUE INDEX IF NOT EXISTS idx_banned_ips_ip_global_unique ...;  -- already in CREATE section
+--   CREATE UNIQUE INDEX IF NOT EXISTS idx_banned_ips_ip_host_unique ...;    -- already in CREATE section
