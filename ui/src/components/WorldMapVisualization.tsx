@@ -1,11 +1,14 @@
-import { useMemo, memo, useState } from "react";
+import { useMemo, memo, useState, type ComponentProps } from "react";
 import {
   ComposableMap,
   Geographies,
   Geography,
   ZoomableGroup,
-  type Geography as GeographyType,
 } from "react-simple-maps";
+
+// react-simple-maps v5 re-exports `Geography` as a component only, so the
+// feature type is taken from the component's own props rather than imported.
+type GeographyType = ComponentProps<typeof Geography>["geography"];
 
 interface GeoData {
   country_code: string;
@@ -385,7 +388,7 @@ function WorldMapVisualization({
               {({ geographies }: { geographies: GeographyType[] }) =>
                 geographies.map((geo: GeographyType) => {
                   // Get ISO2 code from numeric ID
-                  const numericId = geo.id;
+                  const numericId = String(geo.id ?? "");
                   const iso2 = NUMERIC_TO_ISO2[numericId];
                   const countryData = iso2 ? countryDataMap[iso2] : undefined;
                   const hasData = countryData && countryData.count > 0;
@@ -418,20 +421,11 @@ function WorldMapVisualization({
                       onMouseLeave={() => {
                         setTooltipContent("");
                       }}
-                      style={{
-                        default: {
-                          outline: "none",
-                          transition: "all 0.3s",
-                        },
-                        hover: {
-                          fill: hasData ? "#60a5fa" : "#334155",
-                          outline: "none",
-                          cursor: hasData ? "pointer" : "default",
-                        },
-                        pressed: {
-                          outline: "none",
-                        },
-                      }}
+                      className={
+                        hasData
+                          ? "npg-geography npg-geography--interactive"
+                          : "npg-geography"
+                      }
                     />
                   );
                 })

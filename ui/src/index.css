@@ -224,3 +224,25 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 116, 139, 0.5) rgba(51, 65, 85, 0.3);
 }
+
+/* react-simple-maps v5 spreads props straight onto the <path>, so the hover
+   state that used to live in <Geography style={{default,hover,pressed}}>
+   is expressed in CSS. Countries with traffic get the interactive treatment;
+   the rest only get a faint highlight. CSS `fill` wins over the `fill`
+   presentation attribute, so the base colour still comes from the data. */
+.npg-geography {
+  outline: none;
+  transition: fill 0.3s;
+}
+
+.npg-geography:hover {
+  fill: #334155;
+}
+
+.npg-geography--interactive {
+  cursor: pointer;
+}
+
+.npg-geography--interactive:hover {
+  fill: #60a5fa;
+}
