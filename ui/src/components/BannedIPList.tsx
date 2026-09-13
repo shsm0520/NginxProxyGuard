@@ -115,7 +115,7 @@ function BanCard({ ban, hostName, selected, isUnbanning, locale, t, onToggleSele
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={onView}
-              className="font-mono text-sm font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:underline"
+              className="min-w-0 max-w-full break-all text-left font-mono text-sm font-semibold leading-snug text-primary-600 hover:text-primary-700 hover:underline dark:text-primary-400 dark:hover:text-primary-300"
             >
               {ban.ip_address}
             </button>

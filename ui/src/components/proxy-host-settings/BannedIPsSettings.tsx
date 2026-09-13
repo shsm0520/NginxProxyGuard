@@ -123,7 +123,7 @@ export default function BannedIPsSettings({ hostId, queryClient }: SettingsTabPr
               <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                 {bannedIPs.map((ban: BannedIP) => (
                   <tr key={ban.id}>
-                    <td className="px-4 py-2 text-sm font-mono">{ban.ip_address}</td>
+                    <td className="px-4 py-2 text-sm font-mono break-all max-w-[18rem]" title={ban.ip_address}>{ban.ip_address}</td>
                     <td className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400">{ban.reason || '-'}</td>
                     <td className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400">
                       {ban.is_permanent ? (
