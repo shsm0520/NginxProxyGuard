@@ -33,7 +33,7 @@
 // 203.243.0.1 falls back to "--"). Tests use GB instead.
 
 import { test, expect } from '@playwright/test';
-import { APIHelper } from '../../utils/api-helper';
+import { APIHelper, type LogRow } from '../../utils/api-helper';
 import { pollForLog, triggerRequest } from '../../utils/log-helper';
 import { TestDataFactory } from '../../utils/test-data-factory';
 
@@ -63,12 +63,14 @@ async function createIsolatedHost(api: APIHelper, prefix: string) {
 // race conditions where requests hit nginx before the new rules or reloads land.
 // To ensure host configuration is active and ready before final verification,
 // we poll until the expected block status/reason is observed or timeout.
+// The default timeout is set to 15000ms to allow ample margin for debounced
+// reload (2s debounce + execution) and log collector ingestion on slower CI nodes.
 async function waitForReload(
   api: APIHelper,
   opts: {
     host: string;
     path: string;
-    expectedStatus: number;
+    expectedStatus?: number;
     expectedBlockReason: string;
     xForwardedFor?: string;
     userAgent?: string;
@@ -77,7 +79,7 @@ async function waitForReload(
     intervalMs?: number;
   }
 ) {
-  const timeoutMs = opts.timeoutMs ?? 10000;
+  const timeoutMs = opts.timeoutMs ?? 15000;
   const intervalMs = opts.intervalMs ?? 300;
   const deadline = Date.now() + timeoutMs;
 
@@ -90,16 +92,17 @@ async function waitForReload(
       xForwardedFor: opts.xForwardedFor,
     });
 
-    if (res.status === opts.expectedStatus) {
-      // Status matches. Now verify if a matching access log entry with expected
-      // block_reason has been ingested into DB.
+    const statusMatches = opts.expectedStatus === undefined || res.status === opts.expectedStatus;
+    if (statusMatches) {
+      // Status matches expected status (or status check is wildcard). Verify if
+      // matching access log entry with expected block_reason has been ingested into DB.
       try {
         const rows = await api.getLogs({
           host: opts.host,
           limit: 10,
         });
         const match = rows.find(r =>
-          r.status_code === opts.expectedStatus &&
+          (opts.expectedStatus === undefined || r.status_code === opts.expectedStatus) &&
           (!opts.expectedBlockReason || r.block_reason === opts.expectedBlockReason) &&
           (!opts.path || (r.request_uri ?? '').includes(opts.path.split('?')[0]))
         );
@@ -147,13 +150,13 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       xForwardedFor: GEO_IP_GB,
     });
 
-    // Control request: unblocked path/IP must not return 403
+    // Control request: unblocked path/IP must return 502 (reaching unreachable upstream port 1)
     const controlRes = triggerRequest({
       host: host.domain_names[0],
       path: '/case1-control',
       xForwardedFor: GEO_IP_SE,
     });
-    expect(controlRes.status).not.toBe(403);
+    expect(controlRes.status).toBe(502);
 
     expect(row.geo_country_code).toBe('GB');
     expect(row.status_code).toBe(403);
@@ -171,13 +174,13 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       xForwardedFor: GEO_IP_GB,
     });
 
-    // Control request: allowed country must not return 403
+    // Control request: allowed country must return 502
     const controlRes = triggerRequest({
       host: host.domain_names[0],
       path: '/case2-control',
       xForwardedFor: GEO_IP_SE,
     });
-    expect(controlRes.status).not.toBe(403);
+    expect(controlRes.status).toBe(502);
 
     expect(row.geo_country_code).toBe('GB');
   });
@@ -191,32 +194,12 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       countries: ['GB'],
       challengeMode: true,
     });
-    // Challenge mode issues 302 or 200 with CAPTCHA page.
-    const deadline = Date.now() + 10000;
-    let row: LogRow | undefined;
-    while (Date.now() < deadline) {
-      const res = triggerRequest({
-        host: host.domain_names[0],
-        path: '/case3',
-        xForwardedFor: GEO_IP_GB,
-      });
-      if (res.status !== 502) {
-        try {
-          const rows = await api.getLogs({ host: host.domain_names[0], limit: 10 });
-          const match = rows.find(r => r.block_reason === 'geo_block' && (r.request_uri ?? '').includes('/case3'));
-          if (match) {
-            row = match;
-            break;
-          }
-        } catch {
-          // retry
-        }
-      }
-      await new Promise(res => setTimeout(res, 300));
-    }
-    if (!row) {
-      throw new Error('case 3: timed out waiting for geo_block log row in challenge mode');
-    }
+    const row = await waitForReload(api, {
+      host: host.domain_names[0],
+      path: '/case3',
+      expectedBlockReason: 'geo_block',
+      xForwardedFor: GEO_IP_GB,
+    });
 
     expect(row.geo_country_code).toBe('GB');
   });
@@ -235,13 +218,13 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       xForwardedFor: '10.255.255.42',
     });
 
-    // Control request: allowed IP must not be denied
+    // Control request: allowed IP must return 502
     const controlRes = triggerRequest({
       host: host.domain_names[0],
       path: '/case4-control',
       xForwardedFor: '10.255.255.43',
     });
-    expect(controlRes.status).not.toBe(403);
+    expect(controlRes.status).toBe(502);
 
     expect(row.status_code).toBe(403);
     expect(row.client_ip).toBe('10.255.255.42');
@@ -257,12 +240,12 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       expectedBlockReason: 'exploit_block',
     });
 
-    // Control request: benign query string must not return 403
+    // Control request: benign query string must return 502
     const controlRes = triggerRequest({
       host: host.domain_names[0],
       path: '/case5-control?file=normal.txt',
     });
-    expect(controlRes.status).not.toBe(403);
+    expect(controlRes.status).toBe(502);
 
     expect(row.status_code).toBe(403);
     expect(row.exploit_rule).toBeTruthy();
@@ -278,12 +261,12 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       expectedBlockReason: 'exploit_block',
     });
 
-    // Control request: benign path must not return 403
+    // Control request: benign path must return 502
     const controlRes = triggerRequest({
       host: host.domain_names[0],
       path: '/case6/index.html',
     });
-    expect(controlRes.status).not.toBe(403);
+    expect(controlRes.status).toBe(502);
 
     expect(row.exploit_rule).toBeTruthy();
   });
@@ -299,13 +282,13 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       expectedBlockReason: 'exploit_block',
     });
 
-    // Control request: normal UA must not return 403
+    // Control request: normal UA must return 502
     const controlRes = triggerRequest({
       host: host.domain_names[0],
       path: '/case7-control',
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
     });
-    expect(controlRes.status).not.toBe(403);
+    expect(controlRes.status).toBe(502);
 
     expect(row.exploit_rule).toBeTruthy();
     expect(row.bot_category).toBe('scanner');
@@ -322,13 +305,13 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       expectedBlockReason: 'exploit_block',
     });
 
-    // Control request: GET method must not return 405
+    // Control request: GET method must return 502
     const controlRes = triggerRequest({
       host: host.domain_names[0],
       path: '/case8-control',
       method: 'GET',
     });
-    expect(controlRes.status).not.toBe(405);
+    expect(controlRes.status).toBe(502);
 
     expect(row.status_code).toBe(405);
   });
@@ -345,13 +328,13 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       expectedBlockReason: 'banned_ip',
     });
 
-    // Control request: unbanned IP must not return 403
+    // Control request: unbanned IP must return 502
     const controlRes = triggerRequest({
       host: host.domain_names[0],
       path: '/case9-control',
       xForwardedFor: '10.255.255.100',
     });
-    expect(controlRes.status).not.toBe(403);
+    expect(controlRes.status).toBe(502);
 
     expect(row.client_ip).toBe(bannedIp);
   });
@@ -366,12 +349,12 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       expectedBlockReason: 'uri_block',
     });
 
-    // Control request: unblocked URI path must not return 403
+    // Control request: unblocked URI path must return 502
     const controlRes = triggerRequest({
       host: host.domain_names[0],
       path: '/case10-public/dashboard',
     });
-    expect(controlRes.status).not.toBe(403);
+    expect(controlRes.status).toBe(502);
 
     expect(row.status_code).toBe(403);
   });
@@ -387,13 +370,13 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       expectedBlockReason: 'bot_filter',
     });
 
-    // Control request: standard browser UA must not return 403
+    // Control request: standard browser UA must return 502
     const controlRes = triggerRequest({
       host: host.domain_names[0],
       path: '/case11-control',
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
     });
-    expect(controlRes.status).not.toBe(403);
+    expect(controlRes.status).toBe(502);
 
     expect(row.bot_category).toBe('bad_bot');
   });
@@ -409,13 +392,13 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       expectedBlockReason: 'bot_filter',
     });
 
-    // Control request: standard browser UA must not return 403
+    // Control request: standard browser UA must return 502
     const controlRes = triggerRequest({
       host: host.domain_names[0],
       path: '/case12-control',
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
     });
-    expect(controlRes.status).not.toBe(403);
+    expect(controlRes.status).toBe(502);
 
     expect(row.bot_category).toBe('ai_bot');
   });
@@ -431,13 +414,13 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       expectedBlockReason: 'bot_filter',
     });
 
-    // Control request: standard browser UA must not return 403
+    // Control request: standard browser UA must return 502
     const controlRes = triggerRequest({
       host: host.domain_names[0],
       path: '/case13-control',
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
     });
-    expect(controlRes.status).not.toBe(403);
+    expect(controlRes.status).toBe(502);
 
     expect(row.bot_category).toBe('suspicious');
   });
@@ -453,13 +436,13 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       expectedBlockReason: 'bot_filter',
     });
 
-    // Control request: unblocked custom agent must not return 403
+    // Control request: unblocked custom agent must return 502
     const controlRes = triggerRequest({
       host: host.domain_names[0],
       path: '/case14-control',
       userAgent: 'GoodBot/1.0',
     });
-    expect(controlRes.status).not.toBe(403);
+    expect(controlRes.status).toBe(502);
 
     expect(row.bot_category).toBe('custom');
   });
