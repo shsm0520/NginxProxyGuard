@@ -38,7 +38,12 @@ BOT_SENDER="support@$(printf 'github')\.com"
 
 # 1. Commit identity must be the project's GitHub noreply address.
 ident="$(who_cmd)"
-if grep -qivE 'users\.noreply\.github\.com' <<<"$ident"; then
+if [[ -z "$ident" ]]; then
+  # An empty range (nothing to push) has no identities to check. Without this
+  # guard `grep -v` matches the empty line and reports a FAIL with no value,
+  # which trains people to ignore a gate that otherwise means something.
+  report "ok  " "commit identity (no commits in range)"
+elif grep -qivE 'users\.noreply\.github\.com' <<<"$ident"; then
   report "FAIL" "identity is not a GitHub noreply address:"; sed 's/^/    /' <<<"$ident"; fail=1
 else
   report "ok  " "commit identity"
