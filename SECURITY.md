@@ -49,5 +49,6 @@ Out of scope:
   2FA.
 - Complete the initial setup immediately — since v2.24.6 the server blocks all
   protected APIs until the default credentials are changed.
-- Enable 2FA (TOTP) for the admin account.
+- Give each operator their own account with the least-privilege built-in role (Viewer or Operator, v2.34.0+) instead of sharing the admin login, and enable 2FA (TOTP) on every local account.
 - Use API tokens with the minimum permission scopes needed.
+- **If NPG sits behind Cloudflare, another CDN, or an upstream reverse proxy, set Settings → Trusted Proxies to exactly that proxy's address ranges (v2.51.0+).** Without it every request appears to come from the proxy, so IP bans, access lists, geo-blocking and fail2ban act on the proxy's address (one ban can block every visitor) and the global fail2ban jail stays inert. Trusting ranges wider than the proxy lets any visitor spoof their address via `X-Forwarded-For` and bypass those controls.

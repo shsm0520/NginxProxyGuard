@@ -30,6 +30,21 @@ Nginx Proxy Guard uses the following third-party software:
 - **Website**: https://www.maxmind.com/
 - **Attribution**: This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com
 
+### Valkey
+- **License**: BSD-3-Clause
+- **Website**: https://valkey.io/
+- **Note**: Optional cache (`valkey/valkey:9-alpine` in the default compose); NPG runs without it.
+
+### cloudflared (Cloudflare Tunnel connector)
+- **License**: Apache License 2.0
+- **Website**: https://github.com/cloudflare/cloudflared
+- **Note**: Bundled as a standalone binary in the nginx image (`CLOUDFLARED_VERSION` in `nginx/Dockerfile`); only runs when Cloudflare Tunnel is enabled.
+
+### geoipupdate
+- **License**: Apache License 2.0
+- **Website**: https://github.com/maxmind/geoipupdate
+- **Note**: Bundled in the nginx image to refresh the GeoLite2 databases.
+
 ## Backend (Go) Dependencies
 
 | Package | License | Website |
@@ -40,8 +55,16 @@ Nginx Proxy Guard uses the following third-party software:
 | github.com/google/uuid | BSD-3-Clause | https://github.com/google/uuid |
 | github.com/redis/go-redis/v9 | BSD-2-Clause | https://github.com/redis/go-redis |
 | github.com/oschwald/geoip2-golang | ISC | https://github.com/oschwald/geoip2-golang |
-| github.com/cloudflare/cloudflare-go | BSD-3-Clause | https://github.com/cloudflare/cloudflare-go |
 | golang.org/x/crypto | BSD-3-Clause | https://golang.org/x/crypto |
+| golang.org/x/oauth2 | BSD-3-Clause | https://golang.org/x/oauth2 |
+| golang.org/x/sync | BSD-3-Clause | https://golang.org/x/sync |
+| golang.org/x/time | BSD-3-Clause | https://golang.org/x/time |
+| github.com/coreos/go-oidc/v3 | Apache-2.0 | https://github.com/coreos/go-oidc |
+| github.com/prometheus/client_golang | Apache-2.0 | https://github.com/prometheus/client_golang |
+| github.com/oschwald/maxminddb-golang | ISC | https://github.com/oschwald/maxminddb-golang |
+| github.com/robfig/cron/v3 | MIT | https://github.com/robfig/cron |
+| github.com/shirou/gopsutil/v3 | BSD-3-Clause | https://github.com/shirou/gopsutil |
+| github.com/joho/godotenv | MIT | https://github.com/joho/godotenv |
 
 ## Frontend (React) Dependencies
 
@@ -54,6 +77,13 @@ Nginx Proxy Guard uses the following third-party software:
 | i18next | MIT | https://www.i18next.com/ |
 | Tailwind CSS | MIT | https://tailwindcss.com/ |
 | Vite | MIT | https://vitejs.dev/ |
+| react-i18next | MIT | https://react.i18next.com/ |
+| i18next-browser-languagedetector | MIT | https://github.com/i18next/i18next-browser-languageDetector |
+| react-simple-maps | MIT | https://github.com/zcreativelabs/react-simple-maps |
+| topojson-client | ISC | https://github.com/topojson/topojson-client |
+| react-datepicker | MIT | https://reactdatepicker.com/ |
+| qrcode.react | ISC | https://github.com/zpao/qrcode.react |
+| date-fns | MIT | https://date-fns.org/ |
 
 ## Nginx Modules
 
@@ -73,6 +103,10 @@ The following components are licensed under the Apache License 2.0:
 - ModSecurity (Copyright 2002-2024 Trustwave Holdings, Inc.)
 - OWASP Core Rule Set (Copyright 2006-2024 Trustwave Holdings, Inc.)
 - ModSecurity-nginx (Copyright 2015-2024 Trustwave Holdings, Inc.)
+- cloudflared (Cloudflare, Inc.)
+- geoipupdate (MaxMind, Inc.)
+- github.com/coreos/go-oidc (CoreOS and go-oidc contributors)
+- github.com/prometheus/client_golang (The Prometheus Authors)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use these files except in compliance with the License.

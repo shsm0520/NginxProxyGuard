@@ -1,8 +1,19 @@
 # Changelog
 
-> **Current release notes live on [GitHub Releases](https://github.com/svrforum/NginxProxyGuard/releases).**
-> This file only records milestone entries with breaking changes; routine
-> releases are documented per-tag on the Releases page.
+> **Release notes live in [`docs/release-notes/`](docs/release-notes/) — one file per tag from v2.20.2 onward — and the release workflow publishes each file to [GitHub Releases](https://github.com/svrforum/NginxProxyGuard/releases).**
+> This file only records milestone entries with breaking changes or major
+> toolchain bumps; routine releases are documented per-tag in the files above.
+
+## v2.13.15 (2026-05-15)
+
+### Upgrades (major bump)
+
+- Go toolchain 1.25 → 1.26 (Docker builder: `golang:1.26-alpine`)
+- Vite 7 → 8 + @vitejs/plugin-react 5 → 6
+- TypeScript 5.9 → 6.0
+- react-datepicker 8 → 9
+
+Later builder-image majors, none with user-facing breaking changes: Node 24 → 26 (v2.26.0), Go 1.26 → 1.27 (v2.51.0; later patched to 1.27.1, which fixes a `database/sql` deadlock present in 1.27.0), react-simple-maps 3 → 5 (v2.56.0).
 
 ## v2.13.0 (2026-04-18)
 

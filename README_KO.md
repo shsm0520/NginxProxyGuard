@@ -16,7 +16,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/svrforum/NginxProxyGuard?style=for-the-badge&logo=github&color=gold)](https://github.com/svrforum/NginxProxyGuard/stargazers)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/u/svrforum)
 
-[![Nginx](https://img.shields.io/badge/Nginx-1.30.2-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
+[![Nginx](https://img.shields.io/badge/Nginx-1.30.4-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
 [![ModSecurity](https://img.shields.io/badge/ModSecurity-v3.0.15-red?style=for-the-badge)](https://modsecurity.org/)
 [![OWASP CRS](https://img.shields.io/badge/OWASP_CRS-v4.26.0-orange?style=for-the-badge)](https://coreruleset.org/)
 [![HTTP/3](https://img.shields.io/badge/HTTP/3-QUIC-blue?style=for-the-badge)]()
@@ -49,7 +49,7 @@
 **강력한 보안, 쉬운 관리** - Nginx의 복잡함은 줄이고, 보안은 극대화
 
 ### 🔒 SSL 자동화
-Let's Encrypt 통합 및 자동 갱신. DNS-01 챌린지를 통한 와일드카드 인증서 지원. **Cloudflare**, **DuckDNS**, **Dynu** 등 다양한 DNS 프로바이더 지원.
+Let's Encrypt 통합 및 자동 갱신. DNS-01 챌린지를 통한 와일드카드 인증서 지원. **Cloudflare**, **AWS Route 53**, **DuckDNS**, **Dynu** 등 다양한 DNS 프로바이더 지원.
 
 ### 🤖 봇 보호
 80개 이상의 악성 봇과 50개 이상의 AI 크롤러를 자동 차단. 검색 엔진 허용 목록으로 정상 트래픽 보장. 의심스러운 요청에 대한 CAPTCHA 챌린지 모드.
@@ -64,13 +64,13 @@ Let's Encrypt 통합 및 자동 갱신. DNS-01 챌린지를 통한 와일드카�
 강력한 필터링과 제외 패턴으로 Nginx 접근/에러 로그 분석. **TimescaleDB** 시계열 최적화 및 자동 압축.
 
 ### 🛡️ 웹 애플리케이션 방화벽
-ModSecurity v3 + OWASP Core Rule Set v4.26. Paranoia Level 1-4, 호스트별 룰 예외 처리, 익스플로잇 차단 규칙.
+ModSecurity v3 + OWASP Core Rule Set v4.26. Paranoia Level 1-4, 전역 WAF 기본값 + 호스트별 재정의, 전역/호스트별 룰 제외(호스트 전체·URI 경로·단일 인자 범위 지정 가능), 익스플로잇 차단 규칙.
 
 ### ⚡ 요청 속도 제한
 IP, URI, 또는 IP+URI 조합별 설정 가능한 속도 제한으로 DDoS 및 무차별 대입 공격 방어.
 
 ### 🔀 로드 밸런싱 & 업스트림
-라운드 로빈, 최소 연결, IP 해시, 가중치 분산으로 다중 백엔드 서버 지원. 헬스 체크 포함.
+라운드 로빈, 최소 연결, IP 해시, 랜덤 분산과 서버별 가중치·백업 서버(`down`, `max_fails`, `fail_timeout`은 API로 설정)로 다중 백엔드 서버 지원. 장애 백엔드는 nginx의 `max_fails`/`fail_timeout`으로 수동적으로 제외되며, 능동 HTTP 헬스 체크는 아직 구현되지 않았습니다.
 
 ### 🔌 TCP/UDP Stream 프록시
 같은 UI에서 Nginx `stream` 리버스 프록시를 관리합니다. TCP/UDP 리스너, 선택적 SNI preread 라우팅(TCP 전용), PROXY 프로토콜 수신/전송, stream 타임아웃, 설정 테스트, 백업/복원을 지원합니다. 차단된 IP는 stream 리스너에도 자동 적용됩니다.
@@ -123,7 +123,33 @@ UDP를 통한 더 빠르고 안정적인 연결을 위한 최신 프로토콜 �
 프록시 호스트 설정 실패에 대한 실행 가능한 에러 가이드. 클릭 가능한 에러 배지와 상세 트러블슈팅. Nginx 시작 시 깨진 설정 자동 비활성화.
 
 ### 🌐 다이나믹 DNS (v2.21.0, 통합 v2.23.0)
-공인 IP가 바뀌어도 도메인이 홈서버를 가리키도록 유지하는 내장 DDNS (Cloudflare / DuckDNS). 프록시 호스트마다 토글 하나로 켜면 그 호스트의 도메인이 관리형 DDNS 레코드가 되어 도메인 변경 시 자동 동기화되고 호스트 삭제 시 함께 정리됩니다. 기존 호스트 일괄 등록과 갱신 주기 설정도 지원합니다.
+공인 IP가 바뀌어도 도메인이 홈서버를 가리키도록 유지하는 내장 DDNS (Cloudflare / DuckDNS / Dynu). 프록시 호스트마다 토글 하나로 켜면 그 호스트의 도메인이 관리형 DDNS 레코드가 되어 도메인 변경 시 자동 동기화되고 호스트 삭제 시 함께 정리됩니다. 기존 호스트 일괄 등록과 갱신 주기 설정도 지원합니다.
+
+### 🔐 ForwardAuth (v2.27.0)
+프록시 호스트 앞에 **Authelia**, **Authentik** 또는 커스텀 `auth_request` 프로바이더를 두고, 호스트별 우회 경로를 지정할 수 있습니다. (한 호스트는 ForwardAuth와 지오/봇 챌린지 중 하나만 사용합니다.)
+
+### 👥 다중 사용자 & 역할 (v2.34.0)
+기본 제공 **관리자 / 운영자 / 뷰어** 역할과 영역별 읽기/쓰기 권한을 가진 커스텀 역할. 사용자마다 별도 계정과 2FA를 가지며, API 토큰은 발급자의 역할을 넘을 수 없습니다.
+
+### 🪪 SSO / OIDC 로그인 (v2.35.0)
+OpenID Connect 프로바이더(Keycloak 프리셋 포함)로 로그인. 비밀번호 로그인은 항상 유지되며, 자동 계정 생성은 허용 목록 없이는 거부됩니다.
+
+### ☁️ Cloudflare Tunnel (v2.32.0, managed 모드 v2.48.0)
+nginx 이미지에 `cloudflared`가 내장 — 터널 토큰만 붙여 넣으면 포트포워딩 없이 호스트가 외부에 노출되며, WAF/GeoIP/차단 스택은 그대로 통과합니다. managed 모드에서는 NPG가 터널의 catch-all 규칙을 대신 관리합니다.
+
+### 🔔 알림 (v2.36.0)
+Discord, Telegram, 범용 웹훅 채널. 10종 알림 각각을 끄기·즉시·일일 요약으로 설정할 수 있고, 일일 요약에는 CPU/메모리/디스크 상태도 포함됩니다.
+
+### 🌐 전역 보안 기본값 (v2.31.0)
+GeoIP 국가 제한, 봇 필터, 보안 헤더, 클라우드 제공자 차단, 요청 속도 제한, WAF 모드/Paranoia Level을 전역에서 한 번 설정하면 모든 호스트가 상속하거나 개별 재정의합니다.
+
+### 🛰️ 신뢰 프록시 (v2.51.0)
+Cloudflare나 다른 프록시 뒤에서 운영한다면 설정 → 신뢰 프록시(Cloudflare 프리셋 또는 커스텀 CIDR)로 실제 클라이언트 IP를 신뢰할 홉을 지정하세요. 차단, 접근 목록, GeoIP, fail2ban이 프록시가 아닌 방문자 IP에 대해 동작합니다.
+
+### 🚧 전역 Fail2ban Jail (v2.53.0)
+어떤 프록시 호스트에도 매칭되지 않은 요청(IP 직접 접근 스캐너, 미등록 호스트명 → 444)을 셉니다 — 호스트별 jail이 결코 볼 수 없는 트래픽입니다. 기본 비활성·Log-Only로 출시되며 신뢰 프록시 설정이 필요합니다.
+
+그 외 6월 이후: 로그 필터 프리셋 저장(v2.33.0), 차단 IP별 활동 조회(v2.38.0), 앱 내 업데이트 확인(v2.29.0), 경로/인자 범위 WAF 룰 제외(v2.37.0, v2.54.0부터 완전 동작).
 
 ---
 
@@ -133,7 +159,7 @@ UDP를 통한 더 빠르고 안정적인 연결을 위한 최신 프로토콜 �
 
 | 기술 | 용도 |
 |------|------|
-| **Nginx 1.30.2** | HTTP/3 & QUIC을 지원하는 고성능 HTTP 및 stream 리버스 프록시 코어 |
+| **Nginx 1.30.4** | HTTP/3 & QUIC을 지원하는 고성능 HTTP 및 stream 리버스 프록시 코어 |
 | **TimescaleDB (PostgreSQL 17)** | 로그 자동 압축을 위한 시계열 최적화 데이터베이스 |
 | **Valkey 9** | Redis 호환 고속 캐싱 및 세션 관리 (선택) |
 | **Go 1.26 (Echo v4)** | 효율적인 리소스 관리와 동시성 처리 백엔드 API |
@@ -150,6 +176,7 @@ UDP를 통한 더 빠르고 안정적인 연결을 위한 최신 프로토콜 �
 ### 필요 조건
 
 - Docker 24.0+ 및 Docker Compose v2
+- linux/amd64 또는 linux/arm64 호스트 (Raspberry Pi 4/5 등 ARM64 서버 지원)
 - (선택) GeoIP용 [MaxMind 라이선스 키](https://www.maxmind.com/en/geolite2/signup)
 
 ### 설치
@@ -224,7 +251,7 @@ docker compose exec api ./server reset-password --clear-2fa
 
 모든 버전은 완전히 하위 호환됩니다. 수동 마이그레이션 없이 시작 시 데이터베이스 스키마가 자동으로 업그레이드됩니다. 최신 이미지를 받아 컨테이너를 재생성하기만 하면 됩니다.
 
-> **최근 추가**: 내장 다이나믹 DNS(Cloudflare/DuckDNS)를 프록시 호스트별로 통합. [최신 릴리즈](https://github.com/svrforum/NginxProxyGuard/releases)와 [주요 기능](#-주요-기능)을 참조하세요.
+> **compose 수준의 새 옵션**(포트 재정의, API/로그인 속도 제한, `TRUSTED_PROXY_CIDR`, 컨테이너 로그 용량 제한, capability 제거)은 `docker-compose.yml`을 갱신한 설치에만 적용됩니다 — 이미지만 받으면 예전 compose 파일이 그대로 남습니다. 업그레이드 후 현재 [docker-compose.yml](./docker-compose.yml)과 비교하세요. 변경 내역은 [최신 릴리즈](https://github.com/svrforum/NginxProxyGuard/releases)와 [주요 기능](#-주요-기능)을 참조하세요.
 
 ---
 
@@ -235,14 +262,14 @@ Nginx Proxy Guard는 자동화 및 통합을 위한 포괄적인 REST API를 제
 ### 인증
 
 모든 API 엔드포인트는 다음을 통해 인증이 필요합니다:
-- **JWT 토큰**: `Authorization: Bearer <jwt_token>` (로그인에서 획득)
+- **세션 토큰**: `Authorization: Bearer <token>` (`POST /api/v1/auth/login` 응답의 `token` 필드, 2FA 사용 시에는 `POST /api/v1/auth/verify-2fa` 응답)
 - **API 토큰**: `Authorization: Bearer ng_<api_token>` (자동화용)
 
 ### 주요 엔드포인트
 
 | 엔드포인트 | 설명 |
 |----------|------|
-| `POST /api/v1/auth/login` | 인증 및 JWT 토큰 획득 |
+| `POST /api/v1/auth/login` | 인증 및 세션 토큰 획득 |
 | `GET /api/v1/proxy-hosts` | 모든 프록시 호스트 목록 |
 | `POST /api/v1/proxy-hosts` | 새 프록시 호스트 생성 |
 | `GET /api/v1/certificates` | SSL 인증서 목록 |
@@ -254,10 +281,11 @@ Nginx Proxy Guard는 자동화 및 통합을 위한 포괄적인 REST API를 제
 
 ### Swagger UI
 
-다음에서 대화형 API 문서에 접근하세요:
+API 문서(Swagger UI)는 다음 주소에서 제공됩니다:
 ```
-https://localhost:81/api/v1/swagger
+https://localhost:81/api/docs
 ```
+원본 OpenAPI 3.0 스펙은 `https://localhost:81/api/docs/swagger.yaml`에서 받을 수 있습니다.
 
 ---
 
@@ -266,11 +294,17 @@ https://localhost:81/api/v1/swagger
 | 변수 | 설명 | 기본값 |
 |------|------|--------|
 | `DB_PASSWORD` | PostgreSQL 비밀번호 | (필수) |
-| `JWT_SECRET` | JWT 토큰용 시크릿 | (필수) |
+| `JWT_SECRET` | 애플리케이션 시크릿 — 무작위 값으로 설정 (`openssl rand -hex 32`) | `docker-compose.yml` 플레이스홀더 (변경 필요) |
 | `TZ` | 시간대 | `UTC` |
 | `DB_USER` | PostgreSQL 사용자 | `postgres` |
 | `DB_NAME` | 데이터베이스 이름 | `nginx_proxy_guard` |
 | `DOCKER_API_VERSION` | Docker API 버전 (시놀로지용) | 자동 감지 |
+| `UI_PORT` | 관리 패널 호스트 포트 | `81` |
+| `NGINX_HTTP_PORT` / `NGINX_HTTPS_PORT` | nginx 리슨 포트 (host 네트워크 모드; 80/443이 이미 사용 중일 때 변경, 예: Synology DSM) | `80` / `443` |
+| `API_HOST_PORT` | nginx가 API에 접근하는 루프백 호스트 포트 (다른 서비스와 충돌 금지) | `9080` |
+| `API_RATE_LIMIT_PER_MINUTE` | IP당 분당 API 요청 한도; `0` = 끔; Valkey 필요 | `600` |
+| `AUTH_RATE_LIMIT_PER_MINUTE` | 로그인 엔드포인트 전용 IP당 분당 한도; `0` = 끔; Valkey 필요 | `100` |
+| `TRUSTED_PROXY_CIDR` | API가 `X-Forwarded-For` 홉으로 신뢰할 CIDR(쉼표 구분); 미설정 = 루프백/링크로컬/사설망 전부 신뢰 | (미설정) |
 
 ---
 

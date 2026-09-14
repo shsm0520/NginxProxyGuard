@@ -16,7 +16,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/svrforum/NginxProxyGuard?style=for-the-badge&logo=github&color=gold)](https://github.com/svrforum/NginxProxyGuard/stargazers)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/u/svrforum)
 
-[![Nginx](https://img.shields.io/badge/Nginx-1.30.2-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
+[![Nginx](https://img.shields.io/badge/Nginx-1.30.4-009639?style=for-the-badge&logo=nginx&logoColor=white)](https://nginx.org/)
 [![ModSecurity](https://img.shields.io/badge/ModSecurity-v3.0.15-red?style=for-the-badge)](https://modsecurity.org/)
 [![OWASP CRS](https://img.shields.io/badge/OWASP_CRS-v4.26.0-orange?style=for-the-badge)](https://coreruleset.org/)
 [![HTTP/3](https://img.shields.io/badge/HTTP/3-QUIC-blue?style=for-the-badge)]()
@@ -49,7 +49,7 @@
 **Robust Security, Easy Management** - Reduced Nginx complexity, maximized security
 
 ### 🔒 SSL Automation
-Let's Encrypt integration with automatic renewal. Supports wildcard certificates via DNS-01 challenge. Multiple DNS providers supported: **Cloudflare**, **DuckDNS**, **Dynu**.
+Let's Encrypt integration with automatic renewal. Supports wildcard certificates via DNS-01 challenge. Multiple DNS providers supported: **Cloudflare**, **AWS Route 53**, **DuckDNS**, **Dynu**.
 
 ### 🤖 Bot Protection
 Block 80+ malicious bots and 50+ AI crawlers automatically. Search engine allowlist ensures legitimate traffic. CAPTCHA challenge mode for suspicious requests.
@@ -64,13 +64,13 @@ Block or allow traffic by country with interactive world map visualization. MaxM
 Analyze Nginx access/error logs with powerful filtering and exclusion patterns. **TimescaleDB** time-series optimization with automatic compression.
 
 ### 🛡️ Web Application Firewall
-ModSecurity v3 with OWASP Core Rule Set v4.26. Paranoia Level 1-4, per-host rule exceptions, exploit blocking rules.
+ModSecurity v3 with OWASP Core Rule Set v4.26. Paranoia Level 1-4, a global WAF default with per-host override, rule exclusions that are global or per host and can be scoped host-wide, to a URI path, or to a single argument, plus exploit blocking rules.
 
 ### ⚡ Rate Limiting
 Protect against DDoS and brute-force attacks with configurable rate limits per IP, URI, or IP+URI combination.
 
 ### 🔀 Load Balancing & Upstream
-Multiple backend servers with round-robin, least connections, IP hash, or weighted distribution. Health checks included.
+Multiple backend servers with round-robin, least-connections, IP-hash or random distribution, per-server weights and backup servers (`down`, `max_fails`, `fail_timeout` per server via the API). Failed backends are taken out of rotation passively by nginx (`max_fails`/`fail_timeout`); active HTTP health probes are not implemented yet.
 
 ### 🔌 TCP/UDP Stream Proxying
 Manage Nginx `stream` reverse proxies from the same UI. Supports TCP and UDP listeners, optional SNI preread routing (TCP only), PROXY protocol in/out, stream timeouts, config testing, and backup/restore. Banned IPs are auto-applied to stream listeners.
@@ -79,7 +79,7 @@ Manage Nginx `stream` reverse proxies from the same UI. Supports TCP and UDP lis
 
 > Stream traffic is logged to `/var/log/nginx/stream_access.log` (and `stream_error.log`) inside the nginx container. LogCollector ingestion of stream traffic into the NPG dashboard is tracked as a follow-up; for now use `docker logs npg-proxy` or read the file directly.
 
-> `worker_connections` is shared between HTTP and stream listeners. Large numbers of long-lived stream sessions can pressure HTTP capacity — increase `worker_connections` (Settings → Global → "Apply recommended preset" raises it to 8192) if you run heavy stream workloads.
+> `worker_connections` is shared between HTTP and stream listeners. Large numbers of long-lived stream sessions can pressure HTTP capacity — increase `worker_connections` (Settings → Global → "Apply recommended" raises it to 8192) if you run heavy stream workloads.
 
 > `CustomStreamConfig` (Advanced tab) accepts raw nginx `stream` directives and can bind arbitrary ports on any interface. Treat it as an admin-only capability.
 
@@ -123,7 +123,33 @@ Global proxy request/response buffering settings for fine-tuned performance. Use
 Actionable error guides for proxy host configuration failures. Clickable error badges with detailed troubleshooting. Auto-disable broken configs on Nginx startup.
 
 ### 🌐 Dynamic DNS (v2.21.0, integrated v2.23.0)
-Built-in DDNS keeps your domains pointed at your home server as your public IP changes (Cloudflare / DuckDNS). Enable per proxy host with one toggle — the host's domains become managed DDNS records that auto-sync on domain changes and are cleaned up when the host is deleted. Bulk-enable existing hosts, and configure the refresh interval from the DDNS settings.
+Built-in DDNS keeps your domains pointed at your home server as your public IP changes (Cloudflare / DuckDNS / Dynu). Enable per proxy host with one toggle — the host's domains become managed DDNS records that auto-sync on domain changes and are cleaned up when the host is deleted. Bulk-enable existing hosts, and configure the refresh interval from the DDNS settings.
+
+### 🔐 ForwardAuth (v2.27.0)
+Put **Authelia**, **Authentik**, or a custom `auth_request` provider in front of a proxy host, with per-host bypass paths. (A host uses either ForwardAuth or the geo/bot challenge, not both.)
+
+### 👥 Multi-User & Roles (v2.34.0)
+Built-in **Administrator / Operator / Viewer** roles plus custom roles with per-area read/write permissions. Each person gets their own account and 2FA; API tokens can never exceed their owner's role.
+
+### 🪪 SSO / OIDC Login (v2.35.0)
+Sign in through any OpenID Connect provider (Keycloak preset included). Password login always stays available, and just-in-time account creation is fail-closed behind an allowlist.
+
+### ☁️ Cloudflare Tunnel (v2.32.0, managed mode v2.48.0)
+`cloudflared` ships inside the nginx image — paste a tunnel token and your hosts are reachable without port forwarding, still behind the full WAF/GeoIP/ban stack. Managed mode lets NPG maintain the tunnel's catch-all rule for you.
+
+### 🔔 Notifications (v2.36.0)
+Discord, Telegram and generic webhook channels. Each of the ten alerts can be off, immediate, or held for a daily summary that also reports CPU/memory/disk.
+
+### 🌐 Global Security Defaults (v2.31.0)
+Set GeoIP restriction, bot filter, security headers, cloud-provider blocking, rate limit and WAF mode/paranoia once, globally; every host inherits the default or overrides it.
+
+### 🛰️ Trusted Proxies (v2.51.0)
+Running behind Cloudflare or another proxy? Settings → Trusted Proxies (Cloudflare preset or custom CIDRs) tells nginx which hops to trust for the real client IP, so bans, access lists, GeoIP and fail2ban act on the visitor instead of the proxy.
+
+### 🚧 Global Fail2ban Jail (v2.53.0)
+Counts requests that matched **no** proxy host (direct-IP scanners, unknown hostnames answered with 444) — traffic a per-host jail can never see. Ships disabled in Log-Only mode and requires Trusted Proxies to be configured.
+
+Also since June: saved log filter presets (v2.33.0), a per-IP activity view for banned addresses (v2.38.0), an in-app update check (v2.29.0), and WAF rule exclusions scoped to a path or argument (v2.37.0, fully working since v2.54.0).
 
 ---
 
@@ -133,7 +159,7 @@ Built-in DDNS keeps your domains pointed at your home server as your public IP c
 
 | Technology | Purpose |
 |------------|---------|
-| **Nginx 1.30.2** | High-performance HTTP and stream reverse proxy core with HTTP/3 & QUIC support |
+| **Nginx 1.30.4** | High-performance HTTP and stream reverse proxy core with HTTP/3 & QUIC support |
 | **TimescaleDB (PostgreSQL 17)** | Time-series-optimized database with automatic log compression |
 | **Valkey 9** | Redis-compatible high-speed caching and session management (optional) |
 | **Go 1.26 (Echo v4)** | Backend API with efficient resource management and concurrency |
@@ -150,6 +176,7 @@ Built-in DDNS keeps your domains pointed at your home server as your public IP c
 ### Prerequisites
 
 - Docker 24.0+ and Docker Compose v2
+- A linux/amd64 or linux/arm64 host (Raspberry Pi 4/5 and other ARM64 servers are supported)
 - (Optional) [MaxMind License Key](https://www.maxmind.com/en/geolite2/signup) for GeoIP
 
 ### Installation
@@ -224,7 +251,7 @@ Sign in with the printed password and change it immediately from **Account Setti
 
 All versions are fully backward compatible. No manual migration needed — database schema upgrades are applied automatically on startup. Just pull the latest image and recreate the containers.
 
-> **Recently added**: built-in Dynamic DNS (Cloudflare/DuckDNS) integrated per proxy host. See the [latest releases](https://github.com/svrforum/NginxProxyGuard/releases) and [Key Features](#-key-features).
+> **Compose-level options** (port overrides, API/login rate limits, `TRUSTED_PROXY_CIDR`, container log caps, capability drops) only reach installs whose `docker-compose.yml` is refreshed — pulling images alone keeps your old compose file. Compare yours with the current [docker-compose.yml](./docker-compose.yml) after upgrading. See the [latest releases](https://github.com/svrforum/NginxProxyGuard/releases) and [Key Features](#-key-features) for what changed.
 
 ---
 
@@ -235,14 +262,14 @@ Nginx Proxy Guard provides a comprehensive REST API for automation and integrati
 ### Authentication
 
 All API endpoints require authentication via:
-- **JWT Token**: `Authorization: Bearer <jwt_token>` (from login)
+- **Session token**: `Authorization: Bearer <token>` (the `token` field returned by `POST /api/v1/auth/login`, or by `POST /api/v1/auth/verify-2fa` when 2FA is enabled)
 - **API Token**: `Authorization: Bearer ng_<api_token>` (for automation)
 
 ### Key Endpoints
 
 | Endpoint | Description |
 |----------|-------------|
-| `POST /api/v1/auth/login` | Authenticate and get JWT token |
+| `POST /api/v1/auth/login` | Authenticate and get a session token |
 | `GET /api/v1/proxy-hosts` | List all proxy hosts |
 | `POST /api/v1/proxy-hosts` | Create new proxy host |
 | `GET /api/v1/certificates` | List SSL certificates |
@@ -254,10 +281,11 @@ All API endpoints require authentication via:
 
 ### Swagger UI
 
-Access the interactive API documentation at:
+The API documentation (Swagger UI) is served at:
 ```
-https://localhost:81/api/v1/swagger
+https://localhost:81/api/docs
 ```
+The raw OpenAPI 3.0 spec is at `https://localhost:81/api/docs/swagger.yaml`.
 
 ---
 
@@ -266,11 +294,17 @@ https://localhost:81/api/v1/swagger
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `DB_PASSWORD` | PostgreSQL password | (required) |
-| `JWT_SECRET` | Secret for JWT tokens | (required) |
+| `JWT_SECRET` | Application secret — set it to a random value (`openssl rand -hex 32`) | placeholder in `docker-compose.yml` (change it) |
 | `TZ` | Timezone | `UTC` |
 | `DB_USER` | PostgreSQL user | `postgres` |
 | `DB_NAME` | Database name | `nginx_proxy_guard` |
 | `DOCKER_API_VERSION` | Docker API version (for Synology) | auto-detect |
+| `UI_PORT` | Admin panel host port | `81` |
+| `NGINX_HTTP_PORT` / `NGINX_HTTPS_PORT` | nginx listen ports (host network mode; change when 80/443 are already taken, e.g. Synology DSM) | `80` / `443` |
+| `API_HOST_PORT` | Loopback host port nginx uses to reach the API (must not collide with another service) | `9080` |
+| `API_RATE_LIMIT_PER_MINUTE` | Per-IP API request budget per minute; `0` = off; needs Valkey | `600` |
+| `AUTH_RATE_LIMIT_PER_MINUTE` | Separate per-IP budget for the login endpoints; `0` = off; needs Valkey | `100` |
+| `TRUSTED_PROXY_CIDR` | Comma-separated CIDRs the API trusts as `X-Forwarded-For` hops; unset = trust loopback/link-local/private ranges | (unset) |
 
 ---
 
