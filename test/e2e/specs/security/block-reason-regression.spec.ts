@@ -57,13 +57,66 @@ async function createIsolatedHost(api: APIHelper, prefix: string) {
   return host;
 }
 
-// Wait briefly for nginx to reload after a configuration change. The API call
-// returns once the config file is written + nginx -t passes, but the new
-// security rules need an in-flight reload before the *next* request observes
-// them. 600ms is empirically enough on the e2e stack (reloadDebounce=2s in
-// dev, but the e2e build does an immediate reload).
-async function waitForReload() {
-  await new Promise(res => setTimeout(res, 800));
+// Wait for nginx to reload after a configuration change.
+// The backend uses debounced reload (NginxReloaderDebounce = 2s) plus `nginx -t`
+// and reload execution (~1s). A fixed 800ms wait is insufficient and can lead to
+// race conditions where requests hit nginx before the new rules or reloads land.
+// To ensure host configuration is active and ready before final verification,
+// we poll until the expected block status/reason is observed or timeout.
+async function waitForReload(
+  api: APIHelper,
+  opts: {
+    host: string;
+    path: string;
+    expectedStatus: number;
+    expectedBlockReason: string;
+    xForwardedFor?: string;
+    userAgent?: string;
+    method?: string;
+    timeoutMs?: number;
+    intervalMs?: number;
+  }
+) {
+  const timeoutMs = opts.timeoutMs ?? 10000;
+  const intervalMs = opts.intervalMs ?? 300;
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const res = triggerRequest({
+      host: opts.host,
+      path: opts.path,
+      method: opts.method,
+      userAgent: opts.userAgent,
+      xForwardedFor: opts.xForwardedFor,
+    });
+
+    if (res.status === opts.expectedStatus) {
+      // Status matches. Now verify if a matching access log entry with expected
+      // block_reason has been ingested into DB.
+      try {
+        const rows = await api.getLogs({
+          host: opts.host,
+          limit: 10,
+        });
+        const match = rows.find(r =>
+          r.status_code === opts.expectedStatus &&
+          (!opts.expectedBlockReason || r.block_reason === opts.expectedBlockReason) &&
+          (!opts.path || (r.request_uri ?? '').includes(opts.path.split('?')[0]))
+        );
+        if (match) {
+          return match;
+        }
+      } catch {
+        // Transient API query issue during polling; retry until deadline.
+      }
+    }
+
+    await new Promise(res => setTimeout(res, intervalMs));
+  }
+
+  throw new Error(
+    `waitForReload timed out after ${timeoutMs}ms for host=${opts.host} path=${opts.path} expectedStatus=${opts.expectedStatus} expectedBlockReason=${opts.expectedBlockReason}`
+  );
 }
 
 test.describe('block_reason regression — security layer to log pipeline', () => {
@@ -86,20 +139,22 @@ test.describe('block_reason regression — security layer to log pipeline', () =
   test('case 1: geo_block via blacklist mode sets block_reason=geo_block', async () => {
     const host = await createIsolatedHost(api, 'geo-bl');
     await api.setGeoRestriction(host.id, { mode: 'blacklist', countries: ['GB'] });
-    await waitForReload();
-
-    const res = triggerRequest({
+    const row = await waitForReload(api, {
       host: host.domain_names[0],
       path: '/case1',
+      expectedStatus: 403,
+      expectedBlockReason: 'geo_block',
       xForwardedFor: GEO_IP_GB,
     });
-    expect(res.status).toBe(403);
 
-    const row = await pollForLog(api, {
+    // Control request: unblocked path/IP must not return 403
+    const controlRes = triggerRequest({
       host: host.domain_names[0],
-      expectedBlockReason: 'geo_block',
-      uriContains: '/case1',
+      path: '/case1-control',
+      xForwardedFor: GEO_IP_SE,
     });
+    expect(controlRes.status).not.toBe(403);
+
     expect(row.geo_country_code).toBe('GB');
     expect(row.status_code).toBe(403);
   });
@@ -108,20 +163,22 @@ test.describe('block_reason regression — security layer to log pipeline', () =
     const host = await createIsolatedHost(api, 'geo-wl');
     // Whitelist SE only — GB request must be blocked.
     await api.setGeoRestriction(host.id, { mode: 'whitelist', countries: ['SE'] });
-    await waitForReload();
-
-    const res = triggerRequest({
+    const row = await waitForReload(api, {
       host: host.domain_names[0],
       path: '/case2',
+      expectedStatus: 403,
+      expectedBlockReason: 'geo_block',
       xForwardedFor: GEO_IP_GB,
     });
-    expect(res.status).toBe(403);
 
-    const row = await pollForLog(api, {
+    // Control request: allowed country must not return 403
+    const controlRes = triggerRequest({
       host: host.domain_names[0],
-      expectedBlockReason: 'geo_block',
-      uriContains: '/case2',
+      path: '/case2-control',
+      xForwardedFor: GEO_IP_SE,
     });
+    expect(controlRes.status).not.toBe(403);
+
     expect(row.geo_country_code).toBe('GB');
   });
 
@@ -134,22 +191,33 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       countries: ['GB'],
       challengeMode: true,
     });
-    await waitForReload();
+    // Challenge mode issues 302 or 200 with CAPTCHA page.
+    const deadline = Date.now() + 10000;
+    let row: LogRow | undefined;
+    while (Date.now() < deadline) {
+      const res = triggerRequest({
+        host: host.domain_names[0],
+        path: '/case3',
+        xForwardedFor: GEO_IP_GB,
+      });
+      if (res.status !== 502) {
+        try {
+          const rows = await api.getLogs({ host: host.domain_names[0], limit: 10 });
+          const match = rows.find(r => r.block_reason === 'geo_block' && (r.request_uri ?? '').includes('/case3'));
+          if (match) {
+            row = match;
+            break;
+          }
+        } catch {
+          // retry
+        }
+      }
+      await new Promise(res => setTimeout(res, 300));
+    }
+    if (!row) {
+      throw new Error('case 3: timed out waiting for geo_block log row in challenge mode');
+    }
 
-    const res = triggerRequest({
-      host: host.domain_names[0],
-      path: '/case3',
-      xForwardedFor: GEO_IP_GB,
-    });
-    // The challenge handler issues a 302 or 200 with a CAPTCHA page — both are
-    // valid; we only care that it's NOT the upstream 502.
-    expect(res.status).not.toBe(502);
-
-    const row = await pollForLog(api, {
-      host: host.domain_names[0],
-      expectedBlockReason: 'geo_block',
-      uriContains: '/case3',
-    });
     expect(row.geo_country_code).toBe('GB');
   });
 
@@ -159,65 +227,43 @@ test.describe('block_reason regression — security layer to log pipeline', () =
       { directive: 'deny', address: '10.255.255.42' },
       { directive: 'allow', address: 'all' },
     ]);
-    await waitForReload();
-
-    const res = triggerRequest({
+    const row = await waitForReload(api, {
       host: host.domain_names[0],
       path: '/case4',
+      expectedStatus: 403,
+      expectedBlockReason: 'access_denied',
       xForwardedFor: '10.255.255.42',
     });
-    expect(res.status).toBe(403);
 
-    const row = await pollForLog(api, {
+    // Control request: allowed IP must not be denied
+    const controlRes = triggerRequest({
       host: host.domain_names[0],
-      expectedBlockReason: 'access_denied',
-      uriContains: '/case4',
+      path: '/case4-control',
+      xForwardedFor: '10.255.255.43',
     });
+    expect(controlRes.status).not.toBe(403);
+
     expect(row.status_code).toBe(403);
     expect(row.client_ip).toBe('10.255.255.42');
   });
 
-  // Cases 5-8 exercise the *fallback* exploit-blocking ruleset baked into
-  // _security.conf.tmpl. We can't use the custom-rule endpoint because
-  // POST /api/v1/exploit-rules currently returns 500 (see
-  // api/internal/repository/exploit_block_rule.go:Create — pq cannot deduce
-  // the type of $1 when reused inside a COALESCE subquery). The fallback
-  // path still emits block_reason="exploit_block" plus a stable
-  // exploit_rule="*-FALLBACK-*" tag, which is exactly what we need to assert.
-
-  // Cases 5-8 exercise the seeded exploit-blocking ruleset (the e2e DB ships
-  // with the default rules from migrations/001_init.sql, so .Host.BlockExploits
-  // alone is enough — no custom-rule creation needed). All we do is flip
-  // `block_exploits=true` on the host and pick a triggering payload that
-  // matches one of the seeded patterns.
-  //
-  // We can't use the POST /api/v1/exploit-rules endpoint because it currently
-  // returns 500 (see api/internal/repository/exploit_block_rule.go:Create —
-  // `pq: inconsistent types deduced for parameter $1` when $1 is reused inside
-  // a COALESCE subquery). Using seeded rules keeps the spec passing without
-  // masking that bug.
-
   test('case 5: exploit_block fires on path-traversal query string (LFI rule)', async () => {
     const host = await createIsolatedHost(api, 'exp-lfi');
     await api.enableBlockExploits(host.id);
-    await waitForReload();
-
-    const res = triggerRequest({
+    const row = await waitForReload(api, {
       host: host.domain_names[0],
-      // `\.\./` in the query string trips the seeded "Directory Traversal"
-      // rule (category=rfi). UNION SELECT was the obvious candidate, but the
-      // seeded UNION rule requires literal quote chars (\"|'|`) wrapping the
-      // statement, which curl URL-encodes to %27/%22 — the regex then never
-      // matches. The traversal pattern is unencoded-friendly.
       path: '/case5?file=../../etc/passwd',
-    });
-    expect(res.status).toBe(403);
-
-    const row = await pollForLog(api, {
-      host: host.domain_names[0],
+      expectedStatus: 403,
       expectedBlockReason: 'exploit_block',
-      uriContains: '/case5',
     });
+
+    // Control request: benign query string must not return 403
+    const controlRes = triggerRequest({
+      host: host.domain_names[0],
+      path: '/case5-control?file=normal.txt',
+    });
+    expect(controlRes.status).not.toBe(403);
+
     expect(row.status_code).toBe(403);
     expect(row.exploit_rule).toBeTruthy();
   });
@@ -225,71 +271,65 @@ test.describe('block_reason regression — security layer to log pipeline', () =
   test('case 6: exploit_block fires on dotenv request_uri rule', async () => {
     const host = await createIsolatedHost(api, 'exp-uri');
     await api.enableBlockExploits(host.id);
-    await waitForReload();
-
-    const res = triggerRequest({
+    const row = await waitForReload(api, {
       host: host.domain_names[0],
-      // Seeded "Dotenv File Access" rule matches `/\.env(\.|$|/)` against request_uri.
       path: '/case6/.env',
-    });
-    expect(res.status).toBe(403);
-
-    const row = await pollForLog(api, {
-      host: host.domain_names[0],
+      expectedStatus: 403,
       expectedBlockReason: 'exploit_block',
-      uriContains: '/case6',
     });
+
+    // Control request: benign path must not return 403
+    const controlRes = triggerRequest({
+      host: host.domain_names[0],
+      path: '/case6/index.html',
+    });
+    expect(controlRes.status).not.toBe(403);
+
     expect(row.exploit_rule).toBeTruthy();
   });
 
   test('case 7: exploit_block fires on scanner user agent (sqlmap)', async () => {
     const host = await createIsolatedHost(api, 'exp-ua');
     await api.enableBlockExploits(host.id);
-    await waitForReload();
-
-    const res = triggerRequest({
+    const row = await waitForReload(api, {
       host: host.domain_names[0],
       path: '/case7',
       userAgent: 'sqlmap/1.7.2#stable (http://sqlmap.org)',
-    });
-    expect(res.status).toBe(403);
-
-    const row = await pollForLog(api, {
-      host: host.domain_names[0],
+      expectedStatus: 403,
       expectedBlockReason: 'exploit_block',
-      uriContains: '/case7',
     });
+
+    // Control request: normal UA must not return 403
+    const controlRes = triggerRequest({
+      host: host.domain_names[0],
+      path: '/case7-control',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    });
+    expect(controlRes.status).not.toBe(403);
+
     expect(row.exploit_rule).toBeTruthy();
-    // The template renders `set $bot_category_var "scanner"` for user_agent
-    // exploit rules, so bot_category should propagate through to the log row.
     expect(row.bot_category).toBe('scanner');
   });
 
   test('case 8: exploit_block fires on TRACE method (seeded Dangerous Methods rule)', async () => {
     const host = await createIsolatedHost(api, 'exp-trace');
     await api.enableBlockExploits(host.id);
-    await waitForReload();
-
-    const res = triggerRequest({
+    const row = await waitForReload(api, {
       host: host.domain_names[0],
       path: '/case8',
       method: 'TRACE',
-    });
-    expect(res.status).toBe(405);
-
-    // nginx core short-circuits TRACE with 405 BEFORE the rewrite phase, so
-    // the `if ($request_method ~* ...)` block in _security.conf.tmpl never
-    // fires for TRACE — meaning $exploit_rule_var is NOT attributed to a
-    // specific rule. The fix routes 405 through `error_page 405 =
-    // @blocked_method`, where $block_reason_var is unconditionally set to
-    // "exploit_block". So we assert block_reason here but accept that the
-    // rule ID is "-" (unknown) for TRACE specifically; sibling methods like
-    // TRACK/DEBUG/CONNECT do fire the if-block and DO carry the rule ID.
-    const row = await pollForLog(api, {
-      host: host.domain_names[0],
+      expectedStatus: 405,
       expectedBlockReason: 'exploit_block',
-      uriContains: '/case8',
     });
+
+    // Control request: GET method must not return 405
+    const controlRes = triggerRequest({
+      host: host.domain_names[0],
+      path: '/case8-control',
+      method: 'GET',
+    });
+    expect(controlRes.status).not.toBe(405);
+
     expect(row.status_code).toBe(405);
   });
 
@@ -297,119 +337,130 @@ test.describe('block_reason regression — security layer to log pipeline', () =
     const host = await createIsolatedHost(api, 'banned');
     const bannedIp = '10.255.255.99';
     await api.setBannedIPs(host.id, [bannedIp]);
-    await waitForReload();
-
-    const res = triggerRequest({
+    const row = await waitForReload(api, {
       host: host.domain_names[0],
       path: '/case9',
       xForwardedFor: bannedIp,
-    });
-    expect(res.status).toBe(403);
-
-    const row = await pollForLog(api, {
-      host: host.domain_names[0],
+      expectedStatus: 403,
       expectedBlockReason: 'banned_ip',
-      uriContains: '/case9',
     });
+
+    // Control request: unbanned IP must not return 403
+    const controlRes = triggerRequest({
+      host: host.domain_names[0],
+      path: '/case9-control',
+      xForwardedFor: '10.255.255.100',
+    });
+    expect(controlRes.status).not.toBe(403);
+
     expect(row.client_ip).toBe(bannedIp);
   });
 
   test('case 10: uri_block prefix-matches blocked path', async () => {
     const host = await createIsolatedHost(api, 'uri');
     await api.setURIBlock(host.id, '/case10-admin', 'prefix');
-    await waitForReload();
-
-    const res = triggerRequest({
+    const row = await waitForReload(api, {
       host: host.domain_names[0],
       path: '/case10-admin/dashboard',
-    });
-    expect(res.status).toBe(403);
-
-    const row = await pollForLog(api, {
-      host: host.domain_names[0],
+      expectedStatus: 403,
       expectedBlockReason: 'uri_block',
-      uriContains: '/case10-admin',
     });
+
+    // Control request: unblocked URI path must not return 403
+    const controlRes = triggerRequest({
+      host: host.domain_names[0],
+      path: '/case10-public/dashboard',
+    });
+    expect(controlRes.status).not.toBe(403);
+
     expect(row.status_code).toBe(403);
   });
 
   test('case 11: bot_filter blocks bad-bot UA (AhrefsBot)', async () => {
     const host = await createIsolatedHost(api, 'bot-bad');
     await api.setBotFilter(host.id, { blockBadBots: true });
-    await waitForReload();
-
-    const res = triggerRequest({
+    const row = await waitForReload(api, {
       host: host.domain_names[0],
       path: '/case11',
       userAgent: 'AhrefsBot/7.0',
-    });
-    expect(res.status).toBe(403);
-
-    const row = await pollForLog(api, {
-      host: host.domain_names[0],
+      expectedStatus: 403,
       expectedBlockReason: 'bot_filter',
-      uriContains: '/case11',
     });
+
+    // Control request: standard browser UA must not return 403
+    const controlRes = triggerRequest({
+      host: host.domain_names[0],
+      path: '/case11-control',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    });
+    expect(controlRes.status).not.toBe(403);
+
     expect(row.bot_category).toBe('bad_bot');
   });
 
   test('case 12: bot_filter blocks AI-bot UA (GPTBot)', async () => {
     const host = await createIsolatedHost(api, 'bot-ai');
     await api.setBotFilter(host.id, { blockAiBots: true });
-    await waitForReload();
-
-    const res = triggerRequest({
+    const row = await waitForReload(api, {
       host: host.domain_names[0],
       path: '/case12',
       userAgent: 'Mozilla/5.0 (compatible; GPTBot/1.0; +https://openai.com/gptbot)',
-    });
-    expect(res.status).toBe(403);
-
-    const row = await pollForLog(api, {
-      host: host.domain_names[0],
+      expectedStatus: 403,
       expectedBlockReason: 'bot_filter',
-      uriContains: '/case12',
     });
+
+    // Control request: standard browser UA must not return 403
+    const controlRes = triggerRequest({
+      host: host.domain_names[0],
+      path: '/case12-control',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    });
+    expect(controlRes.status).not.toBe(403);
+
     expect(row.bot_category).toBe('ai_bot');
   });
 
   test('case 13: bot_filter blocks suspicious client (curl)', async () => {
     const host = await createIsolatedHost(api, 'bot-susp');
     await api.setBotFilter(host.id, { blockSuspiciousClients: true });
-    await waitForReload();
-
-    const res = triggerRequest({
+    const row = await waitForReload(api, {
       host: host.domain_names[0],
       path: '/case13',
       userAgent: 'curl/7.88.0',
-    });
-    expect(res.status).toBe(403);
-
-    const row = await pollForLog(api, {
-      host: host.domain_names[0],
+      expectedStatus: 403,
       expectedBlockReason: 'bot_filter',
-      uriContains: '/case13',
     });
+
+    // Control request: standard browser UA must not return 403
+    const controlRes = triggerRequest({
+      host: host.domain_names[0],
+      path: '/case13-control',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    });
+    expect(controlRes.status).not.toBe(403);
+
     expect(row.bot_category).toBe('suspicious');
   });
 
   test('case 14: bot_filter blocks custom-blocked agent', async () => {
     const host = await createIsolatedHost(api, 'bot-custom');
     await api.setBotFilter(host.id, { customBlockedAgents: 'MyEvilBot' });
-    await waitForReload();
-
-    const res = triggerRequest({
+    const row = await waitForReload(api, {
       host: host.domain_names[0],
       path: '/case14',
       userAgent: 'MyEvilBot/2.0',
-    });
-    expect(res.status).toBe(403);
-
-    const row = await pollForLog(api, {
-      host: host.domain_names[0],
+      expectedStatus: 403,
       expectedBlockReason: 'bot_filter',
-      uriContains: '/case14',
     });
+
+    // Control request: unblocked custom agent must not return 403
+    const controlRes = triggerRequest({
+      host: host.domain_names[0],
+      path: '/case14-control',
+      userAgent: 'GoodBot/1.0',
+    });
+    expect(controlRes.status).not.toBe(403);
+
     expect(row.bot_category).toBe('custom');
   });
 
