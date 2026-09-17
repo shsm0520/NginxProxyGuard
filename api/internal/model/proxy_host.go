@@ -389,6 +389,7 @@ type ProxyHost struct {
 
 	// Domain configuration
 	DomainNames pq.StringArray `json:"domain_names"`
+	Tags        pq.StringArray `json:"tags"`
 
 	// Forward configuration
 	ForwardScheme           string  `json:"forward_scheme"`
@@ -483,6 +484,7 @@ func (h *ProxyHost) IsStream() bool {
 type CreateProxyHostRequest struct {
 	ProxyType                 string   `json:"proxy_type,omitempty"`
 	DomainNames               []string `json:"domain_names" validate:"required,min=1"`
+	Tags                      []string `json:"tags"`
 	ForwardScheme             string   `json:"forward_scheme"`
 	ForwardHost               string   `json:"forward_host" validate:"required"`
 	ForwardContainerName      *string  `json:"forward_container_name,omitempty"`
@@ -532,6 +534,7 @@ type CreateProxyHostRequest struct {
 type UpdateProxyHostRequest struct {
 	ProxyType                 string   `json:"proxy_type,omitempty"`
 	DomainNames               []string `json:"domain_names,omitempty"`
+	Tags                      []string `json:"tags,omitempty"` // nil = unchanged; an explicit [] clears every tag (omitempty affects marshalling only, so "tags": [] still decodes to a non-nil empty slice)
 	ForwardScheme             string   `json:"forward_scheme,omitempty"`
 	ForwardHost               string   `json:"forward_host,omitempty"`
 	ForwardContainerName      *string  `json:"forward_container_name,omitempty"`
