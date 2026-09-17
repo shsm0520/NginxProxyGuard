@@ -811,6 +811,14 @@ END $$`,
 			sql:  `CREATE UNIQUE INDEX IF NOT EXISTS idx_banned_ips_ip_host_unique ON public.banned_ips USING btree (ip_address, proxy_host_id) WHERE (proxy_host_id IS NOT NULL)`,
 		},
 		{
+			desc: "v2.57.0: proxy_hosts.tags (free-form labels for grouping the host list)",
+			sql:  `ALTER TABLE public.proxy_hosts ADD COLUMN IF NOT EXISTS tags text[] DEFAULT '{}'::text[] NOT NULL`,
+		},
+		{
+			desc: "v2.57.0: gin index for tag filtering",
+			sql:  `CREATE INDEX IF NOT EXISTS idx_proxy_hosts_tags ON public.proxy_hosts USING gin (tags)`,
+		},
+		{
 			desc: "v2.13.17: btree index bot_filters(proxy_host_id)",
 			sql:  `CREATE INDEX IF NOT EXISTS idx_bot_filters_proxy_host ON public.bot_filters USING btree (proxy_host_id)`,
 		},

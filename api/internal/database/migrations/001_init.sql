@@ -1957,6 +1957,7 @@ CREATE TABLE IF NOT EXISTS public.proxy_hosts (
     id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
     proxy_type character varying(20) DEFAULT 'http'::character varying NOT NULL,
     domain_names text[] NOT NULL,
+    tags text[] DEFAULT '{}'::text[] NOT NULL,
     forward_scheme character varying(10) DEFAULT 'http'::character varying NOT NULL,
     forward_host character varying(255) NOT NULL,
     forward_port integer DEFAULT 80 NOT NULL,
@@ -3133,6 +3134,7 @@ CREATE INDEX IF NOT EXISTS idx_logs_type_timestamp ON public.logs USING btree (l
 CREATE INDEX IF NOT EXISTS idx_proxy_hosts_created_at ON public.proxy_hosts USING btree (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_proxy_hosts_domain_names ON public.proxy_hosts USING gin (domain_names);
 CREATE INDEX IF NOT EXISTS idx_proxy_hosts_enabled ON public.proxy_hosts USING btree (enabled);
+CREATE INDEX IF NOT EXISTS idx_proxy_hosts_tags ON public.proxy_hosts USING gin (tags);
 CREATE INDEX IF NOT EXISTS idx_redirect_hosts_domains ON public.redirect_hosts USING gin (domain_names);
 CREATE INDEX IF NOT EXISTS idx_stats_daily_bucket ON public.dashboard_stats_daily USING btree (day_bucket);
 CREATE INDEX IF NOT EXISTS idx_stats_daily_host_bucket ON public.dashboard_stats_daily USING btree (proxy_host_id, day_bucket);
@@ -4490,3 +4492,8 @@ ALTER TABLE public.cloudflare_tunnel ADD COLUMN IF NOT EXISTS catchall_applied_s
 --       AND (a.banned_at, a.id) < (b.banned_at, b.id);
 --   CREATE UNIQUE INDEX IF NOT EXISTS idx_banned_ips_ip_global_unique ...;  -- already in CREATE section
 --   CREATE UNIQUE INDEX IF NOT EXISTS idx_banned_ips_ip_host_unique ...;    -- already in CREATE section
+
+-- v2.57.0: proxy host tags — free-form labels for grouping the host list.
+-- Executable copy lives in database/migration.go `upgrades` (two entries).
+ALTER TABLE public.proxy_hosts ADD COLUMN IF NOT EXISTS tags text[] DEFAULT '{}'::text[] NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_proxy_hosts_tags ON public.proxy_hosts USING gin (tags);
