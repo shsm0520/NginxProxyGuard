@@ -11,7 +11,7 @@ import (
 	"nginx-proxy-guard/internal/model"
 )
 
-func (r *ProxyHostRepository) List(ctx context.Context, page, perPage int, search, sortBy, sortOrder string) ([]model.ProxyHost, int, error) {
+func (r *ProxyHostRepository) List(ctx context.Context, page, perPage int, search, sortBy, sortOrder string, filter model.ProxyHostListFilter) ([]model.ProxyHost, int, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -20,16 +20,35 @@ func (r *ProxyHostRepository) List(ctx context.Context, page, perPage int, searc
 	}
 	offset := (page - 1) * perPage
 
-	// Build WHERE clause for search
-	var whereClause string
+	// Build WHERE clause. Predicates are ANDed; placeholders are numbered in
+	// argument order so the same clause serves the count and the page query.
+	var conds []string
 	var args []interface{}
-	argIndex := 1
-
 	if search != "" {
-		// Search in domain_names array and forward_host
-		whereClause = fmt.Sprintf(" WHERE (array_to_string(domain_names, ',') ILIKE $%d OR forward_host ILIKE $%d)", argIndex, argIndex)
+		n := len(args) + 1
+		conds = append(conds, fmt.Sprintf("(array_to_string(domain_names, ',') ILIKE $%d OR forward_host ILIKE $%d)", n, n))
 		args = append(args, "%"+search+"%")
-		argIndex++
+	}
+	if len(filter.Tags) > 0 {
+		// @> is "contains every element" — the AND semantics the filter promises.
+		conds = append(conds, fmt.Sprintf("tags @> $%d::text[]", len(args)+1))
+		args = append(args, pq.Array(filter.Tags))
+	}
+	if filter.Domain != "" {
+		conds = append(conds, fmt.Sprintf(`regexp_replace(domain_names[1], '^[^.]+\.', '') = $%d`, len(args)+1))
+		args = append(args, filter.Domain)
+	}
+	if filter.Upstream != "" {
+		conds = append(conds, fmt.Sprintf("forward_host = $%d", len(args)+1))
+		args = append(args, filter.Upstream)
+	}
+	if filter.Enabled != nil {
+		conds = append(conds, fmt.Sprintf("enabled = $%d", len(args)+1))
+		args = append(args, *filter.Enabled)
+	}
+	var whereClause string
+	if len(conds) > 0 {
+		whereClause = " WHERE " + strings.Join(conds, " AND ")
 	}
 
 	// Get total count
@@ -85,7 +104,7 @@ func (r *ProxyHostRepository) List(ctx context.Context, page, perPage int, searc
 		%s
 		ORDER BY %s
 		LIMIT $%d OFFSET $%d
-	`, whereClause, orderByClause, argIndex, argIndex+1)
+	`, whereClause, orderByClause, len(args)+1, len(args)+2)
 
 	args = append(args, perPage, offset)
 	rows, err := r.db.QueryContext(ctx, query, args...)
