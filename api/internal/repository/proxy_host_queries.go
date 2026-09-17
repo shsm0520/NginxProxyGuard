@@ -80,7 +80,7 @@ func (r *ProxyHostRepository) List(ctx context.Context, page, perPage int, searc
 			COALESCE(proxy_request_buffering, '') as proxy_request_buffering,
 			COALESCE(client_max_body_size, '') as client_max_body_size,
 			COALESCE(proxy_max_temp_file_size, '') as proxy_max_temp_file_size,
-			access_list_id, enabled, is_favorite, COALESCE(config_status, 'ok') as config_status, COALESCE(config_error, '') as config_error, ddns_enabled, ddns_provider_id, ddns_proxied, auth_provider_id, COALESCE(auth_bypass_paths, '{}') as auth_bypass_paths, meta, created_at, updated_at
+			access_list_id, enabled, is_favorite, COALESCE(config_status, 'ok') as config_status, COALESCE(config_error, '') as config_error, ddns_enabled, ddns_provider_id, ddns_proxied, auth_provider_id, COALESCE(auth_bypass_paths, '{}') as auth_bypass_paths, meta, created_at, updated_at, COALESCE(tags, '{}') as tags
 		FROM proxy_hosts
 		%s
 		ORDER BY %s
@@ -158,6 +158,7 @@ func (r *ProxyHostRepository) List(ctx context.Context, page, perPage int, searc
 			&meta,
 			&host.CreatedAt,
 			&host.UpdatedAt,
+			&host.Tags,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan proxy host: %w", err)
@@ -321,7 +322,7 @@ func (r *ProxyHostRepository) GetAllEnabled(ctx context.Context) ([]model.ProxyH
 			COALESCE(proxy_request_buffering, '') as proxy_request_buffering,
 			COALESCE(client_max_body_size, '') as client_max_body_size,
 			COALESCE(proxy_max_temp_file_size, '') as proxy_max_temp_file_size,
-			access_list_id, enabled, is_favorite, COALESCE(config_status, 'ok') as config_status, COALESCE(config_error, '') as config_error, ddns_enabled, ddns_provider_id, ddns_proxied, auth_provider_id, COALESCE(auth_bypass_paths, '{}') as auth_bypass_paths, meta, created_at, updated_at
+			access_list_id, enabled, is_favorite, COALESCE(config_status, 'ok') as config_status, COALESCE(config_error, '') as config_error, ddns_enabled, ddns_provider_id, ddns_proxied, auth_provider_id, COALESCE(auth_bypass_paths, '{}') as auth_bypass_paths, meta, created_at, updated_at, COALESCE(tags, '{}') as tags
 		FROM proxy_hosts
 		WHERE enabled = true
 		ORDER BY created_at ASC
@@ -397,6 +398,7 @@ func (r *ProxyHostRepository) GetAllEnabled(ctx context.Context) ([]model.ProxyH
 			&meta,
 			&host.CreatedAt,
 			&host.UpdatedAt,
+			&host.Tags,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan proxy host: %w", err)
@@ -459,7 +461,7 @@ func (r *ProxyHostRepository) GetEnabledContainerBacked(ctx context.Context) ([]
 			COALESCE(proxy_request_buffering, '') as proxy_request_buffering,
 			COALESCE(client_max_body_size, '') as client_max_body_size,
 			COALESCE(proxy_max_temp_file_size, '') as proxy_max_temp_file_size,
-			access_list_id, enabled, is_favorite, COALESCE(config_status, 'ok') as config_status, COALESCE(config_error, '') as config_error, ddns_enabled, ddns_provider_id, ddns_proxied, auth_provider_id, COALESCE(auth_bypass_paths, '{}') as auth_bypass_paths, meta, created_at, updated_at
+			access_list_id, enabled, is_favorite, COALESCE(config_status, 'ok') as config_status, COALESCE(config_error, '') as config_error, ddns_enabled, ddns_provider_id, ddns_proxied, auth_provider_id, COALESCE(auth_bypass_paths, '{}') as auth_bypass_paths, meta, created_at, updated_at, COALESCE(tags, '{}') as tags
 		FROM proxy_hosts
 		WHERE enabled = true AND forward_container_name IS NOT NULL
 		ORDER BY created_at ASC
@@ -535,6 +537,7 @@ func (r *ProxyHostRepository) GetEnabledContainerBacked(ctx context.Context) ([]
 			&meta,
 			&host.CreatedAt,
 			&host.UpdatedAt,
+			&host.Tags,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan proxy host: %w", err)
@@ -615,7 +618,7 @@ func (r *ProxyHostRepository) getByReferenceColumn(ctx context.Context, column, 
 			COALESCE(proxy_request_buffering, '') as proxy_request_buffering,
 			COALESCE(client_max_body_size, '') as client_max_body_size,
 			COALESCE(proxy_max_temp_file_size, '') as proxy_max_temp_file_size,
-			access_list_id, enabled, is_favorite, COALESCE(config_status, 'ok') as config_status, COALESCE(config_error, '') as config_error, ddns_enabled, ddns_provider_id, ddns_proxied, auth_provider_id, COALESCE(auth_bypass_paths, '{}') as auth_bypass_paths, meta, created_at, updated_at
+			access_list_id, enabled, is_favorite, COALESCE(config_status, 'ok') as config_status, COALESCE(config_error, '') as config_error, ddns_enabled, ddns_provider_id, ddns_proxied, auth_provider_id, COALESCE(auth_bypass_paths, '{}') as auth_bypass_paths, meta, created_at, updated_at, COALESCE(tags, '{}') as tags
 		FROM proxy_hosts
 		WHERE ` + column + ` = $1
 		ORDER BY created_at ASC
@@ -691,6 +694,7 @@ func (r *ProxyHostRepository) getByReferenceColumn(ctx context.Context, column, 
 			&meta,
 			&host.CreatedAt,
 			&host.UpdatedAt,
+			&host.Tags,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan proxy host: %w", err)

@@ -30,7 +30,7 @@ func (r *ProxyHostRepository) ToggleFavorite(ctx context.Context, id string) (*m
 			COALESCE(proxy_request_buffering, '') as proxy_request_buffering,
 			COALESCE(client_max_body_size, '') as client_max_body_size,
 			COALESCE(proxy_max_temp_file_size, '') as proxy_max_temp_file_size,
-			access_list_id, enabled, is_favorite, COALESCE(config_status, 'ok') as config_status, COALESCE(config_error, '') as config_error, meta, created_at, updated_at
+			access_list_id, enabled, is_favorite, COALESCE(config_status, 'ok') as config_status, COALESCE(config_error, '') as config_error, meta, created_at, updated_at, COALESCE(tags, '{}') as tags
 	`
 
 	var host model.ProxyHost
@@ -79,6 +79,7 @@ func (r *ProxyHostRepository) ToggleFavorite(ctx context.Context, id string) (*m
 		&meta,
 		&host.CreatedAt,
 		&host.UpdatedAt,
+		&host.Tags,
 	)
 
 	if err == sql.ErrNoRows {

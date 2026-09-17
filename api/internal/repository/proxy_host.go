@@ -61,8 +61,8 @@ func (r *ProxyHostRepository) Create(ctx context.Context, req *model.CreateProxy
 			advanced_config, proxy_connect_timeout, proxy_send_timeout, proxy_read_timeout,
 			proxy_buffering, proxy_request_buffering, client_max_body_size, proxy_max_temp_file_size, access_list_id, enabled,
 			ddns_enabled, ddns_provider_id, ddns_proxied,
-			auth_provider_id, auth_bypass_paths, waf_use_global
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46)
+			auth_provider_id, auth_bypass_paths, waf_use_global, tags
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47)
 		RETURNING id, COALESCE(proxy_type, 'http') as proxy_type, domain_names, forward_scheme, forward_host, forward_container_name, forward_container_network, forward_port,
 			COALESCE(stream_listen_host, '') as stream_listen_host,
 			COALESCE(stream_listen_port, 0) as stream_listen_port,
@@ -81,7 +81,7 @@ func (r *ProxyHostRepository) Create(ctx context.Context, req *model.CreateProxy
 			proxy_buffering, COALESCE(proxy_request_buffering, '') as proxy_request_buffering,
 			client_max_body_size, COALESCE(proxy_max_temp_file_size, '') as proxy_max_temp_file_size,
 			access_list_id, enabled, is_favorite, COALESCE(config_status, 'ok') as config_status, COALESCE(config_error, '') as config_error, ddns_enabled, ddns_provider_id, ddns_proxied,
-			auth_provider_id, COALESCE(auth_bypass_paths, '{}') as auth_bypass_paths, meta, created_at, updated_at
+			auth_provider_id, COALESCE(auth_bypass_paths, '{}') as auth_bypass_paths, meta, created_at, updated_at, COALESCE(tags, '{}') as tags
 	`
 
 	var host model.ProxyHost
@@ -190,6 +190,7 @@ func (r *ProxyHostRepository) Create(ctx context.Context, req *model.CreateProxy
 		authProviderIDParam,
 		pq.Array(req.AuthBypassPaths),
 		req.WAFUseGlobal,
+		pq.Array(req.Tags),
 	).Scan(
 		&host.ID,
 		&host.ProxyType,
@@ -245,6 +246,7 @@ func (r *ProxyHostRepository) Create(ctx context.Context, req *model.CreateProxy
 		&meta,
 		&host.CreatedAt,
 		&host.UpdatedAt,
+		&host.Tags,
 	)
 
 	if err != nil {
@@ -315,7 +317,7 @@ func (r *ProxyHostRepository) GetByID(ctx context.Context, id string) (*model.Pr
 			COALESCE(proxy_request_buffering, '') as proxy_request_buffering,
 			COALESCE(client_max_body_size, '') as client_max_body_size,
 			COALESCE(proxy_max_temp_file_size, '') as proxy_max_temp_file_size,
-			access_list_id, enabled, is_favorite, COALESCE(config_status, 'ok') as config_status, COALESCE(config_error, '') as config_error, ddns_enabled, ddns_provider_id, ddns_proxied, auth_provider_id, COALESCE(auth_bypass_paths, '{}') as auth_bypass_paths, meta, created_at, updated_at
+			access_list_id, enabled, is_favorite, COALESCE(config_status, 'ok') as config_status, COALESCE(config_error, '') as config_error, ddns_enabled, ddns_provider_id, ddns_proxied, auth_provider_id, COALESCE(auth_bypass_paths, '{}') as auth_bypass_paths, meta, created_at, updated_at, COALESCE(tags, '{}') as tags
 		FROM proxy_hosts WHERE id = $1
 	`
 
@@ -381,6 +383,7 @@ func (r *ProxyHostRepository) GetByID(ctx context.Context, id string) (*model.Pr
 		&meta,
 		&host.CreatedAt,
 		&host.UpdatedAt,
+		&host.Tags,
 	)
 
 	if err == sql.ErrNoRows {
@@ -437,6 +440,9 @@ func (r *ProxyHostRepository) Update(ctx context.Context, id string, req *model.
 	}
 	if len(req.DomainNames) > 0 {
 		existing.DomainNames = req.DomainNames
+	}
+	if req.Tags != nil {
+		existing.Tags = req.Tags
 	}
 	if req.ForwardScheme != "" {
 		existing.ForwardScheme = req.ForwardScheme
@@ -642,7 +648,8 @@ func (r *ProxyHostRepository) Update(ctx context.Context, id string, req *model.
 			ddns_proxied = $44,
 			auth_provider_id = $45,
 			auth_bypass_paths = $46,
-			waf_use_global = $47
+			waf_use_global = $47,
+			tags = $48
 		WHERE id = $43
 		RETURNING updated_at
 	`
@@ -719,6 +726,7 @@ func (r *ProxyHostRepository) Update(ctx context.Context, id string, req *model.
 		authProviderIDParam,
 		pq.Array(existing.AuthBypassPaths),
 		existing.WAFUseGlobal,
+		pq.Array(existing.Tags),
 	).Scan(&existing.UpdatedAt)
 
 	if err != nil {
@@ -789,7 +797,7 @@ func (r *ProxyHostRepository) GetByDomain(ctx context.Context, domain string) (*
 			COALESCE(proxy_request_buffering, '') as proxy_request_buffering,
 			COALESCE(client_max_body_size, '') as client_max_body_size,
 			COALESCE(proxy_max_temp_file_size, '') as proxy_max_temp_file_size,
-			access_list_id, enabled, is_favorite, COALESCE(config_status, 'ok') as config_status, COALESCE(config_error, '') as config_error, ddns_enabled, ddns_provider_id, ddns_proxied, auth_provider_id, COALESCE(auth_bypass_paths, '{}') as auth_bypass_paths, meta, created_at, updated_at
+			access_list_id, enabled, is_favorite, COALESCE(config_status, 'ok') as config_status, COALESCE(config_error, '') as config_error, ddns_enabled, ddns_provider_id, ddns_proxied, auth_provider_id, COALESCE(auth_bypass_paths, '{}') as auth_bypass_paths, meta, created_at, updated_at, COALESCE(tags, '{}') as tags
 		FROM proxy_hosts WHERE $1 = ANY(domain_names)
 		LIMIT 1
 	`
@@ -856,6 +864,7 @@ func (r *ProxyHostRepository) GetByDomain(ctx context.Context, domain string) (*
 		&meta,
 		&host.CreatedAt,
 		&host.UpdatedAt,
+		&host.Tags,
 	)
 
 	if err == sql.ErrNoRows {
