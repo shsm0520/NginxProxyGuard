@@ -125,6 +125,9 @@ export function useProxyHostSubmit({
       // Step 2: Complete
       setSaveProgress((prev) => ({ ...prev, currentStep: 2 }))
       queryClient.invalidateQueries({ queryKey: ['proxy-hosts'] })
+      // The form is the only place a brand-new tag is typed, so the group
+      // panel's buckets go stale here unless it is invalidated too.
+      queryClient.invalidateQueries({ queryKey: ['proxy-host-groups'] })
       closeProgressWithDelay()
     },
     onError: (error) => {
@@ -181,6 +184,9 @@ export function useProxyHostSubmit({
       // Step 2: Complete
       setSaveProgress((prev) => ({ ...prev, currentStep: 2 }))
       queryClient.invalidateQueries({ queryKey: ['proxy-hosts'] })
+      // An edit can add, rename or drop a tag, so the panel's counts move with
+      // it — invalidate the buckets alongside the list.
+      queryClient.invalidateQueries({ queryKey: ['proxy-host-groups'] })
       closeProgressWithDelay()
     },
     onError: (error) => {

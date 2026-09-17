@@ -36,6 +36,8 @@
       "status": "Status",
       "any": "any",
       "clear": "Clear filters",
+      "showAllTags": "Show {{n}} more tags",
+      "showLessTags": "Show fewer tags",
       "noMatch": "No hosts match these filters",
       "noMatchDescription": "Remove a tag or widen the domain, upstream or status filter."
     },

@@ -36,6 +36,8 @@
       "status": "상태",
       "any": "전체",
       "clear": "필터 지우기",
+      "showAllTags": "태그 {{n}}개 더 보기",
+      "showLessTags": "태그 접기",
       "noMatch": "필터와 일치하는 호스트가 없습니다",
       "noMatchDescription": "태그를 빼거나 도메인·업스트림·상태 필터를 넓혀 보세요."
     },
