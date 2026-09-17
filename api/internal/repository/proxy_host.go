@@ -143,6 +143,13 @@ func (r *ProxyHostRepository) Create(ctx context.Context, req *model.CreateProxy
 		cacheTTL = "7d"
 	}
 
+	// pq.StringArray(nil).Value() is SQL NULL, and an explicit NULL does not fall
+	// back to the column DEFAULT — so a request without a "tags" key would break
+	// the NOT NULL constraint (23502). Bind an empty array, never nil.
+	if req.Tags == nil {
+		req.Tags = []string{}
+	}
+
 	err := r.db.QueryRowContext(ctx, query,
 		req.ProxyType,
 		pq.Array(req.DomainNames),
@@ -289,6 +296,12 @@ func (r *ProxyHostRepository) GetByID(ctx context.Context, id string) (*model.Pr
 	if r.cache != nil {
 		var cached model.ProxyHost
 		if err := r.cache.GetProxyHostConfig(ctx, id, &cached); err == nil {
+			// A blob cached by a binary that predates tags has no "tags" key, so
+			// Tags stays nil — which would surface as "tags": null and, fed back
+			// through Update, bind as SQL NULL against a NOT NULL column.
+			if cached.Tags == nil {
+				cached.Tags = pq.StringArray{}
+			}
 			return &cached, nil
 		}
 	}
@@ -676,6 +689,12 @@ func (r *ProxyHostRepository) Update(ctx context.Context, id string, req *model.
 	var authProviderIDParam sql.NullString
 	if existing.AuthProviderID != nil && *existing.AuthProviderID != "" {
 		authProviderIDParam = sql.NullString{String: *existing.AuthProviderID, Valid: true}
+	}
+
+	// Same nil-slice/NOT NULL trap as Create: existing may come from a cached
+	// blob written before tags existed, so Tags can be nil here.
+	if existing.Tags == nil {
+		existing.Tags = pq.StringArray{}
 	}
 
 	err = r.db.QueryRowContext(ctx, query,
