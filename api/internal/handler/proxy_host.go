@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	authMiddleware "nginx-proxy-guard/internal/middleware"
@@ -147,13 +148,58 @@ func (h *ProxyHostHandler) GetByDomain(c echo.Context) error {
 	return c.JSON(http.StatusOK, host)
 }
 
+// parseProxyHostListFilter reads the optional tag/domain/upstream/enabled
+// query params. Tags go through the model rule so a malformed filter answers
+// 400 instead of silently matching nothing.
+func parseProxyHostListFilter(c echo.Context) (model.ProxyHostListFilter, error) {
+	var f model.ProxyHostListFilter
+	if raw := c.QueryParams()["tag"]; len(raw) > 0 {
+		tags, err := model.NormalizeTags(raw)
+		if err != nil {
+			return f, err
+		}
+		f.Tags = tags
+	}
+	for _, p := range []struct {
+		name string
+		dst  *string
+	}{{"domain", &f.Domain}, {"upstream", &f.Upstream}} {
+		v := strings.TrimSpace(c.QueryParam(p.name))
+		if len(v) > 253 || strings.ContainsAny(v, " \t\r\n") {
+			return f, fmt.Errorf("%w: %s filter must be a single host name", model.ErrInvalidInput, p.name)
+		}
+		*p.dst = v
+	}
+	if v := c.QueryParam("enabled"); v != "" {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return f, fmt.Errorf("%w: enabled must be true or false", model.ErrInvalidInput)
+		}
+		f.Enabled = &b
+	}
+	return f, nil
+}
+
+// Groups answers GET /proxy-hosts/groups — the buckets the filter panel offers.
+func (h *ProxyHostHandler) Groups(c echo.Context) error {
+	groups, err := h.service.Groups(c.Request().Context())
+	if err != nil {
+		return databaseError(c, "group proxy hosts", err)
+	}
+	return c.JSON(http.StatusOK, groups)
+}
+
 func (h *ProxyHostHandler) List(c echo.Context) error {
 	page, perPage := ParsePaginationParams(c)
 	search := c.QueryParam("search")
 	sortBy := c.QueryParam("sort_by")
 	sortOrder := c.QueryParam("sort_order")
+	filter, err := parseProxyHostListFilter(c)
+	if err != nil {
+		return badRequestError(c, err.Error())
+	}
 
-	response, err := h.service.List(c.Request().Context(), page, perPage, search, sortBy, sortOrder)
+	response, err := h.service.List(c.Request().Context(), page, perPage, search, sortBy, sortOrder, filter)
 	if err != nil {
 		return databaseError(c, "list proxy hosts", err)
 	}

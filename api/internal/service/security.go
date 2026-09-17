@@ -526,7 +526,7 @@ func (s *SecurityService) regenerateConfigsForBan(proxyHostID *string) {
 		}
 	} else {
 		// For global ban, regenerate all enabled hosts without reload
-		hosts, _, err := s.proxyHostRepo.List(ctx, 1, config.MaxWAFRulesLimit, "", "", "")
+		hosts, _, err := s.proxyHostRepo.List(ctx, 1, config.MaxWAFRulesLimit, "", "", "", model.ProxyHostListFilter{})
 		if err != nil {
 			log.Printf("[SecurityService] IP ban change NOT applied to nginx — failed to list proxy hosts (ban is saved in DB and will be enforced on the next successful config sync): %v", err)
 			return
@@ -554,7 +554,7 @@ func (s *SecurityService) regenerateAllConfigsForBan() {
 		return
 	}
 
-	hosts, _, err := s.proxyHostRepo.List(ctx, 1, config.MaxWAFRulesLimit, "", "", "")
+	hosts, _, err := s.proxyHostRepo.List(ctx, 1, config.MaxWAFRulesLimit, "", "", "", model.ProxyHostListFilter{})
 	if err != nil {
 		log.Printf("[SecurityService] IP ban list change NOT applied to nginx — failed to list proxy hosts (the change is saved in DB and will be enforced on the next successful config sync): %v", err)
 		return
@@ -738,7 +738,7 @@ func (s *SecurityService) UnbanIPByAddress(ctx context.Context, ip string, userI
 			log.Printf("[SecurityService] Failed to remove banned IP from global cache: %v", err)
 		}
 		if s.proxyHostRepo != nil {
-			hosts, _, err := s.proxyHostRepo.List(ctx, 1, config.MaxWAFRulesLimit, "", "", "")
+			hosts, _, err := s.proxyHostRepo.List(ctx, 1, config.MaxWAFRulesLimit, "", "", "", model.ProxyHostListFilter{})
 			if err == nil && hosts != nil {
 				for _, host := range hosts {
 					s.redisCache.RemoveBannedIP(ctx, ip, host.ID)

@@ -429,7 +429,7 @@ func (s *ProxyHostService) RegenerateConfigsForCloudProviders(ctx context.Contex
 // that have block_exploits enabled. Called when exploit rules are modified.
 func (s *ProxyHostService) RegenerateConfigsForExploitRules(ctx context.Context) error {
 	// Get all hosts with block_exploits enabled
-	hosts, _, err := s.repo.List(ctx, 1, 10000, "", "", "")
+	hosts, _, err := s.repo.List(ctx, 1, 10000, "", "", "", model.ProxyHostListFilter{})
 	if err != nil {
 		return fmt.Errorf("failed to list proxy hosts: %w", err)
 	}

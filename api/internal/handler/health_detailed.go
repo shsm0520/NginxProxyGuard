@@ -9,6 +9,7 @@ import (
 
 	"nginx-proxy-guard/internal/config"
 	"nginx-proxy-guard/internal/database"
+	"nginx-proxy-guard/internal/model"
 	"nginx-proxy-guard/internal/repository"
 	"nginx-proxy-guard/internal/service"
 	"nginx-proxy-guard/pkg/cache"
@@ -268,7 +269,7 @@ func (h *HealthDetailedHandler) nginxInfo(ctx context.Context) *detailedNginxInf
 	if h.proxyRepo == nil {
 		return info
 	}
-	if _, total, err := h.proxyRepo.List(ctx, 1, 1, "", "", ""); err == nil {
+	if _, total, err := h.proxyRepo.List(ctx, 1, 1, "", "", "", model.ProxyHostListFilter{}); err == nil {
 		info.HostCount = total
 	}
 	return info

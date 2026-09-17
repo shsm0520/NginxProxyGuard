@@ -127,6 +127,7 @@ func (s *ProxyHostService) Clone(ctx context.Context, sourceID string, req *mode
 	createReq := &model.CreateProxyHostRequest{
 		ProxyType:                 source.ProxyType,
 		DomainNames:               validDomains,
+		Tags:                      []string(source.Tags),
 		ForwardScheme:             forwardScheme,
 		ForwardHost:               forwardHost,
 		ForwardContainerName:      cloneContainerName,

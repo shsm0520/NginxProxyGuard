@@ -301,6 +301,7 @@ var routePermissions = map[string]string{
 	"POST /api/v1/proxy-hosts/:proxyHostId/uri-block/rules": "proxy:write",
 	"DELETE /api/v1/proxy-hosts/:proxyHostId/uri-block/rules/:ruleId": "proxy:delete",
 	"GET /api/v1/proxy-hosts/by-domain/:domain": "proxy:read",
+	"GET /api/v1/proxy-hosts/groups": "proxy:read",
 	"POST /api/v1/proxy-hosts/sync": "proxy:write",
 	"GET /api/v1/redirect-hosts": "redirect:read",
 	"POST /api/v1/redirect-hosts": "redirect:write",

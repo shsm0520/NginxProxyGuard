@@ -142,7 +142,7 @@ func (h *WAFHandler) GetHostConfigs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Get all proxy hosts
-	hosts, _, err := h.proxyHostRepo.List(ctx, 1, 1000, "", "", "")
+	hosts, _, err := h.proxyHostRepo.List(ctx, 1, 1000, "", "", "", model.ProxyHostListFilter{})
 	if err != nil {
 		httpDatabaseError(w, "list proxy hosts for WAF", err)
 		return

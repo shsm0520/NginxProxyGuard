@@ -214,7 +214,7 @@ func (h *SettingsHandler) performRestore(ctx context.Context, backup *model.Back
 		// below can derive the real (domain-based) config filenames.
 		var failedHosts []model.ProxyHost
 		if h.proxyHostRepo != nil {
-			proxyHosts, _, err := h.proxyHostRepo.List(ctx, 1, config.MaxWAFRulesLimit, "", "", "")
+			proxyHosts, _, err := h.proxyHostRepo.List(ctx, 1, config.MaxWAFRulesLimit, "", "", "", model.ProxyHostListFilter{})
 			if err != nil {
 				log.Printf("[Backup] Warning: failed to list proxy hosts for config regeneration: %v", err)
 			} else {

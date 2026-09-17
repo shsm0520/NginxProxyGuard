@@ -450,7 +450,7 @@ func (c *LogCollector) refreshDomainCache(ctx context.Context) {
 	if c.proxyHostRepo == nil {
 		return
 	}
-	hosts, _, err := c.proxyHostRepo.List(ctx, 1, 1000, "", "", "")
+	hosts, _, err := c.proxyHostRepo.List(ctx, 1, 1000, "", "", "", model.ProxyHostListFilter{})
 	if err != nil {
 		return
 	}

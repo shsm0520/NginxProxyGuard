@@ -216,6 +216,12 @@ func (s *ProxyHostService) applyContainerTarget(ctx context.Context, containerNa
 }
 
 func normalizeCreateProxyHostRequest(req *model.CreateProxyHostRequest) error {
+	tags, err := model.NormalizeTags(req.Tags)
+	if err != nil {
+		return err
+	}
+	req.Tags = tags
+
 	req.ProxyType = model.NormalizeProxyType(req.ProxyType)
 	if req.ProxyType == model.ProxyTypeStream {
 		req.StreamProtocol = model.NormalizeStreamProtocol(req.StreamProtocol)
@@ -499,6 +505,16 @@ func (s *ProxyHostService) validateDDNSOptIn(ctx context.Context, enabled bool, 
 }
 
 func (s *ProxyHostService) prepareUpdateProxyHostRequest(ctx context.Context, id string, req *model.UpdateProxyHostRequest) (string, *model.ProxyHost, error) {
+	// nil means "leave tags alone"; only a present field is normalised, so an
+	// omitted key on a partial update can never wipe a host's tags.
+	if req.Tags != nil {
+		tags, err := model.NormalizeTags(req.Tags)
+		if err != nil {
+			return "", nil, err
+		}
+		req.Tags = tags
+	}
+
 	existingHost, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to get proxy host: %w", err)
@@ -815,8 +831,8 @@ func (s *ProxyHostService) GetByDomain(ctx context.Context, domain string) (*mod
 	return s.repo.GetByDomain(ctx, domain)
 }
 
-func (s *ProxyHostService) List(ctx context.Context, page, perPage int, search, sortBy, sortOrder string) (*model.ProxyHostListResponse, error) {
-	hosts, total, err := s.repo.List(ctx, page, perPage, search, sortBy, sortOrder)
+func (s *ProxyHostService) List(ctx context.Context, page, perPage int, search, sortBy, sortOrder string, filter model.ProxyHostListFilter) (*model.ProxyHostListResponse, error) {
+	hosts, total, err := s.repo.List(ctx, page, perPage, search, sortBy, sortOrder, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -830,6 +846,11 @@ func (s *ProxyHostService) List(ctx context.Context, page, perPage int, search, 
 		PerPage:    perPage,
 		TotalPages: totalPages,
 	}, nil
+}
+
+// Groups is the read-only summary behind the list's filter panel.
+func (s *ProxyHostService) Groups(ctx context.Context) (*model.ProxyHostGroups, error) {
+	return s.repo.Groups(ctx)
 }
 
 // UpdateWithoutReload generates nginx config without reloading (for use with debounced reloader)

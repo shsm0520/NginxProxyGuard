@@ -255,7 +255,7 @@ func (s *WAFAutoBanService) banIP(ctx context.Context, ip string, host string, r
 
 	// Regenerate nginx configs for all enabled hosts (global ban)
 	if s.proxyHostService != nil && s.proxyHostRepo != nil {
-		hosts, _, err := s.proxyHostRepo.List(ctx, 1, 1000, "", "", "")
+		hosts, _, err := s.proxyHostRepo.List(ctx, 1, 1000, "", "", "", model.ProxyHostListFilter{})
 		if err != nil {
 			log.Printf("[WAF Auto-Ban] Warning: Failed to list proxy hosts: %v", err)
 			return nil
@@ -408,7 +408,7 @@ func (s *WAFAutoBanService) cleanupExpiredBans(ctx context.Context) {
 
 		// Regenerate nginx configs for all enabled hosts
 		if s.proxyHostService != nil && s.proxyHostRepo != nil {
-			hosts, _, err := s.proxyHostRepo.List(ctx, 1, 1000, "", "", "")
+			hosts, _, err := s.proxyHostRepo.List(ctx, 1, 1000, "", "", "", model.ProxyHostListFilter{})
 			if err != nil {
 				log.Printf("[WAF Auto-Ban] Failed to list proxy hosts: %v", err)
 				return

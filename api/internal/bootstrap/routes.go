@@ -483,6 +483,8 @@ func registerProxyHostRoutes(v1 *echo.Group, h *handler.ProxyHostHandler) {
 	g.GET("", h.List, proxyRead)
 	g.POST("", h.Create, proxyWrite)
 	g.GET("/by-domain/:domain", h.GetByDomain, proxyRead)
+	// Must stay ahead of GET "/:id" or Echo matches "groups" as a host id.
+	g.GET("/groups", h.Groups, proxyRead)
 	g.POST("/sync", h.SyncAll, proxyWrite)
 	g.GET("/:id", h.GetByID, proxyRead)
 	g.PUT("/:id", h.Update, proxyWrite)

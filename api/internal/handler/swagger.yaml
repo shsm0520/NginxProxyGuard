@@ -299,6 +299,30 @@ paths:
             enum: [asc, desc]
             default: asc
           description: Only applied when sort_by is one of the accepted values; anything other than `desc` sorts ascending.
+        - name: tag
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: Repeatable. The host must carry every listed tag (AND).
+        - name: domain
+          in: query
+          schema:
+            type: string
+          description: Parent domain of the host's first domain name, e.g. `example.com` matches `app.example.com`.
+        - name: upstream
+          in: query
+          schema:
+            type: string
+          description: Exact `forward_host`.
+        - name: enabled
+          in: query
+          schema:
+            type: boolean
+          description: Only enabled (`true`) or only disabled (`false`) hosts.
       responses:
         '200':
           description: List of proxy hosts
@@ -350,6 +374,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /proxy-hosts/groups:
+    get:
+      tags: [Proxy Hosts]
+      summary: Group summary for the host list filter
+      description: |
+        Counts of hosts per tag, per parent domain, per upstream and by enabled
+        state. Read-only; feeds the filter panel. Requires the `proxy:read`
+        scope when called with an API token.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Group counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProxyHostGroups'
   /proxy-hosts/{id}:
     get:
       tags: [Proxy Hosts]
@@ -10523,6 +10564,17 @@ components:
           items:
             type: string
           description: Domain names for http hosts, or SNI/service labels for stream hosts.
+        tags:
+          type: array
+          items:
+            type: string
+            pattern: '^[a-z0-9][a-z0-9._-]*$'
+            maxLength: 32
+          maxItems: 10
+          description: |
+            Free-form labels for grouping the host list. Normalised on write
+            (trimmed, lowercased, de-duplicated). On update an omitted field
+            leaves tags unchanged and an empty array clears them.
         forward_scheme:
           type: string
           enum: [http, https, tcp, udp]
@@ -10748,6 +10800,17 @@ components:
             type: string
           minItems: 1
           description: Validated as domain names for http hosts, or as stream labels for stream hosts.
+        tags:
+          type: array
+          items:
+            type: string
+            pattern: '^[a-z0-9][a-z0-9._-]*$'
+            maxLength: 32
+          maxItems: 10
+          description: |
+            Free-form labels for grouping the host list. Normalised on write
+            (trimmed, lowercased, de-duplicated). On update an omitted field
+            leaves tags unchanged and an empty array clears them.
         forward_scheme:
           type: string
           enum: [http, https, tcp, udp]
@@ -10917,6 +10980,17 @@ components:
           type: array
           items:
             type: string
+        tags:
+          type: array
+          items:
+            type: string
+            pattern: '^[a-z0-9][a-z0-9._-]*$'
+            maxLength: 32
+          maxItems: 10
+          description: |
+            Free-form labels for grouping the host list. Normalised on write
+            (trimmed, lowercased, de-duplicated). On update an omitted field
+            leaves tags unchanged and an empty array clears them.
         forward_scheme:
           type: string
           enum: [http, https, tcp, udp]
@@ -15241,6 +15315,37 @@ components:
         stream_protocol:
           type: string
           enum: [tcp, udp]
+    ProxyHostGroupCount:
+      type: object
+      properties:
+        name:
+          type: string
+        count:
+          type: integer
+      required: [name, count]
+    ProxyHostGroups:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProxyHostGroupCount'
+        domains:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProxyHostGroupCount'
+        upstreams:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProxyHostGroupCount'
+        status:
+          type: object
+          properties:
+            enabled:
+              type: integer
+            disabled:
+              type: integer
+      required: [tags, domains, upstreams, status]
     ProxyHostSyncResult:
       type: object
       properties:

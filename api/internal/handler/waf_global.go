@@ -228,7 +228,7 @@ func (h *WAFHandler) GetGlobalExclusions(w http.ResponseWriter, r *http.Request)
 // regenerateAllHostConfigs regenerates WAF configs for all WAF-enabled hosts
 func (h *WAFHandler) regenerateAllHostConfigs(ctx context.Context) error {
 	// Get all proxy hosts
-	hosts, _, err := h.proxyHostRepo.List(ctx, 1, 10000, "", "", "")
+	hosts, _, err := h.proxyHostRepo.List(ctx, 1, 10000, "", "", "", model.ProxyHostListFilter{})
 	if err != nil {
 		return err
 	}
