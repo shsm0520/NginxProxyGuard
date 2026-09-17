@@ -82,6 +82,7 @@ func TestBackupSyncCriticalTables(t *testing.T) {
 				"ssl_force_https",
 				"ssl_http2",
 				"ssl_http3",
+				"tags",
 				"waf_anomaly_threshold",
 				"waf_enabled",
 				"waf_mode",

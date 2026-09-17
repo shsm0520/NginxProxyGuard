@@ -360,6 +360,7 @@ type ProxyHostData struct {
 	ID                        string                 `json:"id"`
 	ProxyType                 string                 `json:"proxy_type,omitempty"`
 	DomainNames               []string               `json:"domain_names"`
+	Tags                      []string               `json:"tags"`
 	ForwardScheme             string                 `json:"forward_scheme"`
 	ForwardHost               string                 `json:"forward_host"`
 	ForwardContainerName      *string                `json:"forward_container_name,omitempty"`
