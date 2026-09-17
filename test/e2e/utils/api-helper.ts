@@ -1474,6 +1474,9 @@ export interface CreateProxyHostData {
   forward_scheme: string;
   forward_host: string;
   forward_port: number;
+  // Free-form labels for grouping the host list. Normalised server-side
+  // (trimmed, lowercased, de-duplicated); an omitted field leaves them alone.
+  tags?: string[];
   enabled?: boolean;
   ssl_enabled?: boolean;
   ssl_http2?: boolean;

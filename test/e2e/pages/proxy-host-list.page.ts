@@ -56,6 +56,49 @@ export class ProxyHostListPage extends BasePage {
   }
 
   /**
+   * Navigate to the list with filter params already in the URL
+   * (e.g. 'upstream=192.0.2.33'), the way a bookmark or a reload restores one.
+   */
+  async gotoWithFilter(query: string): Promise<void> {
+    await super.goto(`${ROUTES.proxyHosts}?${query}`);
+    await this.waitForHostsLoad();
+  }
+
+  // ---- Tag / group filter panel ----
+
+  /**
+   * A tag chip in the group panel. The panel caps the chips it draws
+   * (MAX_VISIBLE_GROUP_TAGS in ProxyHostGroupFilter.tsx), so a tag that sorts
+   * past the cap is only rendered while it is part of the active filter.
+   */
+  groupTagChip(tag: string): Locator {
+    return this.page.getByTestId(`group-tag-${tag}`);
+  }
+
+  /**
+   * A tag chip on a host row. The chip's text is the tag itself, so the
+   * accessible name matches exactly.
+   */
+  rowTagChip(tag: string): Locator {
+    return this.page.getByTestId('row-tags').getByRole('button', { name: tag, exact: true });
+  }
+
+  /** Every row that carries at least one tag chip. */
+  get rowTagGroups(): Locator {
+    return this.page.getByTestId('row-tags');
+  }
+
+  /** Every host row currently in the table — what a filter narrows. */
+  get tableRows(): Locator {
+    return this.page.locator('table tbody tr');
+  }
+
+  /** "Clear filters" — only rendered while some filter is active. */
+  get groupClearButton(): Locator {
+    return this.page.getByTestId('group-clear');
+  }
+
+  /**
    * Wait for hosts to load.
    */
   async waitForHostsLoad(): Promise<void> {
