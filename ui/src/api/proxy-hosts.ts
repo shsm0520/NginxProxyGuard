@@ -4,6 +4,8 @@ import type {
   UpdateProxyHostRequest,
   ProxyHostListResponse,
   ProxyHostTestResult,
+  ProxyHostListFilter,
+  ProxyHostGroups,
 } from '../types/proxy-host'
 import { apiGet, apiPost, apiPut, apiDelete } from './client'
 
@@ -14,7 +16,8 @@ export async function fetchProxyHosts(
   perPage = 20,
   search = '',
   sortBy = '',
-  sortOrder = ''
+  sortOrder = '',
+  filter: ProxyHostListFilter = {}
 ): Promise<ProxyHostListResponse> {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -29,9 +32,28 @@ export async function fetchProxyHosts(
   if (sortOrder) {
     params.append('sort_order', sortOrder)
   }
+  // `tag` is repeatable and ANDed server-side; the other three are single-valued.
+  for (const tag of filter.tags ?? []) {
+    params.append('tag', tag)
+  }
+  if (filter.domain) {
+    params.append('domain', filter.domain)
+  }
+  if (filter.upstream) {
+    params.append('upstream', filter.upstream)
+  }
+  if (filter.enabled !== undefined) {
+    params.append('enabled', String(filter.enabled))
+  }
   return apiGet<ProxyHostListResponse>(
     `${API_BASE}/proxy-hosts?${params.toString()}`
   )
+}
+
+// Counts per tag / parent domain / upstream / enabled state — the buckets the
+// list's filter panel is drawn from.
+export async function fetchProxyHostGroups(): Promise<ProxyHostGroups> {
+  return apiGet<ProxyHostGroups>(`${API_BASE}/proxy-hosts/groups`)
 }
 
 export async function fetchProxyHost(id: string): Promise<ProxyHost> {

@@ -28,6 +28,7 @@ export function useProxyHostFormState(host: ProxyHost | null | undefined) {
   const [formData, setFormData] = useState<CreateProxyHostRequest>({
     proxy_type: 'http',
     domain_names: [''],
+    tags: [],
     forward_scheme: 'http',
     forward_host: '',
     forward_port: 80,
@@ -248,6 +249,7 @@ export function useProxyHostFormState(host: ProxyHost | null | undefined) {
       setFormData({
         proxy_type: host.proxy_type || 'http',
         domain_names: host.domain_names,
+        tags: host.tags ?? [],
         forward_scheme: host.forward_scheme,
         forward_host: host.forward_host,
         forward_container_name: host.forward_container_name ?? undefined,

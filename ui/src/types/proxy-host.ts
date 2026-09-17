@@ -6,6 +6,7 @@ export interface ProxyHost {
   id: string
   proxy_type: ProxyType
   domain_names: string[]
+  tags: string[]
   forward_scheme: ForwardScheme
   forward_host: string
   forward_container_name?: string | null
@@ -63,6 +64,7 @@ export interface ProxyHost {
 export interface CreateProxyHostRequest {
   proxy_type?: ProxyType
   domain_names: string[]
+  tags?: string[]
   forward_scheme: ForwardScheme
   forward_host: string
   forward_container_name?: string | null
@@ -113,6 +115,7 @@ export interface CreateProxyHostRequest {
 export interface UpdateProxyHostRequest {
   proxy_type?: ProxyType
   domain_names?: string[]
+  tags?: string[]
   forward_scheme?: ForwardScheme
   forward_host?: string
   forward_container_name?: string | null
@@ -245,4 +248,26 @@ export interface SecurityTestResult {
   referrer_policy?: string
   permissions_policy?: string
   server_header?: string
+}
+
+// ProxyHostListFilter narrows GET /proxy-hosts. Every field is optional; tags
+// are AND semantics (the host must carry all of them).
+export interface ProxyHostListFilter {
+  tags?: string[]
+  domain?: string
+  upstream?: string
+  enabled?: boolean
+}
+
+export interface ProxyHostGroupCount {
+  name: string
+  count: number
+}
+
+// ProxyHostGroups is the read-only summary behind the list's filter panel.
+export interface ProxyHostGroups {
+  tags: ProxyHostGroupCount[]
+  domains: ProxyHostGroupCount[]
+  upstreams: ProxyHostGroupCount[]
+  status: { enabled: number; disabled: number }
 }

@@ -1,9 +1,12 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { CreateProxyHostRequest, StreamProtocol } from '../../../types/proxy-host'
 import type { FormErrors } from '../types'
 import { useTranslation } from 'react-i18next'
+import { fetchProxyHostGroups } from '../../../api/proxy-hosts'
 import { HelpTip } from '../../common/HelpTip'
 import { DockerContainerSelector } from '../DockerContainerSelector'
+import { TagInput } from '../TagInput'
 
 interface BasicTabFullProps {
   formData: CreateProxyHostRequest
@@ -46,6 +49,14 @@ export function BasicTabContent({
 }: BasicTabFullProps) {
   const { t } = useTranslation('proxyHost')
   const [dockerSelectorOpen, setDockerSelectorOpen] = useState(false)
+  // Tags already in use elsewhere, offered as datalist suggestions so the same
+  // label is reused rather than re-spelled.
+  const { data: groups } = useQuery({
+    queryKey: ['proxy-host-groups'],
+    queryFn: fetchProxyHostGroups,
+    staleTime: 30_000,
+  })
+  const tagSuggestions = groups?.tags.map((g) => g.name) ?? []
   const isStream = formData.proxy_type === 'stream'
   const streamProtocol = formData.stream_protocol || 'tcp'
 
@@ -245,6 +256,20 @@ export function BasicTabContent({
         {errors.domain_names && (
           <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.domain_names}</p>
         )}
+      </div>
+
+      <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 transition-colors">
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+          <svg className="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+          </svg>
+          {t('form.basic.tags')}
+        </label>
+        <TagInput
+          value={formData.tags ?? []}
+          onChange={(tags) => setFormData((prev) => ({ ...prev, tags }))}
+          suggestions={tagSuggestions}
+        />
       </div>
 
       {isStream && (
