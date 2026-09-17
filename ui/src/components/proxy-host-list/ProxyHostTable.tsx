@@ -17,6 +17,7 @@ interface ProxyHostTableProps {
   onTestConfig: (host: ProxyHost) => void
   onCheckHealth: (hostId: string) => void
   onFavorite: (hostId: string) => void
+  onTagClick: (tag: string) => void
   togglePending: boolean
 }
 
@@ -30,6 +31,7 @@ export function ProxyHostTable({
   onTestConfig,
   onCheckHealth,
   onFavorite,
+  onTagClick,
   togglePending,
 }: ProxyHostTableProps) {
   const { t } = useTranslation('proxyHost')
@@ -70,6 +72,7 @@ export function ProxyHostTable({
               onTestConfig={onTestConfig}
               onCheckHealth={onCheckHealth}
               onFavorite={onFavorite}
+              onTagClick={onTagClick}
             />
           ))}
         </tbody>

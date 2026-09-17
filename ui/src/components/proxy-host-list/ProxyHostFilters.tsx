@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { usePermissions } from '../../hooks/usePermissions';
 import { AddButton } from '../common/listui';
+import { ProxyHostGroupFilter } from './ProxyHostGroupFilter';
+import type { ProxyHostGroups, ProxyHostListFilter } from '../../types/proxy-host';
 
 export type SortBy = 'name' | 'updated' | 'created';
 export type SortOrder = 'asc' | 'desc';
@@ -13,6 +15,9 @@ interface ProxyHostFiltersProps {
   sortOrder: SortOrder;
   onSortChange: (sortBy: SortBy, sortOrder: SortOrder) => void;
   onAdd: () => void;
+  groups?: ProxyHostGroups;
+  filter: ProxyHostListFilter;
+  onFilterChange: (next: ProxyHostListFilter) => void;
 }
 
 export function ProxyHostFilters({
@@ -23,11 +28,15 @@ export function ProxyHostFilters({
   sortOrder,
   onSortChange,
   onAdd,
+  groups,
+  filter,
+  onFilterChange,
 }: ProxyHostFiltersProps) {
   const { can } = usePermissions()
   const { t } = useTranslation('proxyHost');
 
   return (
+    <>
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
       <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t('list.title')}</h2>
 
@@ -82,5 +91,9 @@ export function ProxyHostFilters({
         </AddButton>
       </div>
     </div>
+
+    {/* Auto-group panel: tag chips + domain/upstream/status selects. */}
+    <ProxyHostGroupFilter groups={groups} filter={filter} onChange={onFilterChange} />
+    </>
   );
 }

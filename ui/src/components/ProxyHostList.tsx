@@ -1,9 +1,10 @@
-import { useCallback, useState, useEffect } from 'react'
+import { useCallback, useMemo, useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { fetchProxyHosts, deleteProxyHost, testProxyHost, updateProxyHost, testProxyHostConfig, cloneProxyHost, toggleProxyHostFavorite } from '../api/proxy-hosts'
+import { useSearchParams } from 'react-router-dom'
+import { fetchProxyHosts, fetchProxyHostGroups, deleteProxyHost, testProxyHost, updateProxyHost, testProxyHostConfig, cloneProxyHost, toggleProxyHostFavorite } from '../api/proxy-hosts'
 import { getCertificate } from '../api/certificates'
-import type { ProxyHost } from '../types/proxy-host'
+import type { ProxyHost, ProxyHostListFilter } from '../types/proxy-host'
 import type { ProxyHostTestResult } from '../types/proxy-host'
 import type { TabType } from './proxy-host/types'
 import { TestResultModal } from './proxy-host-list/TestResultModal'
@@ -75,9 +76,55 @@ export function ProxyHostList({ onEdit, onAdd }: ProxyHostListProps) {
     return (saved as SortOrder) || 'asc'
   })
 
+  // Filter state lives in the URL so a reload, a bookmark and back/forward all
+  // keep the view the operator was looking at.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const filter = useMemo<ProxyHostListFilter>(() => {
+    const tags = searchParams.getAll('tag')
+    const enabled = searchParams.get('enabled')
+    return {
+      tags: tags.length ? tags : undefined,
+      domain: searchParams.get('domain') ?? undefined,
+      upstream: searchParams.get('upstream') ?? undefined,
+      enabled: enabled === null ? undefined : enabled === 'true',
+    }
+  }, [searchParams])
+
+  // Rewrites only the filter params, so an unrelated query param survives.
+  // Any filter change goes back to page 1 — page 3 of the unfiltered list is
+  // almost always empty once a filter narrows the result.
+  const setFilter = useCallback((next: ProxyHostListFilter) => {
+    const p = new URLSearchParams(searchParams)
+    p.delete('tag')
+    p.delete('domain')
+    p.delete('upstream')
+    p.delete('enabled')
+    for (const tag of next.tags ?? []) p.append('tag', tag)
+    if (next.domain) p.set('domain', next.domain)
+    if (next.upstream) p.set('upstream', next.upstream)
+    if (next.enabled !== undefined) p.set('enabled', String(next.enabled))
+    setSearchParams(p, { replace: true })
+    setCurrentPage(1)
+  }, [searchParams, setSearchParams])
+
+  // Stable identity keeps the memoized rows from re-rendering on every parent
+  // render; it only changes when the filter itself does.
+  const addTagFilter = useCallback((tag: string) => {
+    const tags = filter.tags ?? []
+    if (!tags.includes(tag)) setFilter({ ...filter, tags: [...tags, tag] })
+  }, [filter, setFilter])
+
+  // Buckets behind the filter panel. Shares its key with the form's suggestion
+  // list, so both read one cache entry.
+  const { data: groups } = useQuery({
+    queryKey: ['proxy-host-groups'],
+    queryFn: fetchProxyHostGroups,
+    staleTime: 30_000,
+  })
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['proxy-hosts', currentPage, perPage, searchQuery, sortBy, sortOrder],
-    queryFn: () => fetchProxyHosts(currentPage, perPage, searchQuery, sortBy, sortOrder),
+    queryKey: ['proxy-hosts', currentPage, perPage, searchQuery, sortBy, sortOrder, filter],
+    queryFn: () => fetchProxyHosts(currentPage, perPage, searchQuery, sortBy, sortOrder, filter),
   })
 
   // Only used to tell whether the host's DDNS provider supports deleting a
@@ -95,6 +142,7 @@ export function ProxyHostList({ onEdit, onAdd }: ProxyHostListProps) {
       deleteProxyHost(id, ddnsRemoveProvider),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['proxy-hosts'] })
+      queryClient.invalidateQueries({ queryKey: ['proxy-host-groups'] })
     },
   })
 
@@ -103,6 +151,7 @@ export function ProxyHostList({ onEdit, onAdd }: ProxyHostListProps) {
       updateProxyHost(id, { enabled }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['proxy-hosts'] })
+      queryClient.invalidateQueries({ queryKey: ['proxy-host-groups'] })
     },
   })
 
@@ -110,6 +159,7 @@ export function ProxyHostList({ onEdit, onAdd }: ProxyHostListProps) {
     mutationFn: toggleProxyHostFavorite,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['proxy-hosts'] })
+      queryClient.invalidateQueries({ queryKey: ['proxy-host-groups'] })
     },
   })
 
@@ -146,6 +196,7 @@ export function ProxyHostList({ onEdit, onAdd }: ProxyHostListProps) {
       }).then(result => ({ ...result, isCreatingCert: params.isCreatingCert })),
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['proxy-hosts'] })
+      queryClient.invalidateQueries({ queryKey: ['proxy-host-groups'] })
       queryClient.invalidateQueries({ queryKey: ['certificates'] })
 
       // If creating new certificate, wait for it to complete
@@ -161,6 +212,7 @@ export function ProxyHostList({ onEdit, onAdd }: ProxyHostListProps) {
         if (success) {
           setCloneCertSuccess(true)
           queryClient.invalidateQueries({ queryKey: ['proxy-hosts'] })
+          queryClient.invalidateQueries({ queryKey: ['proxy-host-groups'] })
           queryClient.invalidateQueries({ queryKey: ['certificates'] })
           // Auto-close modal after 1.5 seconds on success
           setTimeout(() => resetCloneState(), 1500)
@@ -308,8 +360,11 @@ export function ProxyHostList({ onEdit, onAdd }: ProxyHostListProps) {
     handleTestConfig(testingHost)
   }
 
-  // Hosts are now sorted server-side
+  // Hosts are now sorted server-side. `data` is null (not []) when nothing
+  // matches, which a filter makes a routine state — keep the `|| []`.
   const hosts = data?.data || []
+  const hasFilter =
+    (filter.tags?.length ?? 0) > 0 || !!filter.domain || !!filter.upstream || filter.enabled !== undefined
 
   // Handle search input change (debounced via useEffect)
   const handleSearchChange = (value: string) => {
@@ -369,13 +424,16 @@ export function ProxyHostList({ onEdit, onAdd }: ProxyHostListProps) {
         sortOrder={sortOrder}
         onSortChange={handleSortChange}
         onAdd={onAdd}
+        groups={groups}
+        filter={filter}
+        onFilterChange={setFilter}
       />
 
       {hosts.length === 0 ? (
         <EmptyState
           icon={
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {searchInput ? (
+              {searchInput || hasFilter ? (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               ) : (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
@@ -384,19 +442,30 @@ export function ProxyHostList({ onEdit, onAdd }: ProxyHostListProps) {
           }
         >
           <span className="block font-medium text-slate-600 dark:text-slate-300">
-            {searchInput ? t('list.noResults') : t('list.empty')}
+            {searchInput ? t('list.noResults') : hasFilter ? t('list.groups.noMatch') : t('list.empty')}
           </span>
           <span className="mt-1 block text-slate-400">
-            {searchInput ? t('list.noResultsDescription', { query: searchInput }) : t('list.emptyDescription')}
+            {searchInput
+              ? t('list.noResultsDescription', { query: searchInput })
+              : hasFilter
+                ? t('list.groups.noMatchDescription')
+                : t('list.emptyDescription')}
           </span>
-          {searchInput && (
+          {searchInput ? (
             <button
               onClick={handleClearSearch}
               className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
             >
               {t('list.clearSearch')}
             </button>
-          )}
+          ) : hasFilter ? (
+            <button
+              onClick={() => setFilter({})}
+              className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+            >
+              {t('list.groups.clear')}
+            </button>
+          ) : null}
         </EmptyState>
       ) : (
         <ProxyHostTable
@@ -409,6 +478,7 @@ export function ProxyHostList({ onEdit, onAdd }: ProxyHostListProps) {
           onTestConfig={handleTestConfig}
           onCheckHealth={checkHealth}
           onFavorite={handleFavorite}
+          onTagClick={addTagFilter}
           togglePending={toggleMutation.isPending}
         />
       )}

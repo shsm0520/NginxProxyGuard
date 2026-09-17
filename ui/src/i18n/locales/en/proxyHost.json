@@ -29,6 +29,19 @@
       "ssl": "SSL Enabled",
       "waf": "WAF Enabled"
     },
+    "groups": {
+      "tags": "Tags",
+      "domain": "Domain",
+      "upstream": "Upstream",
+      "status": "Status",
+      "any": "any",
+      "clear": "Clear filters",
+      "noMatch": "No hosts match these filters",
+      "noMatchDescription": "Remove a tag or widen the domain, upstream or status filter."
+    },
+    "tags": {
+      "filterBy": "Filter by tag {{tag}}"
+    },
     "columns": {
       "domain": "Domain",
       "target": "Target",

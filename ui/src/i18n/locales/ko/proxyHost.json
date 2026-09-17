@@ -29,6 +29,19 @@
       "ssl": "SSL 활성화",
       "waf": "WAF 활성화"
     },
+    "groups": {
+      "tags": "태그",
+      "domain": "도메인",
+      "upstream": "업스트림",
+      "status": "상태",
+      "any": "전체",
+      "clear": "필터 지우기",
+      "noMatch": "필터와 일치하는 호스트가 없습니다",
+      "noMatchDescription": "태그를 빼거나 도메인·업스트림·상태 필터를 넓혀 보세요."
+    },
+    "tags": {
+      "filterBy": "{{tag}} 태그로 필터"
+    },
     "columns": {
       "domain": "도메인",
       "target": "대상",

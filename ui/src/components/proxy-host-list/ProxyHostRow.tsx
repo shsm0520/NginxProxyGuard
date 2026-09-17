@@ -23,6 +23,7 @@ interface ProxyHostRowProps {
   onTestConfig: (host: ProxyHost) => void;
   onCheckHealth: (hostId: string) => void;
   onFavorite: (hostId: string) => void;
+  onTagClick: (tag: string) => void;
 }
 
 function getDomainUrl(domain: string, sslEnabled: boolean) {
@@ -33,6 +34,11 @@ function getDomainUrl(domain: string, sslEnabled: boolean) {
 // front a dozen+ subdomains) doesn't tower the row and break the table's
 // vertical rhythm. Mirrors the +N more / collapse toggle used on cert cards.
 const MAX_VISIBLE_DOMAINS = 3;
+
+// Same reason as the domain cap: a host may carry up to ten tags, and an
+// uncapped list inside a table cell breaks the row's rhythm. Three chips plus
+// a +N counter that spells the rest out in its tooltip.
+const MAX_VISIBLE_TAGS = 3;
 
 function isStreamHost(host: ProxyHost) {
   return host.proxy_type === 'stream';
@@ -74,6 +80,7 @@ function ProxyHostRowImpl({
   onTestConfig,
   onCheckHealth,
   onFavorite,
+  onTagClick,
 }: ProxyHostRowProps) {
   const { t } = useTranslation(['proxyHost', 'common']);
   // Write affordances follow the role, so a read-only user is not offered actions
@@ -96,6 +103,32 @@ function ProxyHostRowImpl({
     >
       {domainsExpanded ? t('list.domainsCollapse') : t('list.domainsMore', { count: hiddenDomainCount })}
     </button>
+  );
+
+  // Rendered under the domains in both the stream and the HTTP branch.
+  const tags = host.tags ?? [];
+  const tagChips = tags.length > 0 && (
+    <div className="flex flex-wrap gap-1 mt-1" data-testid="row-tags">
+      {tags.slice(0, MAX_VISIBLE_TAGS).map((tag) => (
+        <button
+          key={tag}
+          type="button"
+          onClick={() => onTagClick(tag)}
+          title={t('list.tags.filterBy', { tag })}
+          className="rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-primary-100 hover:text-primary-700 dark:hover:bg-primary-900/40 dark:hover:text-primary-300"
+        >
+          {tag}
+        </button>
+      ))}
+      {tags.length > MAX_VISIBLE_TAGS && (
+        <span
+          className="px-1 text-[11px] text-slate-500 dark:text-slate-400"
+          title={tags.slice(MAX_VISIBLE_TAGS).join(', ')}
+        >
+          +{tags.length - MAX_VISIBLE_TAGS}
+        </span>
+      )}
+    </div>
   );
 
   return (
@@ -130,6 +163,7 @@ function ProxyHostRowImpl({
                 ))}
               </div>
               {domainToggle}
+              {tagChips}
             </div>
           ) : (
             <div className="flex flex-col gap-1">
@@ -153,6 +187,7 @@ function ProxyHostRowImpl({
                 </a>
               ))}
               {domainToggle}
+              {tagChips}
             </div>
           )}
         </div>
