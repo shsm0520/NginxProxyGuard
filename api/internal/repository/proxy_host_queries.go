@@ -35,7 +35,9 @@ func (r *ProxyHostRepository) List(ctx context.Context, page, perPage int, searc
 		args = append(args, pq.Array(filter.Tags))
 	}
 	if filter.Domain != "" {
-		conds = append(conds, fmt.Sprintf(`regexp_replace(domain_names[1], '^[^.]+\.', '') = $%d`, len(args)+1))
+		// Same bucket expression the /groups aggregate uses, so clicking a
+		// group cannot return zero rows.
+		conds = append(conds, fmt.Sprintf(`%s = $%d`, proxyHostDomainBucketExpr, len(args)+1))
 		args = append(args, filter.Domain)
 	}
 	if filter.Upstream != "" {

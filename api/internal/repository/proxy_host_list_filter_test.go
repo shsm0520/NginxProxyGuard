@@ -17,7 +17,9 @@ func TestListFilterBuildsAndedPredicates(t *testing.T) {
 
 	// Count and data queries share the WHERE; both must carry every predicate,
 	// numbered in argument order after the search placeholder.
-	where := regexp.QuoteMeta(`WHERE (array_to_string(domain_names, ',') ILIKE $1 OR forward_host ILIKE $1) AND tags @> $2::text[] AND regexp_replace(domain_names[1], '^[^.]+\.', '') = $3 AND forward_host = $4 AND enabled = $5`)
+	// The domain predicate is the shared bucket expression, so the expectation
+	// is built from the constant rather than a second copy of the SQL.
+	where := regexp.QuoteMeta(`WHERE (array_to_string(domain_names, ',') ILIKE $1 OR forward_host ILIKE $1) AND tags @> $2::text[] AND `+proxyHostDomainBucketExpr+` = $3 AND forward_host = $4 AND enabled = $5`)
 	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM proxy_hosts `+where).
 		WithArgs("%web%", sqlmock.AnyArg(), "example.com", "192.0.2.9", true).
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
@@ -50,7 +52,7 @@ func TestGroupsRunsFourAggregatesAndNeverReturnsNilSlices(t *testing.T) {
 	repo, mock := newMockProxyHostRepo(t)
 	mock.ExpectQuery(`SELECT t, COUNT\(\*\) FROM proxy_hosts, unnest\(tags\) AS t GROUP BY t ORDER BY 2 DESC, 1 ASC`).
 		WillReturnRows(sqlmock.NewRows([]string{"t", "count"}).AddRow("media", 4).AddRow("family", 2))
-	mock.ExpectQuery(`SELECT regexp_replace\(domain_names\[1\], '\^\[\^\.\]\+\\\.', ''\), COUNT\(\*\) FROM proxy_hosts GROUP BY 1 ORDER BY 2 DESC, 1 ASC`).
+	mock.ExpectQuery(regexp.QuoteMeta(proxyHostDomainGroupQuery)).
 		WillReturnRows(sqlmock.NewRows([]string{"d", "count"}).AddRow("example.com", 6))
 	mock.ExpectQuery(`SELECT forward_host, COUNT\(\*\) FROM proxy_hosts GROUP BY 1 ORDER BY 2 DESC, 1 ASC`).
 		WillReturnRows(sqlmock.NewRows([]string{"u", "count"}))
