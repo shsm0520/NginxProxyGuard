@@ -1182,7 +1182,8 @@
       "restoreFailed": "Restore failed: {{error}}",
       "uploadSuccess": "Backup uploaded and restored successfully! Please refresh the page to see updated configurations.",
       "uploadFailed": "Upload and restore failed: {{error}}",
-      "invalidFormat": "Invalid file format. Please select a .tar.gz backup file."
+      "invalidFormat": "Invalid file format. Please select a .tar.gz backup file.",
+      "uploadTooLarge": "The backup archive is larger than the upload limit (about 100 MB). Restore it by placing the archive in the backup volume, or split the data and restore in parts."
     },
     "progress": {
       "title": "Creating Backup",

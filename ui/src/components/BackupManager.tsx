@@ -8,6 +8,7 @@ import {
   restoreBackup,
   getBackupStats,
   uploadAndRestoreBackup,
+  UploadRestoreError,
   getSystemSettings,
   updateSystemSettings,
 } from '../api/settings';
@@ -143,6 +144,12 @@ export default function BackupManager() {
       showActionMessage('success', t('backupManager.messages.uploadSuccess'));
     },
     onError: (error: Error) => {
+      // nginx rejects an oversized archive with 413 before the API sees it, so the
+      // generic failure text told the operator nothing about what to do (#303).
+      if (error instanceof UploadRestoreError && error.status === 413) {
+        showActionMessage('error', t('backupManager.messages.uploadTooLarge'));
+        return;
+      }
       showActionMessage('error', t('backupManager.messages.uploadFailed', { error: error.message }));
     },
   });

@@ -204,6 +204,19 @@ export async function downloadBackup(id: string, filename: string): Promise<void
   document.body.removeChild(a);
 }
 
+// nginx answers 413 before the request reaches the API, so the caller cannot tell an
+// upload-size rejection from a server error by the message alone. Carrying the status
+// lets the component pick a translated explanation. (#303)
+export class UploadRestoreError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'UploadRestoreError';
+    this.status = status;
+  }
+}
+
 export async function uploadAndRestoreBackup(file: File): Promise<{ status: string; message: string; backup: Backup }> {
   const formData = new FormData();
   formData.append('backup', file);
@@ -219,13 +232,11 @@ export async function uploadAndRestoreBackup(file: File): Promise<{ status: stri
   if (!res.ok) {
     // A 413 is produced by nginx, not the API, so the body is an HTML error page and
     // res.json() rejects. Falling back to a bare string hid the real cause (#303) —
-    // always carry the status, and name the upload limit when that is what was hit.
-    const fallback =
-      res.status === 413
-        ? 'Backup archive is too large to upload (HTTP 413). The upload limit is 100 MB.'
-        : `Failed to upload and restore backup (HTTP ${res.status})`;
+    // carry the status so the caller can say what actually happened. This layer is a
+    // plain fetch wrapper with no i18n, so the wording stays with the component.
+    const fallback = `Failed to upload and restore backup (HTTP ${res.status})`;
     const error = await res.json().catch(() => ({ error: fallback }));
-    throw new Error(error.details || error.error || fallback);
+    throw new UploadRestoreError(error.details || error.error || fallback, res.status);
   }
   return res.json();
 }

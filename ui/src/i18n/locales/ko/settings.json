@@ -1186,7 +1186,8 @@
       "restoreFailed": "복원 실패: {{error}}",
       "uploadSuccess": "백업이 업로드되고 복원되었습니다! 페이지를 새로고침하여 업데이트된 설정을 확인하세요.",
       "uploadFailed": "업로드 및 복원 실패: {{error}}",
-      "invalidFormat": "잘못된 파일 형식입니다. .tar.gz 백업 파일을 선택하세요."
+      "invalidFormat": "잘못된 파일 형식입니다. .tar.gz 백업 파일을 선택하세요.",
+      "uploadTooLarge": "백업 파일이 업로드 한도(약 100MB)보다 큽니다. 백업 볼륨에 파일을 직접 넣어 복원하거나, 데이터를 나눠 복원해 주세요."
     },
     "progress": {
       "title": "백업 생성 중",

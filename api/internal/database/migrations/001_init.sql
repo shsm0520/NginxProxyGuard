@@ -4497,3 +4497,14 @@ ALTER TABLE public.cloudflare_tunnel ADD COLUMN IF NOT EXISTS catchall_applied_s
 -- Executable copy lives in database/migration.go `upgrades` (two entries).
 ALTER TABLE public.proxy_hosts ADD COLUMN IF NOT EXISTS tags text[] DEFAULT '{}'::text[] NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_proxy_hosts_tags ON public.proxy_hosts USING gin (tags);
+
+-- v2.57.0: logs_partitioned.rule_id — DOCUMENTATION ONLY, deliberately NOT executable.
+-- 001_init.sql above declares rule_id bigint. database/migration.go's hardcoded
+-- `CREATE TABLE IF NOT EXISTS logs_hypertable` used to declare `integer`, and that
+-- function rebuilds the table and RENAMEs it over logs_partitioned on FRESH installs,
+-- so every install created before this fix is stuck on int4 (#297). The declaration is
+-- now bigint, which repairs new installs.
+-- Existing installs are knowingly left on integer: widening it is a full table rewrite
+-- that requires decompressing every chunk first (~12.5x expansion), for a column whose
+-- reachable values (CRS rule ids) have roughly 215x headroom. Revisit only if a rule id
+-- can ever exceed 2147483647.
