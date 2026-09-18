@@ -13154,6 +13154,7 @@ components:
           type: boolean
         allow_jit:
           type: boolean
+          description: Create an NPG account on first successful sign-in. Requires at least one allowlist entry (allowed_emails, allowed_email_domains or required_group) and a default_role_id — an IdP such as Google authenticates every account on earth, so unrestricted provisioning would publish the panel.
         trust_provider_email:
           type: boolean
           default: false
@@ -13166,7 +13167,6 @@ components:
             link. Enabling it means you vouch for the provider's addresses:
             anyone able to set an arbitrary email address there can sign in as
             the NPG account holding it.
-          description: Create an NPG account on first successful sign-in. Requires at least one allowlist entry (allowed_emails, allowed_email_domains or required_group) and a default_role_id — an IdP such as Google authenticates every account on earth, so unrestricted provisioning would publish the panel.
         allowed_email_domains:
           type: array
           description: Bare domains, lower-cased, without a leading '@'. Combined with allowed_emails as OR.
@@ -13246,6 +13246,7 @@ components:
           description: Omitting this field means TRUE, on update as well as create — send `false` explicitly to keep a provider disabled.
         allow_jit:
           type: boolean
+          description: Automatic account creation on first sign-in. Rejected unless at least one of allowed_emails / allowed_email_domains / required_group is set AND default_role_id is set.
         trust_provider_email:
           type: boolean
           default: false
@@ -13258,7 +13259,6 @@ components:
             link. Enabling it means you vouch for the provider's addresses:
             anyone able to set an arbitrary email address there can sign in as
             the NPG account holding it.
-          description: Automatic account creation on first sign-in. Rejected unless at least one of allowed_emails / allowed_email_domains / required_group is set AND default_role_id is set.
         allowed_email_domains:
           type: array
           description: Bare domains such as example.com. Lower-cased and de-duplicated; a leading '@' is stripped. An entry containing '@' or lacking a dot is rejected.
