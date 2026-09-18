@@ -217,8 +217,15 @@ export async function uploadAndRestoreBackup(file: File): Promise<{ status: stri
     body: formData,
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: 'Failed to upload and restore backup' }));
-    throw new Error(error.details || error.error || 'Failed to upload and restore backup');
+    // A 413 is produced by nginx, not the API, so the body is an HTML error page and
+    // res.json() rejects. Falling back to a bare string hid the real cause (#303) —
+    // always carry the status, and name the upload limit when that is what was hit.
+    const fallback =
+      res.status === 413
+        ? 'Backup archive is too large to upload (HTTP 413). The upload limit is 100 MB.'
+        : `Failed to upload and restore backup (HTTP ${res.status})`;
+    const error = await res.json().catch(() => ({ error: fallback }));
+    throw new Error(error.details || error.error || fallback);
   }
   return res.json();
 }
