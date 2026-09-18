@@ -1776,7 +1776,11 @@ func (db *DB) migrateToTimescaleDB() {
 			http_x_forwarded_for text,
 			severity log_severity,
 			error_message text,
-			rule_id integer,
+			-- bigint, not integer: ModSecurity rule ids exceed int4 (2147483647),
+			-- 001_init.sql declares logs_partitioned.rule_id bigint, and this table
+			-- is renamed over it on fresh installs — a narrower type here would
+			-- stick forever, since ADD COLUMN IF NOT EXISTS never repairs a type (#297)
+			rule_id bigint,
 			rule_message text,
 			rule_severity text,
 			rule_data text,
