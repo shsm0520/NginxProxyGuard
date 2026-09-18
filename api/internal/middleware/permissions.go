@@ -71,6 +71,11 @@ var PublicRoutes = map[string]bool{
 	// short-lived signed URL) and is deferred out of increment 1.
 	"GET /api/docs":              true,
 	"GET /api/docs/swagger.yaml": true,
+	// swagger-ui's own css/js, vendored into the API binary instead of pulled
+	// from a CDN. They share the page's footing by necessity: the browser
+	// fetches them as subresources of a navigation that carries no token, so
+	// gating them renders /api/docs blank for everyone.
+	"GET /api/docs/assets/:version/:file": true,
 
 	// Login flow — no session exists yet.
 	"POST /api/v1/auth/login":      true,

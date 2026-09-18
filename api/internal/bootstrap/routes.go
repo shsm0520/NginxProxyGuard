@@ -67,12 +67,18 @@ func RegisterMiddleware(e *echo.Echo, cfg *config.Config) {
 		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
 	}))
 
+	// The only third-party origins in the policy below belong to the CAPTCHA
+	// challenge (Cloudflare Turnstile / Google reCAPTCHA). unpkg.com and
+	// validator.swagger.io used to be there for /api/docs: swagger-ui-dist is
+	// vendored into the binary now (handler/swaggerui) and the online validator
+	// badge is switched off in swagger_ui.html, so the docs need no off-box origin
+	// at all. Re-adding one means the docs stopped being self-hosted.
 	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
 		XSSProtection:         "1; mode=block",
 		ContentTypeNosniff:    "nosniff",
 		XFrameOptions:         "SAMEORIGIN",
 		HSTSMaxAge:            config.HSTSMaxAge,
-		ContentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.google.com https://www.gstatic.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https://validator.swagger.io; connect-src 'self' https://unpkg.com; frame-src https://challenges.cloudflare.com https://www.google.com",
+		ContentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src https://challenges.cloudflare.com https://www.google.com",
 		ReferrerPolicy:        "strict-origin-when-cross-origin",
 	}))
 
@@ -211,6 +217,11 @@ func registerHealth(e *echo.Echo, c *Container) {
 func registerSwagger(e *echo.Echo, swagger *handler.SwaggerHandler) {
 	e.GET("/api/docs", swagger.ServeUI)
 	e.GET("/api/docs/swagger.yaml", swagger.ServeSpec)
+	// swagger-ui's css/js, embedded in the binary instead of loaded from unpkg.
+	// Same public footing as the page itself — a browser navigation to /api/docs
+	// carries no Authorization header, so gating the assets would blank the page
+	// for everyone (see PublicRoutes in middleware/permissions.go).
+	e.GET(handler.SwaggerAssetsRoute, swagger.ServeAsset)
 }
 
 func registerPublicRoutes(v1 *echo.Group, c *Container) {

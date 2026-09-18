@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nginx Proxy Guard API Documentation</title>
-    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui.css" />
+    <!-- swagger-ui-dist 5.10.3, vendored into the API binary (handler/swaggerui) and
+         served by the API itself: these used to come from unpkg.com, which left the docs
+         blank on any install without egress to a CDN. The version in these three paths
+         must match SwaggerUIDistVersion in handler/swagger.go — swagger_ui_assets_test.go
+         fails if they drift. -->
+    <link rel="stylesheet" href="/api/docs/assets/5.10.3/swagger-ui.css" />
     <style>
         body {
             margin: 0;
@@ -78,14 +83,20 @@
         </div>
     </div>
     <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js"></script>
-    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-standalone-preset.js"></script>
+    <script src="/api/docs/assets/5.10.3/swagger-ui-bundle.js"></script>
+    <script src="/api/docs/assets/5.10.3/swagger-ui-standalone-preset.js"></script>
     <script>
         window.onload = function() {
             SwaggerUIBundle({
                 url: "/api/docs/swagger.yaml",
                 dom_id: '#swagger-ui',
                 deepLinking: true,
+                // Swagger UI defaults validatorUrl to
+                // https://validator.swagger.io/validator, which renders a badge from an
+                // <img> carrying this install's spec URL to a third party. Disabled so the
+                // page makes no off-box request at all, and so that origin can leave
+                // the API's img-src.
+                validatorUrl: null,
                 presets: [
                     SwaggerUIBundle.presets.apis,
                     SwaggerUIStandalonePreset

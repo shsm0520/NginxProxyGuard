@@ -45,6 +45,15 @@ Nginx Proxy Guard uses the following third-party software:
 - **Website**: https://github.com/maxmind/geoipupdate
 - **Note**: Bundled in the nginx image to refresh the GeoLite2 databases.
 
+### Swagger UI (swagger-ui-dist)
+- **License**: Apache License 2.0
+- **Website**: https://github.com/swagger-api/swagger-ui
+- **Copyright**: (C) SmartBear Software
+- **Note**: `swagger-ui.css`, `swagger-ui-bundle.js` and `swagger-ui-standalone-preset.js` from
+  swagger-ui-dist 5.10.3 are vendored into the api image (`api/internal/handler/swaggerui/`) and
+  served by the API, so `/api/docs` renders on installs with no internet egress. The pinned
+  version lives in `SwaggerUIDistVersion` (`api/internal/handler/swagger.go`).
+
 ## Backend (Go) Dependencies
 
 | Package | License | Website |
@@ -105,6 +114,7 @@ The following components are licensed under the Apache License 2.0:
 - ModSecurity-nginx (Copyright 2015-2024 Trustwave Holdings, Inc.)
 - cloudflared (Cloudflare, Inc.)
 - geoipupdate (MaxMind, Inc.)
+- Swagger UI / swagger-ui-dist (SmartBear Software)
 - github.com/coreos/go-oidc (CoreOS and go-oidc contributors)
 - github.com/prometheus/client_golang (The Prometheus Authors)
 
