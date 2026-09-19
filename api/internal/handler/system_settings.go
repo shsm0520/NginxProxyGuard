@@ -134,7 +134,7 @@ func trimInvalidInputPrefix(err error) string {
 func (h *SystemSettingsHandler) UpdateSystemSettings(c echo.Context) error {
 	var req model.UpdateSystemSettingsRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return badRequestError(c, err.Error())
 	}
 
 	// Raw log storage is mandatory since v2.17.1 — LogCollector depends on it

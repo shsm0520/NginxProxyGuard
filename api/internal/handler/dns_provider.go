@@ -156,7 +156,7 @@ func (h *DNSProviderHandler) Test(c echo.Context) error {
 	err := h.service.TestConnection(c.Request().Context(), &req)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"error":   err.Error(),
+			"error":   scrubbedClientText(err.Error()),
 			"success": false,
 		})
 	}

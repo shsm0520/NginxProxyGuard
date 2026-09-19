@@ -32,22 +32,22 @@ func classifyAdminError(c echo.Context, action string, err error) error {
 		errors.Is(err, service.ErrBuiltinRole),
 		errors.Is(err, service.ErrRoleInUse),
 		errors.Is(err, repository.ErrEmailTaken):
-		return c.JSON(http.StatusConflict, map[string]string{"error": err.Error()})
+		return conflictError(c, err.Error())
 	case errors.Is(err, service.ErrUnknownRole), errors.Is(err, sql.ErrNoRows):
-		return c.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
+		return c.JSON(http.StatusNotFound, map[string]string{"error": scrubbedClientText(err.Error())})
 	case errors.Is(err, service.ErrInvalidPerm),
 		errors.Is(err, service.ErrInvalidRoleName),
 		errors.Is(err, service.ErrInvalidUsername),
 		errors.Is(err, service.ErrWeakPassword):
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return badRequestError(c, err.Error())
 	}
 	// NormalizeEmail explains what is wrong with the address; that belongs in
 	// front of the operator as a 400, not buried in a 500. (#240)
 	if strings.HasPrefix(err.Error(), "invalid email address") {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return badRequestError(c, err.Error())
 	}
 	if err.Error() == "role name already exists" || err.Error() == "username already exists" {
-		return c.JSON(http.StatusConflict, map[string]string{"error": err.Error()})
+		return conflictError(c, err.Error())
 	}
 	return internalError(c, action, err)
 }

@@ -63,7 +63,7 @@ func (h *SettingsHandler) GetGlobalSettings(c echo.Context) error {
 func (h *SettingsHandler) UpdateGlobalSettings(c echo.Context) error {
 	var req model.UpdateGlobalSettingsRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return badRequestError(c, err.Error())
 	}
 
 	settings, err := h.settingsService.UpdateGlobalSettings(c.Request().Context(), &req)

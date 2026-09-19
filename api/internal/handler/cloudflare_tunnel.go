@@ -49,7 +49,7 @@ func (h *CloudflareTunnelHandler) Update(c echo.Context) error {
 			return badRequestError(c, err.Error())
 		}
 		if errors.Is(err, service.ErrCFUnreachable) {
-			return c.JSON(http.StatusBadGateway, map[string]string{"error": err.Error()})
+			return c.JSON(http.StatusBadGateway, map[string]string{"error": scrubbedClientText(err.Error())})
 		}
 		return internalError(c, "update cloudflare tunnel settings", err)
 	}

@@ -152,9 +152,7 @@ func (h *CertificateHandler) UpdateUpload(c echo.Context) error {
 	cert, err := h.service.UpdateCustom(c.Request().Context(), id, &req)
 	if err != nil {
 		if errors.Is(err, model.ErrCustomCertOnly) {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"error": err.Error(),
-			})
+			return badRequestError(c, err.Error())
 		}
 		if strings.Contains(err.Error(), "invalid certificate") {
 			return badRequestError(c, err.Error())

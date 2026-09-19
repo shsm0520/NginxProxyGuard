@@ -187,7 +187,7 @@ func (h *HealthDetailedHandler) dbInfo(ctx context.Context) *detailedDatabaseInf
 
 	hyper, err := h.repo.GetHypertableStats(ctx)
 	if err != nil {
-		info.HypertablesError = err.Error()
+		info.HypertablesError = scrubbedClientText(err.Error())
 	} else {
 		info.Hypertables = hyper
 	}

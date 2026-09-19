@@ -232,9 +232,7 @@ func (h *AuthHandler) ChangeCredentials(c echo.Context) error {
 	}
 
 	if err := ValidatePasswordStrength(req.NewPassword); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": err.Error(),
-		})
+		return badRequestError(c, err.Error())
 	}
 
 	if req.NewPassword != req.NewPasswordConfirm {
@@ -289,9 +287,7 @@ func (h *AuthHandler) ChangePassword(c echo.Context) error {
 	}
 
 	if err := ValidatePasswordStrength(req.NewPassword); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": err.Error(),
-		})
+		return badRequestError(c, err.Error())
 	}
 
 	if req.NewPassword != req.NewPasswordConfirm {
@@ -473,9 +469,7 @@ func (h *AuthHandler) ChangeUsername(c echo.Context) error {
 				"error": "Username is already taken",
 			})
 		default:
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"error": err.Error(),
-			})
+			return badRequestError(c, err.Error())
 		}
 	}
 

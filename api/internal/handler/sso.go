@@ -279,9 +279,9 @@ func classifySSOError(c echo.Context, err error) error {
 	msg := err.Error()
 	switch {
 	case strings.Contains(msg, "already exists"):
-		return c.JSON(http.StatusConflict, map[string]string{"error": msg})
+		return conflictError(c, msg)
 	case strings.HasPrefix(msg, "invalid"), strings.Contains(msg, "does not exist"):
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": msg})
+		return badRequestError(c, msg)
 	}
 	return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Operation failed"})
 }

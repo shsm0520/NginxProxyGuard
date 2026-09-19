@@ -329,7 +329,7 @@ func (h *SystemSettingsHandler) UpdateSystemLogConfig(c echo.Context) error {
 
 	var config service.SystemLogConfig
 	if err := c.Bind(&config); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return badRequestError(c, err.Error())
 	}
 
 	if err := h.dockerLogCollector.UpdateConfig(config); err != nil {

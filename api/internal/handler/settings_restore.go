@@ -41,7 +41,7 @@ func (h *SettingsHandler) RestoreBackup(c echo.Context) error {
 		// Critical failure - return error response with partial result if available
 		response := map[string]interface{}{
 			"error":   "restore failed",
-			"details": err.Error(),
+			"details": scrubbedClientText(err.Error()),
 		}
 		if result != nil {
 			response["result"] = result
@@ -80,21 +80,21 @@ func (h *SettingsHandler) performRestore(ctx context.Context, backup *model.Back
 	if backup.IncludesDatabase {
 		data, err := h.extractExportJSON(backup.FilePath)
 		if err != nil {
-			result.DatabaseError = err.Error()
+			result.DatabaseError = scrubbedClientText(err.Error())
 			result.DetermineStatus()
 			return result, fmt.Errorf("failed to read export.json: %w", err)
 		}
 		if data != nil {
 			exportData = &model.ExportData{}
 			if err := json.Unmarshal(data, exportData); err != nil {
-				result.DatabaseError = err.Error()
+				result.DatabaseError = scrubbedClientText(err.Error())
 				result.DetermineStatus()
 				return result, fmt.Errorf("failed to parse export.json: %w", err)
 			}
 			// Import database data first - if this fails, no files are touched
 			certIDMap, err = h.backupRepo.ImportAllData(ctx, exportData)
 			if err != nil {
-				result.DatabaseError = err.Error()
+				result.DatabaseError = scrubbedClientText(err.Error())
 				result.DetermineStatus()
 				return result, fmt.Errorf("failed to import database data: %w", err)
 			}
@@ -427,7 +427,7 @@ func (h *SettingsHandler) UploadAndRestoreBackup(c echo.Context) error {
 	if err != nil {
 		response := map[string]interface{}{
 			"error":   "restore failed",
-			"details": err.Error(),
+			"details": scrubbedClientText(err.Error()),
 		}
 		if result != nil {
 			response["result"] = result

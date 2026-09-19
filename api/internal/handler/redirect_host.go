@@ -51,7 +51,7 @@ func (h *RedirectHostHandler) Create(c echo.Context) error {
 	}
 
 	if err := req.Validate(); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return badRequestError(c, err.Error())
 	}
 
 	host, err := h.repo.Create(c.Request().Context(), &req)
@@ -98,7 +98,7 @@ func (h *RedirectHostHandler) Update(c echo.Context) error {
 	// the panel, so the merged validation below decides instead; it still
 	// rejects every actual edit, now as a 400 that names the field.
 	if err := req.Validate(); err != nil && !req.DisablesHost() {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return badRequestError(c, err.Error())
 	}
 
 	host, err := h.repo.Update(c.Request().Context(), id, &req)

@@ -180,7 +180,7 @@ func (h *NotificationHandler) Test(c echo.Context) error {
 	}
 	_ = c.Bind(&req) // an empty body means the generic test
 	if err := h.dispatcher.SendTest(ctx, ch, req.Event); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return badRequestError(c, err.Error())
 	}
 	return c.JSON(http.StatusOK, map[string]string{"status": "sent"})
 }
@@ -218,7 +218,7 @@ func (h *NotificationHandler) DetectTelegramChats(c echo.Context) error {
 	}
 	chats, err := service.DetectTelegramChats(c.Request().Context(), req.BotToken)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return badRequestError(c, err.Error())
 	}
 	return c.JSON(http.StatusOK, map[string]any{"data": chats})
 }
@@ -230,14 +230,14 @@ func classifyNotificationError(c echo.Context, err error) error {
 	msg := err.Error()
 	switch {
 	case strings.Contains(msg, "already exists"):
-		return c.JSON(http.StatusConflict, map[string]string{"error": msg})
+		return conflictError(c, msg)
 	case strings.HasPrefix(msg, "invalid"):
 		// The code lets the panel show its own wording. The message itself is
 		// aimed at API clients — it names JSON fields the UI labels differently
 		// and is only ever English — so a Korean operator saw
 		// "invalid chat_id: required" in an otherwise translated form.
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": msg,
+			"error": scrubbedClientText(msg),
 			"code":  validationCode(msg),
 		})
 	}

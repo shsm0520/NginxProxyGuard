@@ -46,7 +46,7 @@ func (h *SettingsHandler) ListBackups(c echo.Context) error {
 func (h *SettingsHandler) CreateBackup(c echo.Context) error {
 	var req model.CreateBackupRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return badRequestError(c, err.Error())
 	}
 
 	// Default to include everything
