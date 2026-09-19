@@ -39,7 +39,7 @@ func NewGeoHandler(
 func (h *GeoHandler) GetGlobal(c echo.Context) error {
 	g, err := h.globalGeoRepo.GetGlobal(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	return c.JSON(http.StatusOK, g)
 }
@@ -57,12 +57,12 @@ func (h *GeoHandler) UpdateGlobal(c echo.Context) error {
 
 	g, err := h.globalGeoRepo.Upsert(c.Request().Context(), &req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Regenerate all hosts so inheriting hosts pick up the new default.
 	if err := h.proxyHostService.SyncAllConfigs(c.Request().Context()); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to regenerate configs: " + err.Error()})
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to regenerate configs: " + SafeErrorMessage(err)})
 	}
 
 	if h.audit != nil {
@@ -80,7 +80,7 @@ func (h *GeoHandler) GetByProxyHost(c echo.Context) error {
 	// Verify proxy host exists
 	host, err := h.proxyHostRepo.GetByID(c.Request().Context(), proxyHostID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	if host == nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Proxy host not found"})
@@ -88,7 +88,7 @@ func (h *GeoHandler) GetByProxyHost(c echo.Context) error {
 
 	geo, err := h.geoRepo.GetByProxyHostID(c.Request().Context(), proxyHostID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	if geo == nil {
 		// Return default empty response
@@ -111,7 +111,7 @@ func (h *GeoHandler) SetForProxyHost(c echo.Context) error {
 	// Verify proxy host exists
 	host, err := h.proxyHostRepo.GetByID(c.Request().Context(), proxyHostID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	if host == nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Proxy host not found"})
@@ -128,13 +128,13 @@ func (h *GeoHandler) SetForProxyHost(c echo.Context) error {
 
 	geo, err := h.geoRepo.Upsert(c.Request().Context(), proxyHostID, &req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Regenerate nginx config with geo restrictions (skip if requested)
 	if !skipReload {
 		if err := h.regenerateHostConfig(c, proxyHostID); err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to regenerate nginx config: " + err.Error()})
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to regenerate nginx config: " + SafeErrorMessage(err)})
 		}
 	}
 
@@ -152,7 +152,7 @@ func (h *GeoHandler) UpdateForProxyHost(c echo.Context) error {
 
 	geo, err := h.geoRepo.Update(c.Request().Context(), proxyHostID, &req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	if geo == nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Geo restriction not found"})
@@ -160,7 +160,7 @@ func (h *GeoHandler) UpdateForProxyHost(c echo.Context) error {
 
 	// Regenerate nginx config
 	if err := h.regenerateHostConfig(c, proxyHostID); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to regenerate nginx config: " + err.Error()})
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to regenerate nginx config: " + SafeErrorMessage(err)})
 	}
 
 	return c.JSON(http.StatusOK, geo)
@@ -172,13 +172,13 @@ func (h *GeoHandler) DeleteForProxyHost(c echo.Context) error {
 	skipReload := c.QueryParam("skip_reload") == "true"
 
 	if err := h.geoRepo.Delete(c.Request().Context(), proxyHostID); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Regenerate nginx config without geo restrictions (skip if requested)
 	if !skipReload {
 		if err := h.regenerateHostConfig(c, proxyHostID); err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to regenerate nginx config: " + err.Error()})
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to regenerate nginx config: " + SafeErrorMessage(err)})
 		}
 	}
 

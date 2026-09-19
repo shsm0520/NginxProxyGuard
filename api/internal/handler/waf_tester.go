@@ -143,7 +143,7 @@ func (h *WAFTestHandler) Test(w http.ResponseWriter, r *http.Request) {
 	// This is important for path traversal tests
 	httpReq, err := http.NewRequest("GET", testURL, nil)
 	if err != nil {
-		httpJSONErrorWithDetails(w, "Failed to create request", http.StatusInternalServerError, err.Error())
+		httpJSONErrorWithDetails(w, "Failed to create request", http.StatusInternalServerError, SafeErrorDetail(err))
 		return
 	}
 

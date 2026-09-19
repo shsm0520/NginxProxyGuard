@@ -29,18 +29,24 @@ type ErrorResponse struct {
 // internalError logs the actual error and returns a generic message to the client
 func internalError(c echo.Context, operation string, err error) error {
 	log.Printf("[ERROR] %s: %v", operation, err)
+	if status, msg, ok := ClientStatusForDBError(err); ok {
+		return c.JSON(status, ErrorResponse{Error: msg})
+	}
 	return c.JSON(http.StatusInternalServerError, ErrorResponse{
 		Error:   ErrMsgInternalError,
-		Details: err.Error(),
+		Details: SafeErrorDetail(err),
 	})
 }
 
 // databaseError logs the database error and returns a generic message
 func databaseError(c echo.Context, operation string, err error) error {
 	log.Printf("[DB ERROR] %s: %v", operation, err)
+	if status, msg, ok := ClientStatusForDBError(err); ok {
+		return c.JSON(status, ErrorResponse{Error: msg})
+	}
 	return c.JSON(http.StatusInternalServerError, ErrorResponse{
 		Error:   ErrMsgDatabaseError,
-		Details: err.Error(),
+		Details: SafeErrorDetail(err),
 	})
 }
 
@@ -89,13 +95,21 @@ func httpJSONErrorWithDetails(w http.ResponseWriter, message string, status int,
 // httpInternalError is for standard http.ResponseWriter handlers
 func httpInternalError(w http.ResponseWriter, operation string, err error) {
 	log.Printf("[ERROR] %s: %v", operation, err)
-	httpJSONErrorWithDetails(w, ErrMsgInternalError, http.StatusInternalServerError, err.Error())
+	if status, msg, ok := ClientStatusForDBError(err); ok {
+		httpJSONError(w, msg, status)
+		return
+	}
+	httpJSONErrorWithDetails(w, ErrMsgInternalError, http.StatusInternalServerError, SafeErrorDetail(err))
 }
 
 // httpDatabaseError is for standard http.ResponseWriter handlers
 func httpDatabaseError(w http.ResponseWriter, operation string, err error) {
 	log.Printf("[DB ERROR] %s: %v", operation, err)
-	httpJSONErrorWithDetails(w, ErrMsgDatabaseError, http.StatusInternalServerError, err.Error())
+	if status, msg, ok := ClientStatusForDBError(err); ok {
+		httpJSONError(w, msg, status)
+		return
+	}
+	httpJSONErrorWithDetails(w, ErrMsgDatabaseError, http.StatusInternalServerError, SafeErrorDetail(err))
 }
 
 // validationError returns a validation error with field details

@@ -25,7 +25,7 @@ func (h *SettingsHandler) RestoreBackup(c echo.Context) error {
 
 	backup, err := h.backupRepo.GetByID(c.Request().Context(), id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	if backup == nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "backup not found"})

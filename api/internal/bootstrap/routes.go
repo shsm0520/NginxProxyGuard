@@ -966,9 +966,15 @@ func registerTestRoutes(v1 *echo.Group, c *Container) {
 		id := ec.Param("id")
 		host, err := c.Services.ProxyHost.GetByID(ec.Request().Context(), id)
 		if err != nil {
+			if status, msg, ok := handler.ClientStatusForDBError(err); ok {
+				return ec.JSON(status, map[string]string{
+					"status": "error",
+					"error":  msg,
+				})
+			}
 			return ec.JSON(http.StatusInternalServerError, map[string]string{
 				"status": "error",
-				"error":  err.Error(),
+				"error":  handler.SafeErrorMessage(err),
 			})
 		}
 		if host == nil {
@@ -983,7 +989,7 @@ func registerTestRoutes(v1 *echo.Group, c *Container) {
 			if err != nil {
 				return ec.JSON(http.StatusInternalServerError, map[string]string{
 					"status": "error",
-					"error":  err.Error(),
+					"error":  handler.SafeErrorMessage(err),
 				})
 			}
 			status := config.StatusOK

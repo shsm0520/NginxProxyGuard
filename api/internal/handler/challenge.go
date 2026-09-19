@@ -105,7 +105,7 @@ func NewChallengeHandler(svc *service.ChallengeService, audit *service.AuditServ
 func (h *ChallengeHandler) GetGlobalConfig(c echo.Context) error {
 	config, err := h.svc.GetGlobalConfig(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	return c.JSON(http.StatusOK, config.ToResponse())
 }
@@ -119,7 +119,7 @@ func (h *ChallengeHandler) UpdateGlobalConfig(c echo.Context) error {
 
 	config, err := h.svc.UpdateConfig(c.Request().Context(), nil, &req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Audit log
@@ -136,7 +136,7 @@ func (h *ChallengeHandler) GetProxyHostConfig(c echo.Context) error {
 	proxyHostID := c.Param("id")
 	config, err := h.svc.GetConfig(c.Request().Context(), &proxyHostID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	return c.JSON(http.StatusOK, config.ToResponse())
 }
@@ -152,7 +152,7 @@ func (h *ChallengeHandler) UpdateProxyHostConfig(c echo.Context) error {
 
 	config, err := h.svc.UpdateConfig(c.Request().Context(), &proxyHostID, &req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Audit log
@@ -169,7 +169,7 @@ func (h *ChallengeHandler) DeleteProxyHostConfig(c echo.Context) error {
 	proxyHostID := c.Param("id")
 
 	if err := h.svc.DeleteConfig(c.Request().Context(), &proxyHostID); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -197,7 +197,7 @@ func (h *ChallengeHandler) VerifyCaptcha(c echo.Context) error {
 		if err == service.ErrMissingConfig {
 			return c.JSON(http.StatusServiceUnavailable, map[string]string{"error": "CAPTCHA is not configured"})
 		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -358,7 +358,7 @@ func (h *ChallengeHandler) GetStats(c echo.Context) error {
 
 	stats, err := h.svc.GetStats(c.Request().Context(), proxyHostPtr, hours)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, stats)

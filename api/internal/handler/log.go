@@ -249,7 +249,7 @@ func (h *LogHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.logRepo.List(ctx, filter, page, perPage)
 	if err != nil {
-		httpJSONErrorWithDetails(w, "Failed to list logs", http.StatusInternalServerError, err.Error())
+		httpJSONErrorWithDetails(w, "Failed to list logs", http.StatusInternalServerError, SafeErrorDetail(err))
 		return
 	}
 	logs := result.Logs
@@ -318,7 +318,7 @@ func (h *LogHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 
 	stats, err := h.logRepo.GetStatsWithFilter(ctx, filter)
 	if err != nil {
-		httpJSONErrorWithDetails(w, "Failed to get stats", http.StatusInternalServerError, err.Error())
+		httpJSONErrorWithDetails(w, "Failed to get stats", http.StatusInternalServerError, SafeErrorDetail(err))
 		return
 	}
 
@@ -331,7 +331,7 @@ func (h *LogHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 
 	settings, err := h.logRepo.GetSettings(ctx)
 	if err != nil {
-		httpJSONErrorWithDetails(w, "Failed to get settings", http.StatusInternalServerError, err.Error())
+		httpJSONErrorWithDetails(w, "Failed to get settings", http.StatusInternalServerError, SafeErrorDetail(err))
 		return
 	}
 
@@ -350,7 +350,7 @@ func (h *LogHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 
 	settings, err := h.logRepo.UpdateSettings(ctx, &req)
 	if err != nil {
-		httpJSONErrorWithDetails(w, "Failed to update settings", http.StatusInternalServerError, err.Error())
+		httpJSONErrorWithDetails(w, "Failed to update settings", http.StatusInternalServerError, SafeErrorDetail(err))
 		return
 	}
 
@@ -364,13 +364,13 @@ func (h *LogHandler) Cleanup(w http.ResponseWriter, r *http.Request) {
 	// Get retention days from settings
 	settings, err := h.logRepo.GetSettings(ctx)
 	if err != nil {
-		httpJSONErrorWithDetails(w, "Failed to get settings", http.StatusInternalServerError, err.Error())
+		httpJSONErrorWithDetails(w, "Failed to get settings", http.StatusInternalServerError, SafeErrorDetail(err))
 		return
 	}
 
 	deleted, err := h.logRepo.DeleteOld(ctx, settings.RetentionDays)
 	if err != nil {
-		httpJSONErrorWithDetails(w, "Failed to cleanup logs", http.StatusInternalServerError, err.Error())
+		httpJSONErrorWithDetails(w, "Failed to cleanup logs", http.StatusInternalServerError, SafeErrorDetail(err))
 		return
 	}
 
@@ -393,7 +393,7 @@ func (h *LogHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	log, err := h.logRepo.Create(ctx, &req)
 	if err != nil {
-		httpJSONErrorWithDetails(w, "Failed to create log", http.StatusInternalServerError, err.Error())
+		httpJSONErrorWithDetails(w, "Failed to create log", http.StatusInternalServerError, SafeErrorDetail(err))
 		return
 	}
 
@@ -415,7 +415,7 @@ func (h *LogHandler) GetDistinctHosts(w http.ResponseWriter, r *http.Request) {
 
 	hosts, err := h.logRepo.GetDistinctHosts(ctx, search, limit)
 	if err != nil {
-		httpJSONErrorWithDetails(w, "Failed to get hosts", http.StatusInternalServerError, err.Error())
+		httpJSONErrorWithDetails(w, "Failed to get hosts", http.StatusInternalServerError, SafeErrorDetail(err))
 		return
 	}
 
@@ -434,7 +434,7 @@ func (h *LogHandler) GetDistinctIPs(w http.ResponseWriter, r *http.Request) {
 
 	ips, err := h.logRepo.GetDistinctIPs(ctx, search, limit)
 	if err != nil {
-		httpJSONErrorWithDetails(w, "Failed to get IPs", http.StatusInternalServerError, err.Error())
+		httpJSONErrorWithDetails(w, "Failed to get IPs", http.StatusInternalServerError, SafeErrorDetail(err))
 		return
 	}
 
@@ -453,7 +453,7 @@ func (h *LogHandler) GetDistinctUserAgents(w http.ResponseWriter, r *http.Reques
 
 	agents, err := h.logRepo.GetDistinctUserAgents(ctx, search, limit)
 	if err != nil {
-		httpJSONErrorWithDetails(w, "Failed to get user agents", http.StatusInternalServerError, err.Error())
+		httpJSONErrorWithDetails(w, "Failed to get user agents", http.StatusInternalServerError, SafeErrorDetail(err))
 		return
 	}
 
@@ -467,7 +467,7 @@ func (h *LogHandler) GetDistinctCountries(w http.ResponseWriter, r *http.Request
 
 	countries, err := h.logRepo.GetDistinctCountries(ctx)
 	if err != nil {
-		httpJSONErrorWithDetails(w, "Failed to get countries", http.StatusInternalServerError, err.Error())
+		httpJSONErrorWithDetails(w, "Failed to get countries", http.StatusInternalServerError, SafeErrorDetail(err))
 		return
 	}
 
@@ -486,7 +486,7 @@ func (h *LogHandler) GetDistinctURIs(w http.ResponseWriter, r *http.Request) {
 
 	uris, err := h.logRepo.GetDistinctURIs(ctx, search, limit)
 	if err != nil {
-		httpJSONErrorWithDetails(w, "Failed to get URIs", http.StatusInternalServerError, err.Error())
+		httpJSONErrorWithDetails(w, "Failed to get URIs", http.StatusInternalServerError, SafeErrorDetail(err))
 		return
 	}
 
@@ -500,7 +500,7 @@ func (h *LogHandler) GetDistinctMethods(w http.ResponseWriter, r *http.Request) 
 
 	methods, err := h.logRepo.GetDistinctMethods(ctx)
 	if err != nil {
-		httpJSONErrorWithDetails(w, "Failed to get methods", http.StatusInternalServerError, err.Error())
+		httpJSONErrorWithDetails(w, "Failed to get methods", http.StatusInternalServerError, SafeErrorDetail(err))
 		return
 	}
 

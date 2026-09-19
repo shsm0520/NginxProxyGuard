@@ -47,7 +47,7 @@ func (h *AuditLogHandler) ListAuditLogs(c echo.Context) error {
 	logs, total, err := h.repo.List(c.Request().Context(), filter)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": err.Error(),
+			"error": SafeErrorMessage(err),
 		})
 	}
 
@@ -83,7 +83,7 @@ func (h *AuditLogHandler) GetActions(c echo.Context) error {
 	actions, err := h.repo.GetActions(c.Request().Context())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": err.Error(),
+			"error": SafeErrorMessage(err),
 		})
 	}
 
@@ -105,7 +105,7 @@ func (h *AuditLogHandler) GetResourceTypes(c echo.Context) error {
 	types, err := h.repo.GetResourceTypes(c.Request().Context())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": err.Error(),
+			"error": SafeErrorMessage(err),
 		})
 	}
 

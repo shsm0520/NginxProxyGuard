@@ -37,7 +37,7 @@ type LogFilesResponse struct {
 func (h *SystemSettingsHandler) ListLogFiles(c echo.Context) error {
 	settings, err := h.repo.Get(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	response := LogFilesResponse{
@@ -123,7 +123,7 @@ func (h *SystemSettingsHandler) DownloadLogFile(c echo.Context) error {
 		if os.IsNotExist(err) {
 			return c.JSON(http.StatusNotFound, map[string]string{"error": "file not found"})
 		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Don't allow downloading symlinks
@@ -165,7 +165,7 @@ func (h *SystemSettingsHandler) DeleteLogFile(c echo.Context) error {
 		if os.IsNotExist(err) {
 			return c.JSON(http.StatusNotFound, map[string]string{"error": "file not found"})
 		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Don't allow deleting symlinks
@@ -177,7 +177,7 @@ func (h *SystemSettingsHandler) DeleteLogFile(c echo.Context) error {
 
 	// Delete the file
 	if err := os.Remove(filePath); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Audit log
@@ -217,7 +217,7 @@ func (h *SystemSettingsHandler) ViewLogFile(c echo.Context) error {
 
 		pipe, err := cmd.StdoutPipe()
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return directInternalError(c, err)
 		}
 		tailCmd.Stdin = pipe
 
@@ -242,7 +242,7 @@ func (h *SystemSettingsHandler) ViewLogFile(c echo.Context) error {
 		if os.IsNotExist(err) {
 			return c.JSON(http.StatusNotFound, map[string]string{"error": "file not found"})
 		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	defer file.Close()
 
@@ -253,7 +253,7 @@ func (h *SystemSettingsHandler) ViewLogFile(c echo.Context) error {
 		// Fallback: read the whole file if tail fails
 		content, err := io.ReadAll(file)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return directInternalError(c, err)
 		}
 		output = content
 	}
@@ -270,7 +270,7 @@ func (h *SystemSettingsHandler) TriggerLogRotation(c echo.Context) error {
 	// Get settings
 	settings, err := h.repo.Get(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	if !settings.RawLogEnabled {
@@ -281,7 +281,7 @@ func (h *SystemSettingsHandler) TriggerLogRotation(c echo.Context) error {
 
 	// Generate logrotate config first
 	if err := h.generateLogrotateConfig(settings); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Rotate through the nginx manager: logrotate lives in the nginx container,
@@ -295,7 +295,7 @@ func (h *SystemSettingsHandler) TriggerLogRotation(c echo.Context) error {
 	if err := h.nginxManager.RotateLogs(c.Request().Context()); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
 			"error":   "logrotate failed",
-			"details": err.Error(),
+			"details": SafeErrorDetail(err),
 		})
 	}
 
@@ -333,7 +333,7 @@ func (h *SystemSettingsHandler) UpdateSystemLogConfig(c echo.Context) error {
 	}
 
 	if err := h.dockerLogCollector.UpdateConfig(config); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update config: " + err.Error()})
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update config: " + SafeErrorMessage(err)})
 	}
 
 	// Audit log

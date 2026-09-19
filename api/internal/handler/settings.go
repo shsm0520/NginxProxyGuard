@@ -55,7 +55,7 @@ func NewSettingsHandler(
 func (h *SettingsHandler) GetGlobalSettings(c echo.Context) error {
 	settings, err := h.settingsService.GetGlobalSettings(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	return c.JSON(http.StatusOK, settings)
 }
@@ -68,7 +68,7 @@ func (h *SettingsHandler) UpdateGlobalSettings(c echo.Context) error {
 
 	settings, err := h.settingsService.UpdateGlobalSettings(c.Request().Context(), &req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Audit log
@@ -83,7 +83,7 @@ func (h *SettingsHandler) UpdateGlobalSettings(c echo.Context) error {
 func (h *SettingsHandler) ResetGlobalSettings(c echo.Context) error {
 	settings, err := h.settingsService.ResetGlobalSettings(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Audit log
@@ -107,7 +107,7 @@ func (h *SettingsHandler) ApplySettingsPreset(c echo.Context) error {
 		if err.Error() == "invalid preset: "+preset {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid preset"})
 		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Audit log

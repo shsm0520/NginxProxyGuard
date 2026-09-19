@@ -1,0 +1,139 @@
+package handler
+
+import (
+	"errors"
+	"fmt"
+	"net/http"
+	"strings"
+	"testing"
+
+	"github.com/lib/pq"
+)
+
+// A malformed path id ("/proxy-hosts/not-a-uuid") reaches Postgres as a cast
+// failure, and lib/pq renders the whole story back at us: the SQLSTATE, the
+// column type, the offending literal, and — when the driver kept the statement —
+// the line:column position inside our SQL. Before #298 every one of those
+// strings was copied verbatim into the response body, so any authenticated
+// caller could read our query geometry off a 500. These are the fragments that
+// must never cross the wire again.
+var driverTextMarkers = []string{"pq: ", "22P02", "invalid input syntax", "at position"}
+
+func newUUIDCastError() *pq.Error {
+	return &pq.Error{
+		Code:    "22P02",
+		Message: `invalid input syntax for type uuid: "not-a-uuid"`,
+	}
+}
+
+func assertNoDriverText(t *testing.T, label, got string) {
+	t.Helper()
+	for _, marker := range driverTextMarkers {
+		if strings.Contains(got, marker) {
+			t.Errorf("%s leaked driver text %q: %q", label, marker, got)
+		}
+	}
+}
+
+func TestMalformedIdentifierBecomesClientErrorWithoutDriverText(t *testing.T) {
+	// The shape repositories actually produce: fmt.Errorf("...: %w", pqErr).
+	err := fmt.Errorf("failed to get proxy host: %w", newUUIDCastError())
+
+	status, msg, ok := ClientStatusForDBError(err)
+	if !ok {
+		t.Fatalf("ClientStatusForDBError did not classify a 22P02 wrapped with %%w")
+	}
+	if status != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", status, http.StatusBadRequest)
+	}
+	if msg != ErrMsgInvalidIdentifier {
+		t.Errorf("message = %q, want %q", msg, ErrMsgInvalidIdentifier)
+	}
+	assertNoDriverText(t, "ClientStatusForDBError message", msg)
+
+	// details is omitempty, so "" drops the field from the body entirely.
+	if detail := SafeErrorDetail(err); detail != "" {
+		t.Errorf("SafeErrorDetail = %q, want \"\"", detail)
+	}
+	if got := SafeErrorMessage(err); got != ErrMsgDatabaseError {
+		t.Errorf("SafeErrorMessage = %q, want %q", got, ErrMsgDatabaseError)
+	}
+	assertNoDriverText(t, "SafeErrorMessage", SafeErrorMessage(err))
+}
+
+func TestOtherSQLStatesKeepTheirStatusButStillGetScrubbed(t *testing.T) {
+	// 23505 is our own problem to classify (repositories already map it to
+	// model.ErrDuplicateEntry), so it must stay a 500 — but the driver text
+	// still must not reach the client.
+	err := fmt.Errorf("failed to create user: %w", &pq.Error{
+		Code:    "23505",
+		Message: `duplicate key value violates unique constraint "users_username_key"`,
+	})
+
+	if _, _, ok := ClientStatusForDBError(err); ok {
+		t.Error("ClientStatusForDBError classified 23505; only 22P02 is mapped")
+	}
+	if detail := SafeErrorDetail(err); detail != "" {
+		t.Errorf("SafeErrorDetail = %q, want \"\"", detail)
+	}
+	if got := SafeErrorMessage(err); got != ErrMsgDatabaseError {
+		t.Errorf("SafeErrorMessage = %q, want %q", got, ErrMsgDatabaseError)
+	}
+}
+
+func TestFlattenedChainIsStillScrubbed(t *testing.T) {
+	// Somewhere a wrapper used %v instead of %w, so errors.As can no longer
+	// find the *pq.Error. The rendered-prefix fallback still suppresses it.
+	err := fmt.Errorf("failed to list banned ips: %v", newUUIDCastError())
+
+	if errors.As(err, new(*pq.Error)) {
+		t.Fatal("test precondition broken: the chain is still unwrappable")
+	}
+	if detail := SafeErrorDetail(err); detail != "" {
+		t.Errorf("SafeErrorDetail = %q, want \"\"", detail)
+	}
+	if got := SafeErrorMessage(err); got != ErrMsgDatabaseError {
+		t.Errorf("SafeErrorMessage = %q, want %q", got, ErrMsgDatabaseError)
+	}
+	assertNoDriverText(t, "SafeErrorMessage", SafeErrorMessage(err))
+
+	// The status half deliberately does NOT trust the string test, so a
+	// flattened chain keeps its 500 rather than being guessed into a 400.
+	if _, _, ok := ClientStatusForDBError(err); ok {
+		t.Error("ClientStatusForDBError used the string fallback to change a status")
+	}
+}
+
+func TestApplicationErrorsPassThroughVerbatim(t *testing.T) {
+	// nginx -t output and validation messages are the operator's only
+	// diagnostic in several UI paths; scrubbing them would be a regression.
+	cases := []string{
+		"nginx: [emerg] duplicate auth_request directive in /etc/nginx/conf.d/host_1.conf:42",
+		"invalid domain name: example..com",
+		"acme: error presenting token: dns propagation timed out",
+	}
+	for _, msg := range cases {
+		err := errors.New(msg)
+		if got := SafeErrorDetail(err); got != msg {
+			t.Errorf("SafeErrorDetail(%q) = %q, want it verbatim", msg, got)
+		}
+		if got := SafeErrorMessage(err); got != msg {
+			t.Errorf("SafeErrorMessage(%q) = %q, want it verbatim", msg, got)
+		}
+		if _, _, ok := ClientStatusForDBError(err); ok {
+			t.Errorf("ClientStatusForDBError(%q) classified a non-driver error", msg)
+		}
+	}
+}
+
+func TestNilErrorIsHandled(t *testing.T) {
+	if got := SafeErrorDetail(nil); got != "" {
+		t.Errorf("SafeErrorDetail(nil) = %q, want \"\"", got)
+	}
+	if got := SafeErrorMessage(nil); got != ErrMsgInternalError {
+		t.Errorf("SafeErrorMessage(nil) = %q, want %q", got, ErrMsgInternalError)
+	}
+	if _, _, ok := ClientStatusForDBError(nil); ok {
+		t.Error("ClientStatusForDBError(nil) reported a client error")
+	}
+}

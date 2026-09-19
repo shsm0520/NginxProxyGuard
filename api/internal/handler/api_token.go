@@ -179,6 +179,9 @@ func (h *APITokenHandler) GetToken(c echo.Context) error {
 
 	token, err := h.tokenRepo.GetByID(c.Request().Context(), tokenID)
 	if err != nil {
+		if status, msg, ok := ClientStatusForDBError(err); ok {
+			return c.JSON(status, map[string]string{"error": msg})
+		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to get token"})
 	}
 	if token == nil {
@@ -210,6 +213,9 @@ func (h *APITokenHandler) UpdateToken(c echo.Context) error {
 
 	token, err := h.tokenRepo.GetByID(c.Request().Context(), tokenID)
 	if err != nil {
+		if status, msg, ok := ClientStatusForDBError(err); ok {
+			return c.JSON(status, map[string]string{"error": msg})
+		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to get token"})
 	}
 	if token == nil {
@@ -281,6 +287,9 @@ func (h *APITokenHandler) RevokeToken(c echo.Context) error {
 
 	token, err := h.tokenRepo.GetByID(c.Request().Context(), tokenID)
 	if err != nil {
+		if status, msg, ok := ClientStatusForDBError(err); ok {
+			return c.JSON(status, map[string]string{"error": msg})
+		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to get token"})
 	}
 	if token == nil {
@@ -343,6 +352,9 @@ func (h *APITokenHandler) DeleteToken(c echo.Context) error {
 
 	token, err := h.tokenRepo.GetByID(c.Request().Context(), tokenID)
 	if err != nil {
+		if status, msg, ok := ClientStatusForDBError(err); ok {
+			return c.JSON(status, map[string]string{"error": msg})
+		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to get token"})
 	}
 	if token == nil {
@@ -389,6 +401,9 @@ func (h *APITokenHandler) GetTokenUsage(c echo.Context) error {
 
 	token, err := h.tokenRepo.GetByID(c.Request().Context(), tokenID)
 	if err != nil {
+		if status, msg, ok := ClientStatusForDBError(err); ok {
+			return c.JSON(status, map[string]string{"error": msg})
+		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to get token"})
 	}
 	if token == nil {

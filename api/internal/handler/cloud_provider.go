@@ -35,7 +35,7 @@ func NewCloudProviderHandler(
 func (h *CloudProviderHandler) GetGlobal(c echo.Context) error {
 	g, err := h.globalRepo.GetGlobal(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	return c.JSON(http.StatusOK, g)
 }
@@ -50,11 +50,11 @@ func (h *CloudProviderHandler) UpdateGlobal(c echo.Context) error {
 	ctx := c.Request().Context()
 	g, err := h.globalRepo.Upsert(ctx, &req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	if h.proxyHostService != nil {
 		if err := h.proxyHostService.SyncAllConfigs(ctx); err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to regenerate configs: " + err.Error()})
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to regenerate configs: " + SafeErrorMessage(err)})
 		}
 	}
 	auditCtx := service.ContextWithAudit(ctx, c)
@@ -66,7 +66,7 @@ func (h *CloudProviderHandler) UpdateGlobal(c echo.Context) error {
 func (h *CloudProviderHandler) ListProviders(c echo.Context) error {
 	providers, err := h.repo.List(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	return c.JSON(http.StatusOK, providers)
 }
@@ -75,7 +75,7 @@ func (h *CloudProviderHandler) ListProviders(c echo.Context) error {
 func (h *CloudProviderHandler) ListProvidersByRegion(c echo.Context) error {
 	providers, err := h.repo.ListByRegion(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	return c.JSON(http.StatusOK, providers)
 }
@@ -85,7 +85,7 @@ func (h *CloudProviderHandler) GetProvider(c echo.Context) error {
 	slug := c.Param("slug")
 	provider, err := h.repo.GetBySlug(c.Request().Context(), slug)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	if provider == nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Cloud provider not found"})
@@ -106,7 +106,7 @@ func (h *CloudProviderHandler) CreateProvider(c echo.Context) error {
 
 	provider, err := h.repo.Create(c.Request().Context(), &req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Audit log
@@ -130,7 +130,7 @@ func (h *CloudProviderHandler) UpdateProvider(c echo.Context) error {
 
 	provider, err := h.repo.Update(c.Request().Context(), slug, &req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Audit log
@@ -148,7 +148,7 @@ func (h *CloudProviderHandler) DeleteProvider(c echo.Context) error {
 	slug := c.Param("slug")
 
 	if err := h.repo.Delete(c.Request().Context(), slug); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Audit log
@@ -167,7 +167,7 @@ func (h *CloudProviderHandler) GetBlockedProviders(c echo.Context) error {
 
 	settings, err := h.repo.GetCloudProviderBlockingSettings(c.Request().Context(), proxyHostID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -198,14 +198,14 @@ func (h *CloudProviderHandler) SetBlockedProviders(c echo.Context) error {
 	}
 
 	if err := h.repo.SetCloudProviderBlockingSettings(ctx, proxyHostID, settings); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Regenerate nginx config (skip if requested)
 	if !skipReload && h.proxyHostService != nil {
 		if _, err := h.proxyHostService.Update(ctx, proxyHostID, nil); err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{
-				"error": "Settings saved but failed to regenerate nginx config: " + err.Error(),
+				"error": "Settings saved but failed to regenerate nginx config: " + SafeErrorMessage(err),
 			})
 		}
 	}

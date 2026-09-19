@@ -45,7 +45,7 @@ func (h *SystemLogHandler) List(c echo.Context) error {
 	logs, total, err := h.repo.List(c.Request().Context(), filter)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": err.Error(),
+			"error": SafeErrorMessage(err),
 		})
 	}
 
@@ -63,7 +63,7 @@ func (h *SystemLogHandler) GetStats(c echo.Context) error {
 	stats, err := h.repo.GetStats(c.Request().Context())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": err.Error(),
+			"error": SafeErrorMessage(err),
 		})
 	}
 
@@ -78,7 +78,7 @@ func (h *SystemLogHandler) Cleanup(c echo.Context) error {
 	deleted, err := h.repo.Cleanup(c.Request().Context(), retentionDays)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": err.Error(),
+			"error": SafeErrorMessage(err),
 		})
 	}
 

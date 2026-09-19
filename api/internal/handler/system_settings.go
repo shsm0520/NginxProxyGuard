@@ -91,7 +91,7 @@ func (h *SystemSettingsHandler) initRawLogSettings() {
 func (h *SystemSettingsHandler) GetSystemSettings(c echo.Context) error {
 	settings, err := h.repo.Get(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 	return c.JSON(http.StatusOK, settings.ToResponse())
 }
@@ -173,7 +173,7 @@ func (h *SystemSettingsHandler) UpdateSystemSettings(c echo.Context) error {
 
 	settings, err := h.repo.Update(c.Request().Context(), &req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	// Generate raw log configuration if raw log settings changed
@@ -446,7 +446,7 @@ func (h *SystemSettingsHandler) generateLogrotateConfig(settings *model.SystemSe
 func (h *SystemSettingsHandler) GetGeoIPStatus(c echo.Context) error {
 	settings, err := h.repo.Get(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	status := &model.GeoIPStatus{
@@ -510,7 +510,7 @@ func (h *SystemSettingsHandler) UpdateGeoIPDatabases(c echo.Context) error {
 	// Get credentials from settings
 	licenseKey, accountID, err := h.repo.GetGeoIPCredentials(ctx)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	if licenseKey == "" {
@@ -589,7 +589,7 @@ func (h *SystemSettingsHandler) GetGeoIPHistory(c echo.Context) error {
 
 	history, err := h.historyRepo.List(c.Request().Context(), page, perPage)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, history)
@@ -660,7 +660,7 @@ func parseInterval(interval string) time.Duration {
 func (h *SystemSettingsHandler) TestACME(c echo.Context) error {
 	settings, err := h.repo.Get(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	result := map[string]interface{}{

@@ -19,7 +19,7 @@ import (
 func (h *SettingsHandler) GetDashboard(c echo.Context) error {
 	summary, err := h.settingsService.GetDashboard(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, summary)
@@ -32,7 +32,7 @@ func (h *SettingsHandler) GetGeoIPStats(c echo.Context) error {
 
 	response, err := h.settingsService.GetGeoIPStats(c.Request().Context(), hours)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, response)
@@ -41,7 +41,7 @@ func (h *SettingsHandler) GetGeoIPStats(c echo.Context) error {
 func (h *SettingsHandler) GetSystemHealth(c echo.Context) error {
 	health, err := h.settingsService.GetSystemHealth(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, health)
@@ -67,7 +67,7 @@ func (h *SettingsHandler) GetSystemHealthHistory(c echo.Context) error {
 
 	history, err := h.settingsService.GetSystemHealthHistory(c.Request().Context(), hours, limit)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	since := time.Now().Add(-time.Duration(hours) * time.Hour)
@@ -122,7 +122,7 @@ func (h *SettingsHandler) GetHourlyStats(c echo.Context) error {
 
 	stats, err := h.settingsService.GetHourlyStats(c.Request().Context(), params)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, stats)
@@ -134,7 +134,7 @@ func (h *SettingsHandler) GetDockerStats(c echo.Context) error {
 		if err.Error() == "docker stats service not available" {
 			return c.JSON(http.StatusServiceUnavailable, map[string]string{"error": "Docker stats service not available"})
 		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, summary)
@@ -154,7 +154,7 @@ func (h *SettingsHandler) ListDockerContainers(c echo.Context) error {
 		if err.Error() == "docker stats service not available" {
 			return c.JSON(http.StatusServiceUnavailable, map[string]string{"error": "Docker stats service not available"})
 		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, containers)
@@ -165,7 +165,7 @@ func (h *SettingsHandler) ListDockerContainers(c echo.Context) error {
 func (h *SettingsHandler) SelfCheck(c echo.Context) error {
 	result, err := h.settingsService.SelfCheck(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -178,7 +178,7 @@ func (h *SettingsHandler) SelfCheck(c echo.Context) error {
 func (h *SettingsHandler) TestDashboardQueries(c echo.Context) error {
 	result, err := h.settingsService.TestDashboardQueries(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return directInternalError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
