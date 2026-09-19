@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"nginx-proxy-guard/internal/nginx"
 	"nginx-proxy-guard/internal/service"
 )
 
@@ -293,6 +295,17 @@ func (h *SystemSettingsHandler) TriggerLogRotation(c echo.Context) error {
 	}
 
 	if err := h.nginxManager.RotateLogs(c.Request().Context()); err != nil {
+		// Three refusals are not failures: nothing to cut, a cut that already
+		// happened this second, or a rotation running right now. In each case
+		// the current log is as fresh as a rotation could make it, so the
+		// answer is 200 with the reason rather than a 500 — but the reason is
+		// stated, because "completed" when nothing moved would be a lie.
+		if reason, skipped := logRotationSkipReason(err); skipped {
+			return c.JSON(http.StatusOK, map[string]interface{}{
+				"status":  "skipped",
+				"message": reason,
+			})
+		}
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
 			"error":   "logrotate failed",
 			"details": SafeErrorDetail(err),
@@ -309,6 +322,20 @@ func (h *SystemSettingsHandler) TriggerLogRotation(c echo.Context) error {
 		"status":  "completed",
 		"message": "Log rotation completed successfully",
 	})
+}
+
+// logRotationSkipReason turns the manager's non-failure outcomes into the
+// sentence the operator sees. Anything else is a real logrotate fault.
+func logRotationSkipReason(err error) (string, bool) {
+	switch {
+	case errors.Is(err, nginx.ErrLogrotateNothingToRotate):
+		return "Nothing to rotate: the current log files are empty", true
+	case errors.Is(err, nginx.ErrLogrotateAlreadyRotated):
+		return "Log files were rotated a moment ago; the current log is already fresh", true
+	case errors.Is(err, nginx.ErrLogrotateBusy):
+		return "A log rotation is already in progress", true
+	}
+	return "", false
 }
 
 // GetSystemLogConfig returns the current system log configuration

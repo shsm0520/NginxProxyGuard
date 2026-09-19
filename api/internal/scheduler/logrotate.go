@@ -76,6 +76,16 @@ func (s *LogRotateScheduler) runLogrotate() {
 			log.Println("[LogRotateScheduler] Logrotate config not found, skipping")
 			return
 		}
+		// Nothing to cut, a cut that already happened this second, or a manual
+		// "Rotate now" holding the lock — none of these is a failure.
+		if errors.Is(err, nginx.ErrLogrotateNothingToRotate) {
+			log.Println("[LogRotateScheduler] Raw logs are empty, nothing to rotate")
+			return
+		}
+		if errors.Is(err, nginx.ErrLogrotateAlreadyRotated) || errors.Is(err, nginx.ErrLogrotateBusy) {
+			log.Println("[LogRotateScheduler] Logs were already rotated for this timestamp, skipping")
+			return
+		}
 		log.Printf("[LogRotateScheduler] Logrotate failed: %v", err)
 		return
 	}
