@@ -96,6 +96,7 @@ const (
 	ContextTimeout          = 30 * time.Second
 	NginxTestTimeout        = 60 * time.Second
 	NginxReloadTimeout      = 30 * time.Second
+	NginxLogrotateTimeout   = 60 * time.Second
 )
 
 // Reload retry behavior — governs testAndReloadNginxWithRetry.

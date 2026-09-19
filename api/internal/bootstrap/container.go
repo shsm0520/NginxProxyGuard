@@ -74,7 +74,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	wireServiceCallbacks(svcs, repos)
 	handlers := InitHandlers(repos, svcs, nginxManager, redisCache, db)
 	wirePipelineCanaryHealer(svcs, handlers)
-	schedulers := NewSchedulers(cfg, db, repos, svcs)
+	schedulers := NewSchedulers(cfg, db, nginxManager, repos, svcs)
 
 	return &Container{
 		Config:       cfg,

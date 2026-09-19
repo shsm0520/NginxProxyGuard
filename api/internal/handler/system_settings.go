@@ -423,7 +423,7 @@ func (h *SystemSettingsHandler) generateLogrotateConfig(settings *model.SystemSe
 	)
 
 	// Write to shared volume location (conf.d is shared between api and nginx containers)
-	logrotateFile := "/etc/nginx/conf.d/.logrotate.conf"
+	logrotateFile := nginx.LogrotateConfigPath
 	if err := os.WriteFile(logrotateFile, []byte(config), 0644); err != nil {
 		return fmt.Errorf("failed to write logrotate config: %w", err)
 	}
@@ -436,7 +436,7 @@ func (h *SystemSettingsHandler) generateLogrotateConfig(settings *model.SystemSe
 
 	ctx := context.Background()
 	cmd := exec.CommandContext(ctx, "docker", "exec", nginxContainer,
-		"sh", "-c", "cp /etc/nginx/conf.d/.logrotate.conf /etc/logrotate.d/nginx-guard 2>/dev/null || true")
+		"sh", "-c", "cp "+logrotateFile+" /etc/logrotate.d/nginx-guard 2>/dev/null || true")
 	cmd.Run() // Ignore errors - logrotate may not be installed
 
 	return nil

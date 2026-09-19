@@ -284,18 +284,18 @@ func (h *SystemSettingsHandler) TriggerLogRotation(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
-	// Try to run logrotate
-	logrotateConfig := "/etc/logrotate.d/nginx-guard"
-	if _, err := os.Stat(logrotateConfig); os.IsNotExist(err) {
-		logrotateConfig = "/etc/nginx/conf.d/.logrotate.conf"
+	// Rotate through the nginx manager: logrotate lives in the nginx container,
+	// not here (#301). The scheduler uses the same call so the two cannot drift.
+	if h.nginxManager == nil {
+		return c.JSON(http.StatusServiceUnavailable, map[string]string{
+			"error": "nginx manager is not available",
+		})
 	}
 
-	cmd := exec.CommandContext(c.Request().Context(), "logrotate", "-f", logrotateConfig)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
+	if err := h.nginxManager.RotateLogs(c.Request().Context()); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
 			"error":   "logrotate failed",
-			"details": string(output),
+			"details": err.Error(),
 		})
 	}
 

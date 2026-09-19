@@ -2,26 +2,23 @@ package scheduler
 
 import (
 	"context"
+	"errors"
 	"log"
-	"os"
-	"os/exec"
 	"time"
+
+	"nginx-proxy-guard/internal/nginx"
 )
 
 // LogRotateScheduler runs logrotate daily for raw nginx logs
 type LogRotateScheduler struct {
-	stopCh         chan struct{}
-	nginxContainer string
+	stopCh chan struct{}
+	nginx  *nginx.Manager
 }
 
-func NewLogRotateScheduler() *LogRotateScheduler {
-	container := os.Getenv("NGINX_CONTAINER")
-	if container == "" {
-		container = "npg-proxy"
-	}
+func NewLogRotateScheduler(nginxManager *nginx.Manager) *LogRotateScheduler {
 	return &LogRotateScheduler{
-		stopCh:         make(chan struct{}),
-		nginxContainer: container,
+		stopCh: make(chan struct{}),
+		nginx:  nginxManager,
 	}
 }
 
@@ -64,23 +61,22 @@ func (s *LogRotateScheduler) Stop() {
 	close(s.stopCh)
 }
 
+// runLogrotate delegates to the nginx manager, which owns every docker exec
+// into the proxy container. The manual trigger (TriggerLogRotation handler)
+// goes through the same call so the two paths cannot drift again (#301).
 func (s *LogRotateScheduler) runLogrotate() {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-
-	// Check if logrotate config exists
-	configPath := "/etc/nginx/conf.d/.logrotate.conf"
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		log.Println("[LogRotateScheduler] Logrotate config not found, skipping")
+	if s.nginx == nil {
+		log.Println("[LogRotateScheduler] Nginx manager unavailable, skipping")
 		return
 	}
 
-	// Copy config to nginx container's logrotate.d and run logrotate
-	cmd := exec.CommandContext(ctx, "docker", "exec", s.nginxContainer,
-		"sh", "-c", "cp /etc/nginx/conf.d/.logrotate.conf /etc/logrotate.d/nginx-guard && logrotate -f /etc/logrotate.d/nginx-guard")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("[LogRotateScheduler] Logrotate failed: %v - %s", err, string(output))
+	if err := s.nginx.RotateLogs(context.Background()); err != nil {
+		// Config absent means raw log files were never enabled — not a failure.
+		if errors.Is(err, nginx.ErrLogrotateConfigMissing) {
+			log.Println("[LogRotateScheduler] Logrotate config not found, skipping")
+			return
+		}
+		log.Printf("[LogRotateScheduler] Logrotate failed: %v", err)
 		return
 	}
 
