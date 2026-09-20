@@ -19,11 +19,16 @@ test.describe('Access Logs', () => {
     await page.goto(ROUTES.logsAccess);
     await page.waitForLoadState('domcontentloaded');
 
-    // Either logs are displayed or empty state
-    const hasLogs = await page.locator('table, [class*="log"], [class*="row"]').count() > 0;
-    const hasEmptyState = await page.locator('text=/no.*log|empty|no.*data/i').count() > 0;
-
-    expect(hasLogs || hasEmptyState).toBeTruthy();
+    // Either logs are displayed or an empty state. Asserted with expect(),
+    // which retries, rather than with count(), which is a snapshot: after
+    // domcontentloaded React has not necessarily rendered yet, so counting
+    // right there was a race that lost whenever the machine was busy — it
+    // passed alone and failed inside a parallel run.
+    await expect(
+      page.locator('table, [class*="log"], [class*="row"]')
+        .or(page.locator('text=/no.*log|empty|no.*data/i'))
+        .first()
+    ).toBeVisible();
   });
 
   test('should have log filter options', async ({ page }) => {
@@ -104,14 +109,15 @@ test.describe('Audit Logs', () => {
     // Audit logs should capture user actions
     await page.goto(ROUTES.logsAudit);
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(1000);
 
-    // Should have log content or empty state
-    const logCount = await page.locator('table, [class*="log"], [class*="entry"]').count();
-    const emptyCount = await page.locator('text=/no.*log|empty/i').count();
-    const hasContent = logCount > 0 || emptyCount > 0;
-
-    expect(hasContent).toBeTruthy();
+    // Retried, not counted once after a 1s cushion. The cushion was the same
+    // bet as the fixed sleeps in the block-reason spec: usually enough, and
+    // nothing when the machine is loaded.
+    await expect(
+      page.locator('table, [class*="log"], [class*="entry"]')
+        .or(page.locator('text=/no.*log|empty/i'))
+        .first()
+    ).toBeVisible();
   });
 });
 
@@ -132,11 +138,13 @@ test.describe('Raw Log Files', () => {
     await page.goto(ROUTES.logsRawFiles);
     await page.waitForLoadState('domcontentloaded');
 
-    // Should show file list or message
-    const hasFiles = await page.locator('text=/\\.log|\\.gz|access|error/i').count() > 0;
-    const hasEmptyState = await page.locator('text=/no.*file|empty/i').count() > 0;
-
-    expect(hasFiles || hasEmptyState).toBeTruthy();
+    // Same reasoning as "should show log entries or empty state": retry the
+    // assertion instead of counting once, or this races the first render.
+    await expect(
+      page.locator('text=/\\.log|\\.gz|access|error/i')
+        .or(page.locator('text=/no.*file|empty/i'))
+        .first()
+    ).toBeVisible();
   });
 });
 
