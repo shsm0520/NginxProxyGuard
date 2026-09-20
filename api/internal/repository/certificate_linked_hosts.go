@@ -34,6 +34,12 @@ import (
 // UNION ALL, not two round-trips: the page needs both kinds interleaved per
 // certificate, and this way "linked" has a single definition — the same one
 // CountByCertificateID and the delete guard use.
+//
+// $1::uuid[] is explicit on purpose. certificate_id is a uuid column and
+// there is no uuid = text operator, so a text[] cast does not merely perform
+// worse — it fails outright. Leaving the parameter untyped happens to work,
+// because Postgres infers the array type from the comparison, but stating it
+// keeps the next reader from "fixing" it into ::text[].
 const linkedHostsQuery = `
 	SELECT certificate_id, kind, domains, enabled, target, cloudflare_proxied FROM (
 		SELECT
@@ -44,7 +50,7 @@ const linkedHostsQuery = `
 			forward_scheme || '://' || forward_host || ':' || forward_port::text AS target,
 			COALESCE(ddns_enabled, false) AND COALESCE(ddns_proxied, false) AS cloudflare_proxied
 		FROM proxy_hosts
-		WHERE certificate_id = ANY($1)
+		WHERE certificate_id = ANY($1::uuid[])
 		UNION ALL
 		SELECT
 			certificate_id,
@@ -59,7 +65,7 @@ const linkedHostsQuery = `
 				|| '://' || forward_domain_name || COALESCE(forward_path, '') AS target,
 			false AS cloudflare_proxied
 		FROM redirect_hosts
-		WHERE certificate_id = ANY($1)
+		WHERE certificate_id = ANY($1::uuid[])
 	) linked
 	ORDER BY domains[1]`
 
