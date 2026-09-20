@@ -89,8 +89,26 @@ test.describe('WAF audit pipeline ingestion', () => {
     expect(String(ruleID), 'CRS rule_id should be 6 digits').toMatch(/^\d{6}$/);
 
     expect(row.rule_message, 'rule_message should be populated').toBeTruthy();
-    // CRS 942100 message is "SQL Injection Attack Detected via libinjection".
-    expect(String(row.rule_message), 'rule_message should describe SQL injection').toMatch(/SQL Injection/i);
+
+    // Classified as SQL injection — asserted on attack_type and the rule
+    // family, not on the wording of one rule.
+    //
+    // This used to require rule_message to match /SQL Injection/i, on the
+    // assumption that CRS 942100 ("SQL Injection Attack Detected via
+    // libinjection") would be the recorded rule. It is not: this payload is
+    // recorded as 942190, "Detects MSSQL code execution and information
+    // gathering attempts" — every bit as much a SQLi rule, and 942xxx IS the
+    // SQLi family, but its message never contains the phrase. So the
+    // assertion failed every run, on wording rather than on behaviour.
+    // The rule family is what the API actually exposes on a list row —
+    // attack_type is stored and classified ("sqli" here) but the list
+    // projection in repository/log.go does not select it, so the panel's own
+    // detail view cannot show it either. Reported separately; not something
+    // to pin a test on.
+    expect(Number(ruleID), 'rule_id should be in the CRS SQLi family (942xxx)')
+      .toBeGreaterThanOrEqual(942000);
+    expect(Number(ruleID), 'rule_id should be in the CRS SQLi family (942xxx)')
+      .toBeLessThan(943000);
 
     // Action + block_reason for a ModSec-blocked request (SecRuleEngine On).
     expect(row.action_taken, 'action_taken should be "blocked"').toBe('blocked');
@@ -128,6 +146,12 @@ test.describe('WAF audit pipeline ingestion', () => {
     const ruleID = row.rule_id;
     expect(String(ruleID), 'CRS rule_id should be 6 digits').toMatch(/^\d{6}$/);
     expect(row.rule_message, 'rule_message should be populated').toBeTruthy();
+    // Same reasoning as the SQLi case: pin the rule family, never one rule's
+    // wording. 941xxx is the CRS XSS family.
+    expect(Number(ruleID), 'rule_id should be in the CRS XSS family (941xxx)')
+      .toBeGreaterThanOrEqual(941000);
+    expect(Number(ruleID), 'rule_id should be in the CRS XSS family (941xxx)')
+      .toBeLessThan(942000);
     expect(row.action_taken, 'action_taken should be "blocked"').toBe('blocked');
     expect(row.block_reason, 'block_reason should be "waf"').toBe('waf');
   });
