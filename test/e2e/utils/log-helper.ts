@@ -15,6 +15,7 @@
 // values (Host headers and X-Forwarded-For are user-controlled in this context).
 
 import { execFileSync } from 'child_process';
+import { readFileSync, unlinkSync } from 'fs';
 import type { APIHelper, LogRow } from './api-helper';
 import { NGINX_HTTP_PORT } from '../fixtures/test-data';
 
@@ -42,6 +43,8 @@ export interface TriggerRequestResult {
   body: string;
 }
 
+let bodyFileCounter = 0;
+
 const DEFAULT_ORIGIN = `127.0.0.1:${NGINX_HTTP_PORT}`;
 const DEFAULT_USER_AGENT = 'npg-e2e/block-reason-spec';
 
@@ -59,9 +62,15 @@ export function triggerRequest(opts: TriggerRequestOptions): TriggerRequestResul
   const ua = opts.userAgent ?? DEFAULT_USER_AGENT;
   const timeoutSec = opts.timeoutSec ?? 5;
 
+  // A per-call body file. This used to be a single fixed path, which two
+  // workers firing at the same moment would overwrite for each other — the
+  // status was still right, so an assertion on the BODY would fail for a
+  // reason nothing in the test pointed at.
+  const bodyFile = `/tmp/npg-e2e-body-${process.pid}-${bodyFileCounter++}.txt`;
+
   const args: string[] = [
     '-sk',
-    '-o', '/tmp/npg-e2e-body.txt',
+    '-o', bodyFile,
     '-w', '%{http_code}',
     '--max-time', String(timeoutSec),
     '-X', method,
@@ -97,12 +106,85 @@ export function triggerRequest(opts: TriggerRequestOptions): TriggerRequestResul
   const status = parseInt(statusStr.trim(), 10);
   let body = '';
   try {
-    body = execFileSync('cat', ['/tmp/npg-e2e-body.txt'], { encoding: 'utf-8' });
+    body = readFileSync(bodyFile, 'utf-8');
   } catch {
     body = '';
   }
+  try {
+    unlinkSync(bodyFile);
+  } catch {
+    // Best effort: a leftover file in the container's /tmp is harmless.
+  }
 
   return { status, body };
+}
+
+/**
+ * Wait until the proxy answers the way the just-applied configuration says it
+ * should, then return that response.
+ *
+ * Replaces the fixed `waitForReload()` sleep each spec used to carry. That
+ * sleep was betting on a number, and the bet was structurally unwinnable:
+ * NginxReloader debounces on the TRAILING edge (constants.go,
+ * NginxReloaderDebounce = 2s) and every new request RESTARTS the timer. So
+ * when specs run in parallel — each creating hosts and toggling security
+ * settings — the reload that makes this test's rule live can be pushed back
+ * indefinitely by other workers. An 800ms sleep was short even for the quiet
+ * case. That is #294: block-reason case 10 failed alongside its siblings and
+ * passed alone, which is the signature of a timing assumption, not of a broken
+ * uri_block rule.
+ *
+ * Polling the real condition removes the guess in both directions: it returns
+ * as soon as the rule is live (usually first try) and it still fails, with a
+ * useful message, when the rule never becomes live.
+ *
+ * The probe is the test's own request, fired repeatedly. Every caller here
+ * targets a freshly created single-purpose host on a unique path, so the extra
+ * attempts only add rows that pollForLog would match anyway. Do NOT use this
+ * for a rule whose own trigger is cumulative — rate limits, fail2ban counters,
+ * auto-ban thresholds — because there the repeats ARE the state under test.
+ */
+export async function triggerUntil(
+  opts: TriggerRequestOptions,
+  expected: (result: TriggerRequestResult) => boolean,
+  options: { timeoutMs?: number; intervalMs?: number; describe?: string } = {},
+): Promise<TriggerRequestResult> {
+  const timeoutMs = options.timeoutMs ?? 20000;
+  const interval = options.intervalMs ?? 250;
+  const deadline = Date.now() + timeoutMs;
+
+  let attempts = 0;
+  let last: TriggerRequestResult | undefined;
+  let lastError: unknown;
+
+  for (;;) {
+    attempts++;
+    try {
+      last = triggerRequest(opts);
+      lastError = undefined;
+      if (expected(last)) {
+        return last;
+      }
+    } catch (err) {
+      // curl can fail outright while nginx is mid-reload; that is a state to
+      // wait through, not to fail on — unless it is still happening at the
+      // deadline, in which case it is reported.
+      lastError = err;
+    }
+
+    if (Date.now() >= deadline) {
+      const what = options.describe ?? `${opts.method ?? 'GET'} ${opts.host}${opts.path ?? '/'}`;
+      const seen = lastError
+        ? `the request kept failing: ${lastError instanceof Error ? lastError.message : String(lastError)}`
+        : `the last response was status ${last?.status}`;
+      throw new Error(
+        `Timed out after ${timeoutMs}ms (${attempts} attempts) waiting for ${what} to match the expected response; ${seen}. ` +
+        `If the rule is correct, the reload never landed — NginxReloader debounces on the trailing edge and restarts its timer on every request.`,
+      );
+    }
+
+    await new Promise(res => setTimeout(res, interval));
+  }
 }
 
 export interface LogMatchCriteria {

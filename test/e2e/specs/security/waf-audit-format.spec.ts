@@ -29,15 +29,9 @@
 
 import { test, expect } from '@playwright/test';
 import { APIHelper } from '../../utils/api-helper';
-import { pollForLog, triggerRequest } from '../../utils/log-helper';
+import { pollForLog, triggerUntil } from '../../utils/log-helper';
 import { TestDataFactory } from '../../utils/test-data-factory';
 
-// Allow nginx config write → `nginx -t` → reload to settle before we fire the
-// probe. 800ms matches the block-reason-regression spec; 2s is overkill but
-// safe for paranoia=1 modsec config which adds extra rule files.
-async function waitForReload(): Promise<void> {
-  await new Promise(res => setTimeout(res, 1500));
-}
 
 test.describe('WAF audit pipeline ingestion', () => {
   let api: APIHelper;
@@ -68,14 +62,12 @@ test.describe('WAF audit pipeline ingestion', () => {
       enabled: true,
     });
     await api.enableWAF(host.id, { mode: 'blocking', paranoiaLevel: 1 });
-    await waitForReload();
-
     // Classic SQLi via libinjection — CRS rule 942100 fires at paranoia 1.
     // Path matches the capture fixture used in TestModSecParser_FixtureSchema.
-    const probeResp = triggerRequest({
+    const probeResp = await triggerUntil({
       host: domain,
       path: "/?id=1'%20UNION%20SELECT%20username,password%20FROM%20users--",
-    });
+    }, r => r.status === 403, { describe: 'the SQLi probe to be blocked by ModSecurity' });
     expect(probeResp.status, 'SQLi probe should be blocked by ModSec').toBe(403);
 
     const row = await pollForLog(api, {
@@ -115,14 +107,12 @@ test.describe('WAF audit pipeline ingestion', () => {
       enabled: true,
     });
     await api.enableWAF(host.id, { mode: 'blocking', paranoiaLevel: 1 });
-    await waitForReload();
-
     // CRS 941100 — XSS via libinjection. Path is URL-encoded so curl passes
     // it through unchanged and ModSec sees the <script>alert(1)</script> body.
-    const probeResp = triggerRequest({
+    const probeResp = await triggerUntil({
       host: domain,
       path: '/?msg=%3Cscript%3Ealert(1)%3C/script%3E',
-    });
+    }, r => r.status === 403, { describe: 'the XSS probe to be blocked by ModSecurity' });
     expect(probeResp.status, 'XSS probe should be blocked by ModSec').toBe(403);
 
     const row = await pollForLog(api, {

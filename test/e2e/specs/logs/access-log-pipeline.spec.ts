@@ -22,12 +22,8 @@
 
 import { test, expect } from '@playwright/test';
 import { APIHelper } from '../../utils/api-helper';
-import { pollForLog, triggerRequest } from '../../utils/log-helper';
+import { pollForLog, triggerUntil } from '../../utils/log-helper';
 import { TestDataFactory } from '../../utils/test-data-factory';
-
-async function waitForReload(): Promise<void> {
-  await new Promise(res => setTimeout(res, 1500));
-}
 
 test.describe('Access log file-tail pipeline ingestion', () => {
   let api: APIHelper;
@@ -43,7 +39,7 @@ test.describe('Access log file-tail pipeline ingestion', () => {
 
   test('plain GET lands as log_type=access with block_reason=none', async () => {
     const host = TestDataFactory.generateDomain('access-pipeline');
-    const created = await api.createProxyHost({
+    await api.createProxyHost({
       domain_names: [host],
       forward_host: '127.0.0.1',
       forward_port: 19080, // api container — guaranteed reachable inside e2e net
@@ -52,21 +48,34 @@ test.describe('Access log file-tail pipeline ingestion', () => {
       waf_enabled: false,
       enabled: true,
     });
-    await waitForReload();
-
-    const probePath = `/_npg_pipeline_${Date.now()}`;
-    const result = triggerRequest({
-      host,
-      path: probePath,
-      xForwardedFor: '203.0.113.42',
-    });
     // Status itself isn't the invariant — we just need nginx to have processed
     // the request enough to write an access log line. 502 is also acceptable
     // (upstream may not actually answer); what matters is the log row.
+    //
+    // Waiting on that same set is what tells us the reload landed: until the
+    // new server block is live the proxy answers from the catch-all instead,
+    // and the request never reaches this host's access log at all.
+    const servedByThisHost = (status: number) => [200, 502, 504, 404].includes(status);
+
+    const probePath = `/_npg_pipeline_${Date.now()}`;
+    const result = await triggerUntil(
+      { host, path: probePath, xForwardedFor: '203.0.113.42' },
+      r => servedByThisHost(r.status),
+      { describe: `${host} to be served by its own server block` },
+    );
     expect([200, 502, 504, 404]).toContain(result.status);
 
+    // Matched on the domain, not on the host id. The id is not available yet
+    // and the test was asking for something the collector does not promise:
+    // it resolves domain -> host_id from a map rebuilt on a 30s ticker
+    // (log_collector.go), and a plain miss returns "" rather than looking the
+    // domain up. So a host created just after a tick is genuinely unattributed
+    // for up to 30s, and polling its id for 15s could only ever fail-then-pass
+    // on retry — which is what it did, on this spec, before and after the
+    // trigger rework. The access-log line always carries the host name, which
+    // is what this test is actually about.
     const row = await pollForLog(api, {
-      hostId: created.id,
+      host,
       expectedLogType: 'access',
       uriContains: probePath,
       timeoutMs: 15000,
