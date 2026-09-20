@@ -4504,7 +4504,17 @@ CREATE INDEX IF NOT EXISTS idx_proxy_hosts_tags ON public.proxy_hosts USING gin 
 -- function rebuilds the table and RENAMEs it over logs_partitioned on FRESH installs,
 -- so every install created before this fix is stuck on int4 (#297). The declaration is
 -- now bigint, which repairs new installs.
--- Existing installs are knowingly left on integer: widening it is a full table rewrite
--- that requires decompressing every chunk first (~12.5x expansion), for a column whose
--- reachable values (CRS rule ids) have roughly 215x headroom. Revisit only if a rule id
--- can ever exceed 2147483647.
+--
+-- v2.57.1 repairs existing installs, but only where the repair is free. Measured on
+-- pg17/timescaledb: with any chunk compressed the server refuses outright --
+--   ERROR: operation not supported on hypertables with compressed chunks
+-- -- so the only route would be decompressing every chunk (~12.5x expansion on disk)
+-- during boot. Uncompressed it costs ~0.5s per 100k rows, which is the shape of an
+-- install young enough not to have compressed yet. So the upgrade widens when there
+-- are zero compressed chunks and logs a warning otherwise; either way it can never
+-- fail the boot. Executable copy lives in database/migration.go `upgrades`.
+--   DO $$ ... ALTER TABLE public.logs_partitioned ALTER COLUMN rule_id TYPE bigint ... $$;
+--
+-- Column drift between this file and migrateToTimescaleDB()'s two hand-typed lists is
+-- now caught by database/migration_hypertable_columns_test.go, which compares all three
+-- lists by name, by type and by position.

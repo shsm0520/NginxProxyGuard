@@ -819,6 +819,70 @@ END $$`,
 			sql:  `CREATE INDEX IF NOT EXISTS idx_proxy_hosts_tags ON public.proxy_hosts USING gin (tags)`,
 		},
 		{
+			// #297 part two. 001_init.sql declares logs_partitioned.rule_id bigint,
+			// but migrateToTimescaleDB() built logs_hypertable with `integer` and
+			// renamed it over the live table — so every install created between
+			// the two is stuck on the narrow type, and ADD COLUMN IF NOT EXISTS
+			// never repairs a type. v2.57.0 fixed the declaration; this repairs
+			// the installs that already took it.
+			//
+			// Measured, not assumed: TimescaleDB refuses the widening outright
+			// once any chunk is compressed —
+			//     ERROR: operation not supported on hypertables with compressed chunks
+			// The only way through would be decompressing every chunk first, and
+			// compression is what keeps a home server's disk from filling (12.5x
+			// here), so a boot-time mass decompress is never the right trade: it
+			// would need the uncompressed size free on disk and would block
+			// startup for as long as it took.
+			//
+			// So the widening is opportunistic. Uncompressed, it costs ~1.2s per
+			// 200k rows (measured on pg17/timescaledb), which is exactly the
+			// shape of an install young enough not to have compressed yet — the
+			// affected population, caught before it hardens. Anything already
+			// compressed is left alone and says so once per boot, because a log
+			// row whose rule_id needs more than int4 is a rule id above 2.1
+			// billion, which ModSecurity itself never issues.
+			//
+			// EXCEPTION WHEN others is load-bearing: this must never be the
+			// statement that turns a boot into a partially-migrated schema.
+			desc: "v2.57.1: widen logs_partitioned.rule_id to bigint where it is cheap (#297)",
+			sql: `DO $$
+DECLARE
+    current_type text;
+    compressed_chunks bigint := 0;
+BEGIN
+    SELECT data_type INTO current_type
+      FROM information_schema.columns
+     WHERE table_schema = 'public'
+       AND table_name = 'logs_partitioned'
+       AND column_name = 'rule_id';
+
+    IF current_type IS DISTINCT FROM 'integer' THEN
+        RETURN;
+    END IF;
+
+    IF to_regclass('timescaledb_information.chunks') IS NOT NULL THEN
+        SELECT count(*) INTO compressed_chunks
+          FROM timescaledb_information.chunks
+         WHERE hypertable_name = 'logs_partitioned'
+           AND is_compressed;
+    END IF;
+
+    IF compressed_chunks > 0 THEN
+        RAISE WARNING '[Migration] logs_partitioned.rule_id is still integer and % chunk(s) are compressed; TimescaleDB refuses ALTER COLUMN TYPE on compressed hypertables, so the widening is skipped. Harmless in practice: it only bounds rule ids above 2147483647.', compressed_chunks;
+        RETURN;
+    END IF;
+
+    BEGIN
+        SET LOCAL statement_timeout = '60s';
+        ALTER TABLE public.logs_partitioned ALTER COLUMN rule_id TYPE bigint;
+        RAISE NOTICE '[Migration] logs_partitioned.rule_id widened to bigint';
+    EXCEPTION WHEN others THEN
+        RAISE WARNING '[Migration] logs_partitioned.rule_id widening skipped: %', SQLERRM;
+    END;
+END $$`,
+		},
+		{
 			desc: "v2.13.17: btree index bot_filters(proxy_host_id)",
 			sql:  `CREATE INDEX IF NOT EXISTS idx_bot_filters_proxy_host ON public.bot_filters USING btree (proxy_host_id)`,
 		},
