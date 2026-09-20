@@ -221,7 +221,7 @@ func (r *DDNSRepository) UpdateStatus(ctx context.Context, id, ip, status, errMs
 		UPDATE ddns_records
 		SET last_ip = $2, last_status = $3, last_error = $4, last_synced_at = $5, updated_at = now()
 		WHERE id = $1`,
-		id, ip, status, errMsg, syncedAt)
+		id, ip, status, persistedErrorText(errMsg), syncedAt)
 	if err != nil {
 		return fmt.Errorf("failed to update ddns status: %w", err)
 	}

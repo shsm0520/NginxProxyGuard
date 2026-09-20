@@ -84,7 +84,7 @@ func (r *GeoIPHistoryRepository) UpdateFailed(ctx context.Context, id string, er
 		    error_message = $2
 		WHERE id = $3
 	`
-	_, err := r.db.ExecContext(ctx, query, model.GeoIPUpdateStatusFailed, errMsg, id)
+	_, err := r.db.ExecContext(ctx, query, model.GeoIPUpdateStatusFailed, persistedErrorText(errMsg), id)
 	return err
 }
 

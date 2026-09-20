@@ -44,9 +44,7 @@ func (h *SystemLogHandler) List(c echo.Context) error {
 
 	logs, total, err := h.repo.List(c.Request().Context(), filter)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": SafeErrorMessage(err),
-		})
+		return directInternalError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -62,9 +60,7 @@ func (h *SystemLogHandler) List(c echo.Context) error {
 func (h *SystemLogHandler) GetStats(c echo.Context) error {
 	stats, err := h.repo.GetStats(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": SafeErrorMessage(err),
-		})
+		return directInternalError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, stats)
@@ -77,9 +73,7 @@ func (h *SystemLogHandler) Cleanup(c echo.Context) error {
 
 	deleted, err := h.repo.Cleanup(c.Request().Context(), retentionDays)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": SafeErrorMessage(err),
-		})
+		return directInternalError(c, err)
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{

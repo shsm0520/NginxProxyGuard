@@ -8,6 +8,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
+
+	"nginx-proxy-guard/internal/database"
 )
 
 // Postgres SQLSTATE codes. Only invalid_text_representation is mapped onto a
@@ -15,17 +17,17 @@ import (
 // unambiguously the caller's mistake. Every other code deliberately stays a
 // 500 — mislabelling one of our own bugs as the caller's fault is worse than a
 // vague 500. Extending the map later is a one-line change. (#298)
-const sqlStateInvalidTextRepresentation = "22P02"
+const sqlStateInvalidTextRepresentation = database.SQLStateInvalidTextRepresentation
 
 // ErrMsgInvalidIdentifier is returned when a path/body identifier could not be
 // parsed by Postgres (e.g. "not-a-uuid" reaching a uuid column).
-const ErrMsgInvalidIdentifier = "Invalid identifier format"
+const ErrMsgInvalidIdentifier = database.MsgInvalidIdentifier
 
 // driverTextPrefix is what lib/pq puts in front of every server error it
 // renders: Error() returns "pq: <message>", or "pq: <message> (<SQLSTATE>)"
 // once the code is known. It is therefore an exact boundary between the text
 // we wrote and the text the driver wrote.
-const driverTextPrefix = "pq: "
+const driverTextPrefix = database.DriverTextPrefix
 
 // isDriverError reports whether a Postgres driver error sits anywhere in the
 // error chain. lib/pq renders "pq: <message> (<SQLSTATE>)" and, when the driver
@@ -85,20 +87,11 @@ func SafeErrorMessage(err error) string {
 // renders inside its own text, so a malformed identifier says so and anything
 // else falls back to the generic database wording rather than mislabelling the
 // cause. Messages with no driver text in them are returned untouched. (#298)
+// The scrub itself lives in internal/database, because a response is not the
+// only way driver text escapes: several tables persist an error string and
+// serve it back. One definition keeps the wire and the stored copy in step.
 func SafeClientText(message string) string {
-	i := strings.Index(message, driverTextPrefix)
-	if i < 0 {
-		return message
-	}
-	reason := ErrMsgDatabaseError
-	if strings.Contains(message[i:], "("+sqlStateInvalidTextRepresentation+")") {
-		reason = ErrMsgInvalidIdentifier
-	}
-	prefix := strings.TrimRight(message[:i], " \t:,-")
-	if prefix == "" {
-		return reason
-	}
-	return prefix + ": " + reason
+	return database.ScrubDriverText(message)
 }
 
 // scrubbedClientText is what the shared 4xx helpers actually call. The 5xx

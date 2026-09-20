@@ -6,12 +6,17 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+
+	"nginx-proxy-guard/internal/database"
 )
 
 // Common error messages for clients (no internal details)
 const (
 	ErrMsgInternalError    = "An internal error occurred"
-	ErrMsgDatabaseError    = "A database error occurred"
+	// Same string the scrub substitutes for driver text, by reference rather
+	// than by copy: a stored error and a returned one must not start wording
+	// the same failure differently.
+	ErrMsgDatabaseError    = database.MsgDatabaseError
 	ErrMsgNotFound         = "Resource not found"
 	ErrMsgUnauthorized     = "Authentication required"
 	ErrMsgForbidden        = "Access denied"

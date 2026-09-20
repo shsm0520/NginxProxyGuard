@@ -134,7 +134,7 @@ func (r *BackupRepository) UpdateStatus(ctx context.Context, id, status, errorMs
 		SET status = $2, error_message = $3
 		WHERE id = $1
 	`
-	_, err := r.db.ExecContext(ctx, query, id, status, errorMsg)
+	_, err := r.db.ExecContext(ctx, query, id, status, persistedErrorText(errorMsg))
 	return err
 }
 

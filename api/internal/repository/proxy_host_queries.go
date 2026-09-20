@@ -751,7 +751,9 @@ func (r *ProxyHostRepository) getByReferenceColumn(ctx context.Context, column, 
 // UpdateConfigStatus updates the config_status and config_error for a proxy host
 func (r *ProxyHostRepository) UpdateConfigStatus(ctx context.Context, id, status, configError string) error {
 	query := `UPDATE proxy_hosts SET config_status = $1, config_error = $2 WHERE id = $3`
-	_, err := r.db.ExecContext(ctx, query, status, configError, id)
+	// The callers pass err.Error() straight through, and this row is read back
+	// by the host list — see persisted_errors.go.
+	_, err := r.db.ExecContext(ctx, query, status, persistedErrorText(configError), id)
 	if err != nil {
 		return fmt.Errorf("failed to update config status: %w", err)
 	}

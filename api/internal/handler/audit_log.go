@@ -31,10 +31,16 @@ func (h *AuditLogHandler) ListAuditLogs(c echo.Context) error {
 	}
 	// Validate uuid; an invalid value would hit the uuid column and raise a
 	// Postgres "invalid input syntax for type uuid" error (500 + DB log).
+	//
+	// Answering 400 rather than dropping the value. Silently ignoring it meant
+	// a request for ONE user's audit trail came back as everyone's, with a 200
+	// and no indication the filter had not been applied — the one failure mode
+	// an audit log must not have.
 	if uid := c.QueryParam("user_id"); uid != "" {
-		if _, err := uuid.Parse(uid); err == nil {
-			filter.UserID = uid
+		if _, err := uuid.Parse(uid); err != nil {
+			return badRequestError(c, "user_id: "+ErrMsgInvalidIdentifier)
 		}
+		filter.UserID = uid
 	}
 
 	// Parse limit and offset using utility functions
@@ -46,9 +52,7 @@ func (h *AuditLogHandler) ListAuditLogs(c echo.Context) error {
 
 	logs, total, err := h.repo.List(c.Request().Context(), filter)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": SafeErrorMessage(err),
-		})
+		return directInternalError(c, err)
 	}
 
 	// Format logs for display
@@ -82,9 +86,7 @@ func (h *AuditLogHandler) ListAuditLogs(c echo.Context) error {
 func (h *AuditLogHandler) GetActions(c echo.Context) error {
 	actions, err := h.repo.GetActions(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": SafeErrorMessage(err),
-		})
+		return directInternalError(c, err)
 	}
 
 	// Format actions with labels
@@ -104,9 +106,7 @@ func (h *AuditLogHandler) GetActions(c echo.Context) error {
 func (h *AuditLogHandler) GetResourceTypes(c echo.Context) error {
 	types, err := h.repo.GetResourceTypes(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": SafeErrorMessage(err),
-		})
+		return directInternalError(c, err)
 	}
 
 	// Format types with labels
