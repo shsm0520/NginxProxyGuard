@@ -4378,8 +4378,12 @@ paths:
       tags: [Auth]
       summary: Begin 2FA enrolment
       description: |
-        Generates a TOTP secret, an otpauth QR URL and backup codes for the calling
-        account. Nothing is enabled until `POST /auth/2fa/enable` confirms a code.
+        Generates a TOTP secret and an otpauth QR URL for the calling account.
+        Nothing is enabled until `POST /auth/2fa/enable` confirms a code.
+
+        Idempotent while an enrolment is pending: calling it again returns the
+        same secret, so a QR that has already been scanned is never silently
+        invalidated. Backup codes come from `/auth/2fa/enable`.
         Self-service — authentication only. Takes no request body.
       security:
         - SessionAuth: []
@@ -4417,16 +4421,13 @@ paths:
                   type: string
       responses:
         '200':
-          description: 2FA enabled
+          description: 2FA enabled; backup codes returned once
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
+                $ref: '#/components/schemas/Enable2FAResponse'
         '400':
-          description: totp_code missing
+          description: totp_code missing, or setup was never started
           content:
             application/json:
               schema:
@@ -12874,7 +12875,14 @@ components:
           format: date-time
     Setup2FAResponse:
       type: object
-      description: Enrolment material from POST /auth/2fa/setup. Nothing is active until POST /auth/2fa/enable confirms a code.
+      description: |
+        Enrolment material from POST /auth/2fa/setup. Nothing is active until
+        POST /auth/2fa/enable confirms a code.
+
+        Calling this again while an enrolment is pending returns the SAME secret
+        and QR, so an authenticator that already scanned it keeps working.
+        Backup codes are not returned here — they are issued by
+        POST /auth/2fa/enable, which is the write that stores them.
       properties:
         secret:
           type: string
@@ -12882,6 +12890,15 @@ components:
         qr_code_url:
           type: string
           description: otpauth:// URL to render as a QR code.
+    Enable2FAResponse:
+      type: object
+      description: |
+        Result of POST /auth/2fa/enable. The backup codes are returned in
+        plaintext exactly once — only bcrypt hashes are stored — and they come
+        from the same write that enabled 2FA.
+      properties:
+        message:
+          type: string
         backup_codes:
           type: array
           description: One-time recovery codes; shown only here.

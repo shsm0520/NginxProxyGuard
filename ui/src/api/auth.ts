@@ -59,6 +59,11 @@ export interface FontFamilyResponse {
 export interface Setup2FAResponse {
   secret: string
   qr_code_url: string
+}
+
+/** Backup codes arrive with the enable response — the one write that stores them. */
+export interface Enable2FAResponse {
+  message: string
   backup_codes: string[]
 }
 
@@ -328,7 +333,7 @@ export async function setup2FA(): Promise<Setup2FAResponse> {
   return res.json()
 }
 
-export async function enable2FA(request: Enable2FARequest): Promise<void> {
+export async function enable2FA(request: Enable2FARequest): Promise<Enable2FAResponse> {
   const res = await fetch(`${API_BASE}/auth/2fa/enable`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -339,6 +344,8 @@ export async function enable2FA(request: Enable2FARequest): Promise<void> {
     const error = await res.json()
     throw new Error(error.error || 'Failed to enable 2FA')
   }
+
+  return res.json()
 }
 
 export async function disable2FA(request: Disable2FARequest): Promise<void> {

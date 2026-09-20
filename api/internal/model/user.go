@@ -100,9 +100,23 @@ type AuthStatus struct {
 }
 
 // 2FA Setup
+// Setup2FAResponse carries only what is needed to pair an authenticator.
+//
+// Backup codes deliberately do NOT live here. They used to, and that made the
+// displayed set and the stored hashes two different things the moment a second
+// setup call happened: the secret is kept across calls (so the QR already
+// scanned keeps working), but a second call rewrote the hashes, leaving the
+// first screen holding ten codes the database had never seen. They are issued
+// by Enable2FA instead, where "displayed" and "stored" are the same write.
 type Setup2FAResponse struct {
-	Secret     string   `json:"secret"`
-	QRCodeURL  string   `json:"qr_code_url"`
+	Secret    string `json:"secret"`
+	QRCodeURL string `json:"qr_code_url"`
+}
+
+// Enable2FAResponse returns the backup codes minted for this enrolment. This is
+// the only time they are ever shown in plaintext — only bcrypt hashes are kept.
+type Enable2FAResponse struct {
+	Message     string   `json:"message"`
 	BackupCodes []string `json:"backup_codes"`
 }
 

@@ -465,6 +465,27 @@ func (s *AuditService) Log2FADisabled(ctx context.Context, username string) erro
 	return s.logEntry(ctx, "totp_disabled", "user", "", username, nil)
 }
 
+// Log2FAFailed records a rejected 2FA code.
+//
+// Only the successes were audited, so a rejection left nothing anywhere: the
+// same 401 and the same "Invalid 2FA code" whether the stored secret had been
+// rotated out from under the user, the host clock had drifted past the ±30s
+// window, or the code was simply wrong. That is why #305 arrived as "the code
+// is correct but it says it is wrong" with nothing further to go on — neither
+// the reporter nor a maintainer reading their logs could tell the three apart.
+//
+// stage says which door was being tried ("login" or "enable"); reason carries
+// what the server could tell about it. logEntryWithUser is used rather than
+// logEntry because the login-side rejection has no authenticated user in
+// context, and the attempted username and IP belong in the operator-visible
+// columns rather than buried in the details JSONB.
+func (s *AuditService) Log2FAFailed(ctx context.Context, username, ipAddress, userAgent, stage, reason string) error {
+	return s.logEntryWithUser(ctx, "", username, ipAddress, userAgent, "totp_failed", "user", "", username, map[string]interface{}{
+		"stage":  stage,
+		"reason": reason,
+	})
+}
+
 // LogAccessListCreated logs access list creation
 func (s *AuditService) LogAccessListCreated(ctx context.Context, name string) error {
 	return s.logEntry(ctx, "access_list_created", "access_list", "", name, nil)

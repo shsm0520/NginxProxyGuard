@@ -36,6 +36,10 @@ func (h *AuthHandler) Verify2FA(c echo.Context) error {
 				"error": "Invalid or expired temporary token",
 			})
 		case service.ErrInvalid2FACode:
+			// Audited so a rejection leaves a trace. Without it the three
+			// causes — rotated secret, clock drift, wrong code — are
+			// indistinguishable to everyone, including us (#305).
+			h.auditService.Log2FAFailed(c.Request().Context(), "", ip, userAgent, "login", "code rejected")
 			return c.JSON(http.StatusUnauthorized, map[string]string{
 				"error": "Invalid 2FA code",
 			})
@@ -121,14 +125,20 @@ func (h *AuthHandler) Enable2FA(c echo.Context) error {
 		})
 	}
 
-	err := h.authService.Enable2FA(c.Request().Context(), user.ID, &req)
+	backupCodes, err := h.authService.Enable2FA(c.Request().Context(), user.ID, &req)
 	if err != nil {
 		switch err {
 		case service.Err2FAAlreadyEnabled:
 			return c.JSON(http.StatusConflict, map[string]string{
 				"error": "2FA is already enabled",
 			})
+		case service.ErrSetupNotInitiated:
+			return c.JSON(http.StatusBadRequest, map[string]string{
+				"error": "Start 2FA setup before enabling it",
+			})
 		case service.ErrInvalid2FACode:
+			h.auditService.Log2FAFailed(c.Request().Context(), user.Username,
+				c.RealIP(), c.Request().UserAgent(), "enable", "code rejected")
 			return c.JSON(http.StatusUnauthorized, map[string]string{
 				"error": "Invalid 2FA code",
 			})
@@ -143,8 +153,12 @@ func (h *AuthHandler) Enable2FA(c echo.Context) error {
 	auditCtx := service.ContextWithAudit(c.Request().Context(), c)
 	h.auditService.Log2FAEnabled(auditCtx, user.Username)
 
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "2FA enabled successfully",
+	// The only time the backup codes are ever returned in plaintext — the
+	// database keeps bcrypt hashes. They come from the same write that enabled
+	// 2FA, so what is shown here is what will actually work.
+	return c.JSON(http.StatusOK, model.Enable2FAResponse{
+		Message:     "2FA enabled successfully",
+		BackupCodes: backupCodes,
 	})
 }
 
@@ -180,6 +194,8 @@ func (h *AuthHandler) Disable2FA(c echo.Context) error {
 				"error": "Invalid password",
 			})
 		case service.ErrInvalid2FACode:
+			h.auditService.Log2FAFailed(c.Request().Context(), user.Username,
+				c.RealIP(), c.Request().UserAgent(), "disable", "code rejected")
 			return c.JSON(http.StatusUnauthorized, map[string]string{
 				"error": "Invalid 2FA code",
 			})

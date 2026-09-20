@@ -220,27 +220,57 @@ func (r *AuthRepository) CheckUsernameExists(ctx context.Context, username, excl
 
 // 2FA operations
 
-func (r *AuthRepository) SetTOTPSecret(ctx context.Context, userID, secret string, backupCodes []string) error {
+// EnsureTOTPSecret stores a pending enrolment secret, but only if the account
+// does not already have one, and returns the secret that is now stored.
+//
+// It used to be an unconditional overwrite, which is how an enrolment could
+// silently break (#305). The QR lives only in browser state, so closing the
+// dialog, pressing Cancel or reloading loses it; coming back and pressing the
+// button again minted a NEW secret over the top. The authenticator still held
+// the old one, so every code it produced — and every code from any other app
+// seeded from the same QR — was rejected, with the same "Invalid 2FA code" a
+// genuinely wrong entry gets. Nothing told the user their QR had died.
+//
+// COALESCE(NULLIF(...)) keeps an existing pending secret, so re-opening the
+// screen hands back the same QR instead of invalidating the one already
+// scanned. Backup codes are NOT written here — EnableTOTP mints them once the
+// enrolment actually completes. Writing them here would reintroduce the split
+// this fix exists to close: the secret survives a second setup call but the
+// codes would not, leaving whichever screen called first holding ten codes the
+// database never stored.
+//
+// One statement also settles the race. Two setups in flight (two tabs, a double
+// click) both used to write, and the loser's QR was the one left on screen. Now
+// the first writer wins and RETURNING tells every caller which secret that was.
+//
+// totp_enabled = FALSE repeats the service's guard atomically: an enrolled
+// account's working secret can never be touched by this path.
+func (r *AuthRepository) EnsureTOTPSecret(ctx context.Context, userID, secret string) (string, error) {
 	query := `
 		UPDATE users
-		SET totp_secret = $2,
-		    backup_codes = $3,
+		SET totp_secret = COALESCE(NULLIF(totp_secret, ''), $2),
 		    updated_at = NOW()
-		WHERE id = $1
+		WHERE id = $1 AND totp_enabled = FALSE
+		RETURNING totp_secret
 	`
-	_, err := r.db.ExecContext(ctx, query, userID, secret, pq.Array(backupCodes))
-	return err
+	var stored string
+	err := r.db.QueryRowContext(ctx, query, userID, secret).Scan(&stored)
+	return stored, err
 }
 
-func (r *AuthRepository) EnableTOTP(ctx context.Context, userID string) error {
+// EnableTOTP completes an enrolment: it flips the flag and writes the backup
+// codes in the same statement, so the set the user is about to be shown is by
+// construction the set that was stored.
+func (r *AuthRepository) EnableTOTP(ctx context.Context, userID string, hashedBackupCodes []string) error {
 	query := `
 		UPDATE users
 		SET totp_enabled = TRUE,
 		    totp_verified_at = NOW(),
+		    backup_codes = $2,
 		    updated_at = NOW()
 		WHERE id = $1
 	`
-	_, err := r.db.ExecContext(ctx, query, userID)
+	_, err := r.db.ExecContext(ctx, query, userID, pq.Array(hashedBackupCodes))
 	return err
 }
 

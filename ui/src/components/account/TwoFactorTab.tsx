@@ -11,6 +11,8 @@ interface TwoFactorTabProps {
   setting2FA: boolean;
   showBackupCodes: boolean;
   setShowBackupCodes: (show: boolean) => void;
+  /** Issued by the enable call, which is the write that stored their hashes. */
+  backupCodes: string[];
   disableForm: Disable2FARequest;
   setDisableForm: (form: Disable2FARequest) => void;
   disabling2FA: boolean;
@@ -28,6 +30,7 @@ export function TwoFactorTab({
   setting2FA,
   showBackupCodes,
   setShowBackupCodes,
+  backupCodes,
   disableForm,
   setDisableForm,
   disabling2FA,
@@ -118,7 +121,7 @@ export function TwoFactorTab({
                   {t('account.twoFactor.backupCodes.description')}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  {setup2FAData.backup_codes.map((code, i) => (
+                  {backupCodes.map((code, i) => (
                     <code key={i} className="bg-gray-200 dark:bg-gray-800 px-3 py-1 rounded text-gray-900 dark:text-white font-mono text-center">
                       {code}
                     </code>

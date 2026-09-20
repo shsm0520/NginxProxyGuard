@@ -208,10 +208,10 @@ export function Login({ onLogin }: LoginProps) {
           ) : (
             <>
               <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2 text-center">
-                {t('changePassword.title', { defaultValue: 'Two-Factor Authentication' })}
+                {t('login.twoFactorTitle')}
               </h2>
               <p className="text-slate-500 dark:text-slate-400 text-sm text-center mb-6">
-                {t('common:validation.required', { defaultValue: 'Enter the 6-digit code from your authenticator app' })}
+                {t('login.twoFactorSubtitle')}
               </p>
 
               <form onSubmit={handle2FASubmit} className="space-y-5">
@@ -228,15 +228,26 @@ export function Login({ onLogin }: LoginProps) {
                     name="totpCode"
                     autoComplete="one-time-code"
                     value={totpCode}
-                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    /* Accepts a 6-digit TOTP OR an 8-character backup code.
+                       This used to be replace(/\D/g,'').slice(0,6), which
+                       deleted every letter — so the ten backup codes the
+                       product issues (8 chars of base32, A-Z and 2-7) could
+                       never be typed here, even though the server accepts them
+                       and the line below says you can use one. When someone's
+                       authenticator broke, the documented way back in was dead
+                       and the only option left was resetting 2FA (#305).
+                       Non-alphanumerics are still dropped so spacing from a
+                       password manager does not count toward the length; the
+                       server decides what is actually valid. */
+                    onChange={(e) => setTotpCode(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 8))}
                     className="w-full px-4 py-4 border border-slate-300 dark:border-slate-600 rounded-lg text-center text-3xl tracking-[0.5em] font-mono focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                     placeholder="000000"
-                    maxLength={6}
+                    maxLength={8}
                     required
                     autoFocus
                   />
                   <p className="text-slate-500 dark:text-slate-400 text-xs text-center mt-2">
-                    {t('common:messages.noData', { defaultValue: 'You can also use a backup code' })}
+                    {t('login.backupCodeHint')}
                   </p>
                 </div>
 

@@ -51,6 +51,7 @@ export default function AccountSettings({ onClose, onLogout }: AccountSettingsPr
   const [totpCode, setTotpCode] = useState('')
   const [setting2FA, setSetting2FA] = useState(false)
   const [showBackupCodes, setShowBackupCodes] = useState(false)
+  const [backupCodes, setBackupCodes] = useState<string[]>([])
   const [disableForm, setDisableForm] = useState<Disable2FARequest>({
     password: '',
     totp_code: ''
@@ -188,7 +189,13 @@ export default function AccountSettings({ onClose, onLogout }: AccountSettingsPr
 
     try {
       setSetting2FA(true)
-      await enable2FA({ totp_code: totpCode })
+      // Backup codes come back from the enable call, not from setup. Setup can
+      // be run more than once (the secret is kept so an already-scanned QR
+      // keeps working), so codes issued there could be overwritten before the
+      // enrolment finished and the screen would show a set the database had
+      // never stored. These are the codes that were just hashed (#305).
+      const enabled = await enable2FA({ totp_code: totpCode })
+      setBackupCodes(enabled.backup_codes)
       setSuccess(t('account.twoFactor.enableSuccess'))
       setShowBackupCodes(true)
       await loadAccountInfo()
@@ -329,6 +336,7 @@ export default function AccountSettings({ onClose, onLogout }: AccountSettingsPr
               setting2FA={setting2FA}
               showBackupCodes={showBackupCodes}
               setShowBackupCodes={setShowBackupCodes}
+              backupCodes={backupCodes}
               disableForm={disableForm}
               setDisableForm={setDisableForm}
               disabling2FA={disabling2FA}

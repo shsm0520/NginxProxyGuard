@@ -45,15 +45,50 @@ func GenerateQRCodeURL(secret, username string) string {
 	)
 }
 
+// otpSeparators are the characters an authenticator or a password manager puts
+// between digit groups, or that a paste drags along. 1Password renders a TOTP
+// as "123 456" and copying it can carry the space; a Korean or Japanese IME can
+// leave a non-breaking or ideographic space; some UIs group with a hyphen.
+// None of them are part of the code, and every one of them used to turn a
+// correct code into "Invalid 2FA code" with nothing said about why (#305).
+var otpSeparators = strings.NewReplacer(
+	" ", "", "\t", "", "\n", "", "\r", "",
+	"-", "", "\u00a0", "", "\u200b", "", "\u3000", "",
+)
+
+// NormalizeOTPInput strips the separators above and upper-cases what is left,
+// so a TOTP and a base32 backup code are both compared in the form they were
+// issued in. It does NOT validate: an input that is still wrong after this is
+// rejected by the comparison, as it should be.
+func NormalizeOTPInput(code string) string {
+	return strings.ToUpper(otpSeparators.Replace(code))
+}
+
 // ValidateTOTPCode validates a TOTP code against a secret
 // Uses constant-time comparison to prevent timing attacks
 func ValidateTOTPCode(secret, code string) bool {
+	code = NormalizeOTPInput(code)
+
+	// Fail closed on an empty submission. Without this the function answers
+	// "yes" to (undecodable secret, empty code): generateTOTPCode returns ""
+	// for a secret it cannot base32-decode, and ConstantTimeCompare("", "")
+	// is 1. No caller can reach that today — all four check for an empty code
+	// first — but an authentication primitive whose answer to "I could not
+	// evaluate this" is "accept" is one refactor away from a bypass.
+	if code == "" {
+		return false
+	}
+
 	// Allow 1 period before and after current time for clock skew
 	currentTime := time.Now().Unix()
 
 	for _, offset := range []int64{-1, 0, 1} {
 		timestamp := currentTime + (offset * totpPeriod)
 		expectedCode := generateTOTPCode(secret, timestamp)
+		if expectedCode == "" {
+			// The stored secret is not decodable. Nothing can match it.
+			return false
+		}
 		// Use constant-time comparison to prevent timing attacks
 		if subtle.ConstantTimeCompare([]byte(expectedCode), []byte(code)) == 1 {
 			return true
@@ -118,8 +153,16 @@ func GenerateBackupCodes(count int) ([]string, []string, error) {
 
 // ValidateBackupCode checks if a backup code is valid and returns remaining codes
 func ValidateBackupCode(code string, hashedCodes []string) (bool, []string) {
+	// Same normalisation as the TOTP path: a backup code read off a printout
+	// or pasted from a password manager arrives with spacing and casing that
+	// are not part of the code.
+	code = NormalizeOTPInput(code)
+	if code == "" {
+		return false, hashedCodes
+	}
+
 	for i, hashedCode := range hashedCodes {
-		if err := bcrypt.CompareHashAndPassword([]byte(hashedCode), []byte(strings.ToUpper(code))); err == nil {
+		if err := bcrypt.CompareHashAndPassword([]byte(hashedCode), []byte(code)); err == nil {
 			// Remove used code
 			remaining := make([]string, 0, len(hashedCodes)-1)
 			remaining = append(remaining, hashedCodes[:i]...)

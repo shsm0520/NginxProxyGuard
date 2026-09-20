@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"os"
@@ -31,6 +32,11 @@ var (
 	Err2FANotEnabled      = errors.New("2FA is not enabled")
 	Err2FAAlreadyEnabled  = errors.New("2FA is already enabled")
 	ErrInvalidTempToken   = errors.New("invalid or expired temporary token")
+	// ErrSetupNotInitiated: enable was called without a pending secret. It was
+	// an untyped errors.New, so the handler's switch fell through to the
+	// default arm and answered 500 for what is plainly a client sequencing
+	// mistake.
+	ErrSetupNotInitiated = errors.New("2FA setup not initiated")
 )
 
 const (
@@ -323,52 +329,79 @@ func (s *AuthService) Setup2FA(ctx context.Context, userID string) (*model.Setup
 		return nil, err
 	}
 
-	// Generate backup codes
+	// Store the secret (not enabled yet).
+	//
+	// EnsureTOTPSecret returns the secret that is ACTUALLY stored, which is the
+	// one already there if this account has an enrolment in progress. Re-opening
+	// the setup screen therefore shows the same QR rather than quietly
+	// invalidating the one the user has already scanned (#305). Everything
+	// below must use the returned value, never the freshly generated one.
+	//
+	// Backup codes are not minted here. They belong to a completed enrolment —
+	// see Enable2FA.
+	stored, err := s.repo.EnsureTOTPSecret(ctx, userID, secret)
+	if err != nil {
+		// No row came back: the account turned out to be enrolled already (the
+		// WHERE excludes it), which the caller treats as a conflict rather than
+		// a server fault.
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, Err2FAAlreadyEnabled
+		}
+		return nil, err
+	}
+
+	// Generate QR code URL
+	qrURL := GenerateQRCodeURL(stored, user.Username)
+
+	return &model.Setup2FAResponse{
+		Secret:    stored,
+		QRCodeURL: qrURL,
+	}, nil
+}
+
+// Enable2FA enables 2FA after verifying a code
+func (s *AuthService) Enable2FA(ctx context.Context, userID string, req *model.Enable2FARequest) ([]string, error) {
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, ErrUnauthorized
+	}
+
+	if user.TOTPEnabled {
+		return nil, Err2FAAlreadyEnabled
+	}
+
+	if user.TOTPSecret == "" {
+		return nil, ErrSetupNotInitiated
+	}
+
+	// Verify the code
+	if !ValidateTOTPCode(user.TOTPSecret, req.TOTPCode) {
+		return nil, ErrInvalid2FACode
+	}
+
+	// Mint the backup codes here rather than at setup time, and store them in
+	// the same statement that flips the flag. The plaintext returned below is
+	// therefore the plaintext whose hashes were just written — there is no
+	// window in which the screen shows one set and the database holds another.
+	//
+	// That window existed when setup issued them: the secret survives a second
+	// setup call (so an already-scanned QR keeps working) but the codes did
+	// not, so the first screen could enrol successfully and then display ten
+	// codes that had been overwritten. Backup codes are the only offline way
+	// back into an account, so a set that silently does not work is worse than
+	// no set at all.
 	codes, hashedCodes, err := GenerateBackupCodes(backupCodeCount)
 	if err != nil {
 		return nil, err
 	}
 
-	// Store secret and hashed backup codes (not enabled yet)
-	if err := s.repo.SetTOTPSecret(ctx, userID, secret, hashedCodes); err != nil {
+	if err := s.repo.EnableTOTP(ctx, userID, hashedCodes); err != nil {
 		return nil, err
 	}
-
-	// Generate QR code URL
-	qrURL := GenerateQRCodeURL(secret, user.Username)
-
-	return &model.Setup2FAResponse{
-		Secret:      secret,
-		QRCodeURL:   qrURL,
-		BackupCodes: codes,
-	}, nil
-}
-
-// Enable2FA enables 2FA after verifying a code
-func (s *AuthService) Enable2FA(ctx context.Context, userID string, req *model.Enable2FARequest) error {
-	user, err := s.repo.GetUserByID(ctx, userID)
-	if err != nil {
-		return err
-	}
-	if user == nil {
-		return ErrUnauthorized
-	}
-
-	if user.TOTPEnabled {
-		return Err2FAAlreadyEnabled
-	}
-
-	if user.TOTPSecret == "" {
-		return errors.New("2FA setup not initiated")
-	}
-
-	// Verify the code
-	if !ValidateTOTPCode(user.TOTPSecret, req.TOTPCode) {
-		return ErrInvalid2FACode
-	}
-
-	// Enable 2FA
-	return s.repo.EnableTOTP(ctx, userID)
+	return codes, nil
 }
 
 // Disable2FA disables 2FA
