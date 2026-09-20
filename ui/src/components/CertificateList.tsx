@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { listCertificates, deleteCertificate, renewCertificate, downloadCertificate, bulkDeleteErrorCertificates, clearCertificateError } from '../api/certificates';
-import { fetchProxyHosts } from '../api/proxy-hosts';
-import type { Certificate } from '../types/certificate';
+import { ApiError } from '../api/client';
+import type { Certificate, CertificateLinkedHost } from '../types/certificate';
 import CertificateForm from './CertificateForm';
 import CertificateUpdateForm from './CertificateUpdateForm';
 import { CertificateDetail } from './CertificateDetail';
@@ -22,7 +22,7 @@ function parseSortOption(option: SortOption): { sortBy: string; sortOrder: strin
 
 interface CertificateCardProps {
   cert: Certificate;
-  hosts?: { domain: string; enabled: boolean }[];
+  hosts?: CertificateLinkedHost[];
   expanded: boolean;
   onToggleExpand: () => void;
   onView: () => void;
@@ -195,17 +195,6 @@ export default function CertificateList() {
     refetchInterval: 120000,
   });
 
-  const { data: proxyHostsData } = useQuery({
-    queryKey: ['proxy-hosts-for-certs'],
-    queryFn: () => fetchProxyHosts(1, 200),
-    staleTime: 30000,
-  });
-
-  const hostsByCertId = useMemo(() => (proxyHostsData?.data ?? []).reduce((map, h) => {
-    if (h.certificate_id) (map[h.certificate_id] ??= []).push({ domain: h.domain_names[0], enabled: h.enabled, cfProxied: !!h.ddns_enabled && !!h.ddns_proxied });
-    return map;
-  }, {} as Record<string, { domain: string; enabled: boolean; cfProxied: boolean }[]>), [proxyHostsData]);
-
   const total = data?.total ?? 0;
   const totalPages = data?.total_pages ?? 1;
   const hasFilters = searchQuery || statusFilter || providerFilter;
@@ -215,6 +204,19 @@ export default function CertificateList() {
     mutationFn: deleteCertificate,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['certificates'] });
+    },
+    // The delete guard answers 409 when a proxy or redirect host still points
+    // at the certificate. Without this the rejection was dropped on the floor:
+    // the dialog closed, the row stayed, and nothing said why (#302). The
+    // server's sentence is English and names counts, so the screen supplies its
+    // own wording and points at the linked-hosts column, which now lists the
+    // redirect hosts too.
+    onError: (err: unknown) => {
+      const inUse = err instanceof ApiError && err.status === 409;
+      setNotice({
+        type: 'error',
+        message: inUse ? t('messages.deleteInUse') : t('messages.deleteFailed'),
+      });
     },
   });
 
@@ -394,7 +396,7 @@ export default function CertificateList() {
             <CertificateCard
               key={cert.id}
               cert={cert}
-              hosts={hostsByCertId[cert.id]}
+              hosts={cert.linked_hosts}
               expanded={expandedCertId === cert.id}
               onToggleExpand={() => setExpandedCertId(expandedCertId === cert.id ? null : cert.id)}
               onView={() => setSelectedCertId(cert.id)}

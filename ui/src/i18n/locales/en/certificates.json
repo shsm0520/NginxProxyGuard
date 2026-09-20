@@ -59,7 +59,8 @@
       "previous": "Previous",
       "next": "Next",
       "last": "Last"
-    }
+    },
+    "redirectHost": "redirect"
   },
   "form": {
     "title": "New Certificate",
@@ -143,7 +144,8 @@
     "updateFailed": "Failed to update certificate",
     "bulkDeleteConfirm": "Are you sure you want to delete all error certificates? This action cannot be undone.",
     "bulkDeleteSuccess": "{{count}} error certificate(s) deleted.",
-    "bulkDeleteFailed": "Failed to delete error certificates"
+    "bulkDeleteFailed": "Failed to delete error certificates",
+    "deleteInUse": "This certificate is still in use. Unassign it from the hosts listed under \"Linked hosts\" first — redirect hosts count too."
   },
   "dnsProviders": {
     "title": "DNS Providers",

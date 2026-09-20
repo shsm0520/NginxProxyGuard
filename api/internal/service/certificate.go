@@ -473,6 +473,26 @@ func (s *CertificateService) GetByID(ctx context.Context, id string) (*model.Cer
 	return s.repo.GetByID(ctx, id)
 }
 
+// GetWithDetails is what the detail modal reads. It exists so that view gets
+// its linked hosts from the same query the list and the delete guard use,
+// instead of re-deriving them client-side from a page of proxy hosts (#302).
+func (s *CertificateService) GetWithDetails(ctx context.Context, id string) (*model.CertificateWithDetails, error) {
+	cert, err := s.repo.GetByID(ctx, id)
+	if err != nil || cert == nil {
+		return nil, err
+	}
+
+	details := cert.ToWithDetails()
+	linked, err := s.repo.ListLinkedHosts(ctx, []string{id})
+	if err != nil {
+		log.Printf("[CertificateService] could not resolve linked hosts for %s; the section will read as empty: %v", id, err)
+	} else if hosts := linked[id]; len(hosts) > 0 {
+		details.LinkedHosts = hosts
+	}
+
+	return &details, nil
+}
+
 // RecoverMaterialFromDisk repairs a certificate whose key material was emptied
 // in the database by the pre-fix write path (#253) but whose files are still on
 // disk, which is the common case: nginx keeps serving from
@@ -582,8 +602,26 @@ func (s *CertificateService) List(ctx context.Context, page, perPage int, search
 	totalPages := (total + perPage - 1) / perPage
 
 	details := make([]model.CertificateWithDetails, len(certs))
+	ids := make([]string, len(certs))
 	for i := range certs {
 		details[i] = certs[i].ToWithDetails()
+		ids[i] = certs[i].ID
+	}
+
+	// One query for the whole page. A failure here is not worth failing the
+	// list over — the certificates themselves are what the page is for — but
+	// it must not be silent either, because an empty column and a column that
+	// could not be filled look identical and that ambiguity is exactly what
+	// #302 was about.
+	linked, err := s.repo.ListLinkedHosts(ctx, ids)
+	if err != nil {
+		log.Printf("[CertificateService] could not resolve linked hosts for this page; the column will read as empty: %v", err)
+	} else {
+		for i := range details {
+			if hosts := linked[details[i].ID]; len(hosts) > 0 {
+				details[i].LinkedHosts = hosts
+			}
+		}
 	}
 
 	return &model.CertificateListResponse{

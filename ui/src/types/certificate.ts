@@ -16,6 +16,25 @@ export interface Certificate {
   dns_provider?: DNSProvider;
   days_until_expiry?: number;
   needs_renewal?: boolean;
+  /**
+   * Hosts referencing this certificate, resolved server-side. Proxy AND
+   * redirect both — the delete guard counts both, so anything narrower
+   * disagrees with the 409 it returns (#302).
+   *
+   * Optional only because a Certificate is also built from request shapes
+   * that have no details; every list and detail response carries it, as [].
+   */
+  linked_hosts?: CertificateLinkedHost[];
+}
+
+export interface CertificateLinkedHost {
+  kind: 'proxy' | 'redirect';
+  /** Every name on the host, so "+N more" stays accurate. */
+  domains: string[];
+  enabled: boolean;
+  /** Upstream for a proxy host, destination for a redirect — pre-rendered. */
+  target: string;
+  cloudflare_proxied: boolean;
 }
 
 export interface CreateCertificateRequest {

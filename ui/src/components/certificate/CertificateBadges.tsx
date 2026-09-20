@@ -1,13 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Certificate } from '../../types/certificate';
+import type { Certificate, CertificateLinkedHost } from '../../types/certificate';
 import { CloudflareProxyBadge } from '../common/listui';
-
-interface LinkedHost {
-  domain: string;
-  enabled: boolean;
-  cfProxied?: boolean;
-}
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300',
@@ -73,7 +67,7 @@ export function DomainCell({ domains }: { domains: string[] }) {
 
 const LINKED_HOSTS_VISIBLE = 3;
 
-export function LinkedHostsCell({ hosts }: { hosts?: LinkedHost[] }) {
+export function LinkedHostsCell({ hosts }: { hosts?: CertificateLinkedHost[] }) {
   const { t } = useTranslation('certificates');
   const [expanded, setExpanded] = useState(false);
 
@@ -89,8 +83,16 @@ export function LinkedHostsCell({ hosts }: { hosts?: LinkedHost[] }) {
       {visible.map((h, i) => (
         <span key={i} className="inline-flex items-center gap-1">
           <span className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${h.enabled ? 'bg-green-500' : 'bg-slate-400'}`} />
-          <span className="text-xs text-slate-600 dark:text-slate-400 truncate max-w-[140px]" title={h.domain}>{h.domain}</span>
-          {h.cfProxied && <CloudflareProxyBadge title={t('list.cloudflareProxied')} />}
+          <span className="text-xs text-slate-600 dark:text-slate-400 truncate max-w-[140px]" title={h.domains.join(', ')}>{h.domains[0]}</span>
+          {/* A redirect host blocks the delete exactly like a proxy host does,
+              so it has to be visible as one — and distinguishable, or the row
+              sends you looking on the wrong page for something to unassign. */}
+          {h.kind === 'redirect' && (
+            <span className="rounded bg-slate-100 px-1 text-[10px] font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+              {t('list.redirectHost')}
+            </span>
+          )}
+          {h.cloudflare_proxied && <CloudflareProxyBadge title={t('list.cloudflareProxied')} />}
         </span>
       ))}
       {hiddenCount > 0 && (

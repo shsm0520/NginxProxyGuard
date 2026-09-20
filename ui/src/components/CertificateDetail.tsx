@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { getCertificate } from '../api/certificates'
-import { fetchProxyHosts } from '../api/proxy-hosts'
 import { ModalShell } from './common/ModalShell'
 import { CloudflareProxyBadge } from './common/listui'
 import type { Certificate } from '../types/certificate'
@@ -19,13 +18,11 @@ export function CertificateDetail({ certificateId, onClose }: CertificateDetailP
     queryFn: () => getCertificate(certificateId),
   })
 
-  const { data: linkedHosts } = useQuery({
-    queryKey: ['certificate-linked-hosts', certificateId],
-    queryFn: async () => {
-      const result = await fetchProxyHosts(1, 100)
-      return result.data.filter(h => h.certificate_id === certificateId)
-    },
-  })
+  // Linked hosts come with the certificate now. The previous version listed a
+  // page of proxy hosts and filtered it client-side, which missed redirect
+  // hosts entirely and silently dropped anything past the page — so a
+  // certificate that could not be deleted still showed nothing using it (#302).
+  const linkedHosts = cert?.linked_hosts
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '-'
@@ -203,22 +200,30 @@ export function CertificateDetail({ certificateId, onClose }: CertificateDetailP
               <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">{t('detail.linkedHosts')}</h3>
               {linkedHosts && linkedHosts.length > 0 ? (
                 <div className="space-y-2">
-                  {linkedHosts.map(host => (
-                    <div key={host.id} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">
+                  {linkedHosts.map((host, i) => (
+                    <div key={`${host.kind}-${host.domains[0]}-${i}`} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">
                       <div className={`w-2 h-2 rounded-full ${host.enabled ? 'bg-green-500' : 'bg-slate-400'}`} />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-slate-900 dark:text-white truncate flex items-center gap-1">
-                          <span className="truncate">{host.domain_names[0]}</span>
-                          {host.ddns_enabled && host.ddns_proxied && <CloudflareProxyBadge title={t('list.cloudflareProxied')} />}
+                          <span className="truncate">{host.domains[0]}</span>
+                          {/* A redirect host blocks the delete exactly like a
+                              proxy host does, so say which page to go and
+                              unassign it on. */}
+                          {host.kind === 'redirect' && (
+                            <span className="rounded bg-slate-200 px-1 text-[10px] font-medium text-slate-600 dark:bg-slate-600 dark:text-slate-300">
+                              {t('list.redirectHost')}
+                            </span>
+                          )}
+                          {host.cloudflare_proxied && <CloudflareProxyBadge title={t('list.cloudflareProxied')} />}
                         </p>
-                        {host.domain_names.length > 1 && (
+                        {host.domains.length > 1 && (
                           <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {t('list.more', { count: host.domain_names.length - 1 })}
+                            {t('list.more', { count: host.domains.length - 1 })}
                           </p>
                         )}
                       </div>
                       <span className="text-xs text-slate-500 dark:text-slate-400">
-                        → {host.forward_scheme}://{host.forward_host}:{host.forward_port}
+                        → {host.target}
                       </span>
                     </div>
                   ))}

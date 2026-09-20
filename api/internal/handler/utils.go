@@ -50,12 +50,29 @@ func ParsePaginationParams(c echo.Context) (page, perPage int) {
 		page = DefaultPage
 	}
 
-	perPage, _ = strconv.Atoi(c.QueryParam("per_page"))
-	if perPage < MinPerPage || perPage > MaxPerPage {
-		perPage = DefaultPerPage
-	}
+	return page, clampPerPage(c.QueryParam("per_page"), DefaultPerPage)
+}
 
-	return page, perPage
+// clampPerPage turns a per_page parameter into a usable page size.
+//
+// Asking for more than MaxPerPage used to fall back to DefaultPerPage, which
+// is the one answer the caller definitely did not want: a request for 200 came
+// back with 20, with nothing in the response saying so. The certificates page
+// asked for 200 and silently built its "linked hosts" column out of an
+// arbitrary twenty proxy hosts, so on any install with more than twenty hosts
+// a certificate in use looked unused — while deleting it still returned 409
+// (#302). Too large now means the maximum, which is what a ceiling normally
+// means. Absent, unparseable or below the minimum still means the default,
+// because those carry no request to honour.
+func clampPerPage(raw string, defaultPerPage int) int {
+	perPage, err := strconv.Atoi(raw)
+	if err != nil || perPage < MinPerPage {
+		return defaultPerPage
+	}
+	if perPage > MaxPerPage {
+		return MaxPerPage
+	}
+	return perPage
 }
 
 // ParsePaginationParamsWithDefaults extracts pagination with custom defaults
@@ -65,12 +82,7 @@ func ParsePaginationParamsWithDefaults(c echo.Context, defaultPerPage int) (page
 		page = DefaultPage
 	}
 
-	perPage, _ = strconv.Atoi(c.QueryParam("per_page"))
-	if perPage < MinPerPage || perPage > MaxPerPage {
-		perPage = defaultPerPage
-	}
-
-	return page, perPage
+	return page, clampPerPage(c.QueryParam("per_page"), defaultPerPage)
 }
 
 // ValidateStringLength checks if a string is within the maximum length

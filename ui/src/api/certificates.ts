@@ -10,7 +10,7 @@ import { getAuthHeaders } from './auth';
 // Uses the shared handler from client.ts so 403s get the operator-facing
 // permission message instead of the raw API wording, and 401/502-504 behave the
 // same as everywhere else. This module previously carried its own copy. (#222)
-import { handleResponse } from './client';
+import { ApiError, handleResponse } from './client';
 
 const API_BASE = '/api/v1';
 
@@ -88,7 +88,11 @@ export async function deleteCertificate(id: string): Promise<void> {
   });
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error || `HTTP ${response.status}`);
+    // ApiError, not Error: the 409 the delete guard returns is a distinct
+    // outcome the screen has its own wording for, and the server's sentence is
+    // always English. Losing the status meant the caller could only show a
+    // generic failure — or, as it did, nothing at all (#302).
+    throw new ApiError(error.error || `HTTP ${response.status}`, response.status, error.details);
   }
 }
 

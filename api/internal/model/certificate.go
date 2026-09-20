@@ -110,6 +110,36 @@ type CertificateWithDetails struct {
 	Certificate
 	DaysUntilExpiry int  `json:"days_until_expiry"`
 	NeedsRenewal    bool `json:"needs_renewal"`
+
+	// Hosts referencing this certificate — proxy and redirect both, because
+	// the delete guard counts both. Always a list, never null, so the panel
+	// can tell "nothing is using it" apart from "nobody looked" (#302).
+	LinkedHosts []CertificateLinkedHost `json:"linked_hosts"`
+}
+
+// CertificateLinkedHost is one host that references a certificate. It is
+// deliberately a flat display shape rather than an embedded host: what the
+// panel shows is a name, whether it is live, and whether Cloudflare is in
+// front of it — and a certificate page has no business carrying a host's
+// forwarding rules or WAF settings.
+type CertificateLinkedHost struct {
+	// Kind is "proxy" or "redirect". Redirect hosts were the half the old
+	// client-side grouping never asked for.
+	Kind string `json:"kind"`
+
+	// Domains is every name on the host, not just the first: the detail view
+	// shows "+N more", and truncating here would quietly change what it says.
+	Domains []string `json:"domains"`
+
+	Enabled bool `json:"enabled"`
+
+	// Target is where the host sends traffic, rendered per kind — an upstream
+	// for a proxy host, a destination for a redirect. Pre-rendered because the
+	// two are assembled from different columns and the panel should not have to
+	// know which kind it is holding to print one line.
+	Target string `json:"target"`
+
+	CloudflareProxied bool `json:"cloudflare_proxied"`
 }
 
 // ToWithDetails converts Certificate to CertificateWithDetails
@@ -118,6 +148,7 @@ func (c *Certificate) ToWithDetails() CertificateWithDetails {
 		Certificate:     *c,
 		DaysUntilExpiry: c.DaysUntilExpiry(),
 		NeedsRenewal:    c.NeedsRenewal(),
+		LinkedHosts:     []CertificateLinkedHost{},
 	}
 }
 

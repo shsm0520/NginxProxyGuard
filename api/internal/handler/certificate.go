@@ -63,7 +63,7 @@ func (h *CertificateHandler) BulkDeleteErrors(c echo.Context) error {
 func (h *CertificateHandler) Get(c echo.Context) error {
 	id := c.Param("id")
 
-	cert, err := h.service.GetByID(c.Request().Context(), id)
+	cert, err := h.service.GetWithDetails(c.Request().Context(), id)
 	if err != nil {
 		return databaseError(c, "get certificate", err)
 	}
@@ -72,7 +72,7 @@ func (h *CertificateHandler) Get(c echo.Context) error {
 		return notFoundError(c, "Certificate")
 	}
 
-	return c.JSON(http.StatusOK, cert.ToWithDetails())
+	return c.JSON(http.StatusOK, cert)
 }
 
 // Create handles POST /api/v1/certificates

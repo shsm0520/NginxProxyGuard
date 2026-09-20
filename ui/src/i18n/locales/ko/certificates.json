@@ -59,7 +59,8 @@
       "previous": "이전",
       "next": "다음",
       "last": "마지막"
-    }
+    },
+    "redirectHost": "리다이렉트"
   },
   "form": {
     "title": "새 인증서",
@@ -143,7 +144,8 @@
     "updateFailed": "인증서 교체에 실패했습니다",
     "bulkDeleteConfirm": "모든 오류 인증서를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
     "bulkDeleteSuccess": "{{count}}개의 오류 인증서가 삭제되었습니다.",
-    "bulkDeleteFailed": "오류 인증서 삭제에 실패했습니다"
+    "bulkDeleteFailed": "오류 인증서 삭제에 실패했습니다",
+    "deleteInUse": "아직 사용 중인 인증서입니다. \"연결된 호스트\"에 표시된 호스트에서 먼저 해제해 주세요 — 리다이렉트 호스트도 포함됩니다."
   },
   "dnsProviders": {
     "title": "DNS 제공자",
