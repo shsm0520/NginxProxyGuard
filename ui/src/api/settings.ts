@@ -411,7 +411,22 @@ export async function deleteLogFile(filename: string): Promise<void> {
   }
 }
 
-export async function triggerLogRotation(): Promise<{ status: string; message: string }> {
+/**
+ * The server answers 200 for three outcomes it deliberately does not treat as
+ * failures — nothing to cut, a cut that already happened, one already running —
+ * and says so in `status`. A caller that only checks res.ok reports all three
+ * as "rotation completed", which is the one thing they are not (#301).
+ */
+export type LogRotationSkipReason = 'empty' | 'already_rotated' | 'busy';
+export type LogRotationResult = {
+  status: 'completed' | 'skipped';
+  /** Stable code for the skip, for screens that translate their own wording. */
+  reason?: LogRotationSkipReason;
+  /** English fallback sentence from the server. */
+  message: string;
+};
+
+export async function triggerLogRotation(): Promise<LogRotationResult> {
   const res = await fetch(`${API_BASE}/system-settings/log-files/rotate`, {
     method: 'POST',
     headers: getAuthHeaders(),

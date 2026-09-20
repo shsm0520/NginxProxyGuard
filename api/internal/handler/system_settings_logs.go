@@ -300,9 +300,14 @@ func (h *SystemSettingsHandler) TriggerLogRotation(c echo.Context) error {
 		// the current log is as fresh as a rotation could make it, so the
 		// answer is 200 with the reason rather than a 500 — but the reason is
 		// stated, because "completed" when nothing moved would be a lie.
-		if reason, skipped := logRotationSkipReason(err); skipped {
+		if code, reason, skipped := logRotationSkipReason(err); skipped {
 			return c.JSON(http.StatusOK, map[string]interface{}{
-				"status":  "skipped",
+				"status": "skipped",
+				// A stable code beside the sentence. The sentence is English
+				// and always will be; the panel is Korean by default, so it
+				// needs something to translate on. Clients that only read
+				// `message` keep working.
+				"reason":  code,
 				"message": reason,
 			})
 		}
@@ -324,18 +329,28 @@ func (h *SystemSettingsHandler) TriggerLogRotation(c echo.Context) error {
 	})
 }
 
-// logRotationSkipReason turns the manager's non-failure outcomes into the
-// sentence the operator sees. Anything else is a real logrotate fault.
-func logRotationSkipReason(err error) (string, bool) {
+// Stable reason codes for a skipped rotation. These are part of the response
+// contract — the panel selects its wording from them — so they must not be
+// renamed to match a sentence someone rephrased.
+const (
+	LogRotationSkipEmpty          = "empty"
+	LogRotationSkipAlreadyRotated = "already_rotated"
+	LogRotationSkipBusy           = "busy"
+)
+
+// logRotationSkipReason turns the manager's non-failure outcomes into a code
+// and the sentence a client without translations can fall back on. Anything
+// else is a real logrotate fault.
+func logRotationSkipReason(err error) (code, reason string, skipped bool) {
 	switch {
 	case errors.Is(err, nginx.ErrLogrotateNothingToRotate):
-		return "Nothing to rotate: the current log files are empty", true
+		return LogRotationSkipEmpty, "Nothing to rotate: the current log files are empty", true
 	case errors.Is(err, nginx.ErrLogrotateAlreadyRotated):
-		return "Log files were rotated a moment ago; the current log is already fresh", true
+		return LogRotationSkipAlreadyRotated, "Log files were rotated a moment ago; the current log is already fresh", true
 	case errors.Is(err, nginx.ErrLogrotateBusy):
-		return "A log rotation is already in progress", true
+		return LogRotationSkipBusy, "A log rotation is already in progress", true
 	}
-	return "", false
+	return "", "", false
 }
 
 // GetSystemLogConfig returns the current system log configuration

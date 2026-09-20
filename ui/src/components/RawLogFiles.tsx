@@ -28,7 +28,7 @@ export default function RawLogFiles() {
   const [viewContent, setViewContent] = useState<string>('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [editedSettings, setEditedSettings] = useState<UpdateSystemSettingsRequest>({});
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   // Fetch settings
   const { data: settings } = useQuery({
@@ -71,10 +71,28 @@ export default function RawLogFiles() {
   // Rotate logs mutation
   const rotateMutation = useMutation({
     mutationFn: triggerLogRotation,
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['logFiles'] });
-      setSaveMessage({ type: 'success', text: t('rawFiles.rotateSuccess') });
-      setTimeout(() => setSaveMessage(null), 3000);
+      // The server answers 200 for three outcomes it does not treat as
+      // failures — nothing to cut, a cut that already happened this second,
+      // one already running — and names which in `reason`. Reporting all of
+      // them as "rotation completed" was the last place #301 stayed invisible:
+      // the operator pressed the button, saw success, and the file list did
+      // not change. Skips are shown as such, with the reason.
+      if (result.status === 'skipped') {
+        const reasonKey = result.reason ?? 'unknown';
+        setSaveMessage({
+          type: 'info',
+          text: t([`rawFiles.rotateSkipped.${reasonKey}`, 'rawFiles.rotateSkipped.unknown']),
+        });
+      } else {
+        setSaveMessage({ type: 'success', text: t('rawFiles.rotateSuccess') });
+      }
+      setTimeout(() => setSaveMessage(null), 5000);
+    },
+    onError: (error: Error) => {
+      setSaveMessage({ type: 'error', text: t('rawFiles.rotateFail', { error: error.message }) });
+      setTimeout(() => setSaveMessage(null), 5000);
     },
   });
 
@@ -139,7 +157,9 @@ export default function RawLogFiles() {
       {saveMessage && (
         <div className={`px-4 py-3 rounded-lg text-sm font-medium ${saveMessage.type === 'success'
           ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800'
-          : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
+          : saveMessage.type === 'info'
+            ? 'bg-slate-50 dark:bg-slate-700/40 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
+            : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
           }`}>
           {saveMessage.text}
         </div>

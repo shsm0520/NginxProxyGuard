@@ -637,6 +637,13 @@
       "deleting": "삭제 중...",
       "close": "닫기",
       "noContent": "내용 없음"
+    },
+    "rotateFail": "로그 로테이션 실패: {{error}}",
+    "rotateSkipped": {
+      "empty": "로테이션할 내용이 없습니다 — 현재 로그 파일이 비어 있습니다.",
+      "already_rotated": "방금 로테이션되어 현재 로그가 이미 새 파일입니다.",
+      "busy": "이미 로그 로테이션이 진행 중입니다.",
+      "unknown": "로테이션된 파일이 없습니다."
     }
   },
   "filterMatch": {

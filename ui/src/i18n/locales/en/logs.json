@@ -635,6 +635,13 @@
       "deleting": "Deleting...",
       "close": "Close",
       "noContent": "No content"
+    },
+    "rotateFail": "Log rotation failed: {{error}}",
+    "rotateSkipped": {
+      "empty": "Nothing to rotate — the current log files are empty.",
+      "already_rotated": "Already rotated a moment ago; the current log is fresh.",
+      "busy": "A log rotation is already running.",
+      "unknown": "Nothing was rotated."
     }
   },
   "filterMatch": {
