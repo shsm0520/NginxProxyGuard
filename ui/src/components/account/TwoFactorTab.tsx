@@ -161,16 +161,23 @@ export function TwoFactorTab({
               />
             </div>
             <div>
-              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-1">TOTP Code</label>
+              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-1">{t('account.twoFactor.disableCodeLabel')}</label>
               <input
                 type="text"
                 value={disableForm.totp_code}
-                onChange={(e) => setDisableForm({ ...disableForm, totp_code: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                /* Same filter as the login form: a 6-digit TOTP or an
+                   8-character backup code. Turning 2FA off is exactly when the
+                   authenticator may be gone, so requiring a code from it made
+                   backup codes a one-way door. */
+                onChange={(e) => setDisableForm({ ...disableForm, totp_code: e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 8) })}
                 className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-center text-xl tracking-widest focus:border-blue-500 focus:outline-none"
                 placeholder="000000"
-                maxLength={6}
+                maxLength={8}
                 required
               />
+              <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">
+                {t('account.twoFactor.disableCodeHint')}
+              </p>
             </div>
             <button
               type="submit"

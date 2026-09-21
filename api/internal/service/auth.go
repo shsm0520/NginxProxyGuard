@@ -423,8 +423,20 @@ func (s *AuthService) Disable2FA(ctx context.Context, userID string, req *model.
 		return ErrInvalidCredentials
 	}
 
-	// Verify TOTP code
-	if !ValidateTOTPCode(user.TOTPSecret, req.TOTPCode) {
+	// Verify the second factor with the SAME rule the login path uses: a TOTP
+	// code or a backup code.
+	//
+	// This accepted TOTP only, which made backup codes a one-way door — they
+	// got you in but not out. A user whose authenticator is lost or wiped could
+	// sign in with a backup code and then had no way to turn 2FA off and pair a
+	// new device, because turning it off demanded a code from the device they
+	// no longer had. Their only exit was the host-level `reset-password
+	// --clear-2fa`, which also resets the password and kills every session.
+	// Backup codes exist precisely for that situation.
+	//
+	// The password is still required, so this is the same strength as the login
+	// it mirrors: something known plus one of the two second factors.
+	if !s.verify2FACode(user, req.TOTPCode) {
 		return ErrInvalid2FACode
 	}
 
